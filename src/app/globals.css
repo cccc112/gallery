@@ -1,27 +1,84 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Carrara white marble-inspired palette (Light Mode by default) */
+  --background: #f8f9fa;
+  --foreground: oklch(0.27 0.02 255);
+  --card: #ffffff;
+  --card-foreground: oklch(0.27 0.02 255);
+  --popover: #ffffff;
+  --popover-foreground: oklch(0.27 0.02 255);
+  
+  /* Luxury zinc-900 primary */
+  --primary: oklch(0.21 0.006 265);
+  --primary-foreground: #f8f9fa;
+  
+  /* Soft secondary (Warm Gray #f1f3f5) */
+  --secondary: #f1f3f5;
+  --secondary-foreground: oklch(0.27 0.02 255);
+  
+  /* Muted tones */
+  --muted: #f1f3f5;
+  --muted-foreground: oklch(0.45 0.015 255);
+  
+  /* Accent - warm subtle tone */
+  --accent: oklch(0.92 0.008 60);
+  --accent-foreground: oklch(0.27 0.02 255);
+  
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: #ffffff;
+  
+  /* 極簡細邊框 border-zinc-200/60 (rgba(228, 228, 231, 0.6)) */
+  --border: rgba(228, 228, 231, 0.6);
+  --input: rgba(228, 228, 231, 0.6);
+  --ring: oklch(0.45 0.015 255);
+  
+  --radius: 0.375rem;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.145 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.145 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.985 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.396 0.141 25.723);
+  --destructive-foreground: oklch(0.637 0.237 25.331);
+  --border: oklch(0.269 0 0);
+  --input: oklch(0.269 0 0);
+  --ring: oklch(0.439 0 0);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground transition-colors duration-200;
+    font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
-}
-
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
+/* Elegant Carrara Marble Background with multi-layered Linear Gradients */
+.marble-bg {
+  background-color: #f8f9fa;
+  background-image: 
+    linear-gradient(135deg, rgba(255, 255, 255, 0.6) 0%, transparent 60%),
+    linear-gradient(225deg, rgba(241, 243, 245, 0.7) 0%, transparent 50%),
+    linear-gradient(45deg, rgba(228, 231, 235, 0.3) 0%, transparent 70%),
+    linear-gradient(315deg, rgba(248, 249, 250, 0.5) 0%, transparent 50%),
+    linear-gradient(180deg, #f8f9fa 0%, #f1f3f5 100%);
 }
