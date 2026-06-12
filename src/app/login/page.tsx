@@ -2,12 +2,13 @@ import Link from 'next/link';
 import { signIn } from '@/app/auth/actions';
 
 interface LoginPageProps {
-  searchParams: { error?: string; redirect?: string };
+  searchParams: { error?: string; redirect?: string; message?: string };
 }
 
 export default function LoginPage({ searchParams }: LoginPageProps) {
   const error = searchParams.error;
   const redirectTo = searchParams.redirect || '/';
+  const message = searchParams.message;
 
   return (
     <div className="marble-bg min-h-screen flex items-center justify-center px-6 py-16">
@@ -36,6 +37,12 @@ export default function LoginPage({ searchParams }: LoginPageProps) {
           <p className="text-xs text-muted-foreground font-light mb-8">請輸入您的帳號資訊以繼續</p>
 
           {/* Error */}
+          {message === 'password_updated' && (
+            <div className="mb-6 px-4 py-3 rounded-sm bg-emerald-50 border border-emerald-200 text-xs text-emerald-700 font-medium">
+              密碼已成功更新，請使用新密碼登入。
+            </div>
+          )}
+
           {error && (
             <div className="mb-6 px-4 py-3 rounded-sm bg-rose-50 border border-rose-200 text-xs text-rose-700 font-medium">
               {decodeURIComponent(error)}
@@ -65,6 +72,12 @@ export default function LoginPage({ searchParams }: LoginPageProps) {
                 <label htmlFor="password" className="block text-xs font-semibold tracking-wider uppercase text-muted-foreground">
                   密碼
                 </label>
+                <Link
+                  href="/forgot-password"
+                  className="text-[11px] text-muted-foreground hover:text-foreground underline underline-offset-4 transition-colors"
+                >
+                  忘記密碼？
+                </Link>
               </div>
               <input
                 id="password"

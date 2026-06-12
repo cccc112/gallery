@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { sql } from '@/lib/db';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
 
@@ -27,27 +27,29 @@ export async function signUp(formData: FormData) {
     return redirect(`/register?error=${encodeURIComponent(error.message)}`);
   }
 
-  // 在 users table 建立 profile（ON CONFLICT 防止重複）
+  // 用 admin client（service_role）寫入 public.users，完全繞過 RLS
   if (data.user) {
     try {
-      await sql`
-        INSERT INTO public.users (id, email, display_name, role, avatar_url, created_at)
-        VALUES (
-          ${data.user.id},
-          ${email},
-          ${displayName},
-          ${'buyer'},
-          ${'https://api.dicebear.com/7.x/adventurer/svg?seed=' + encodeURIComponent(email)},
-          NOW()
-        )
-        ON CONFLICT (id) DO NOTHING
-      `;
-    } catch (dbError) {
-      console.error('Failed to create user profile:', dbError);
+      const admin = createAdminClient();
+      const { error: dbError } = await admin.from('users').upsert(
+        {
+          id: data.user.id,
+          email,
+          display_name: displayName,
+          role: 'buyer',
+          avatar_url: `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(email)}`,
+          created_at: new Date().toISOString(),
+        },
+        { onConflict: 'id', ignoreDuplicates: true }
+      );
+      if (dbError) {
+        console.error('Failed to create user profile:', dbError.message);
+      }
+    } catch (e) {
+      console.error('Admin client error:', e);
     }
   }
 
-  // 若 Supabase 需要 email 確認，顯示提示頁；否則直接跳首頁
   if (data.session) {
     revalidatePath('/', 'layout');
     redirect('/');
@@ -78,4 +80,32 @@ export async function signOut() {
   await supabase.auth.signOut();
   revalidatePath('/', 'layout');
   redirect('/');
+}
+
+export async function forgotPassword(formData: FormData) {
+  const supabase = createClient();
+  const email = formData.get('email') as string;
+
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${SITE_URL}/update-password`,
+  });
+
+  if (error) {
+    return redirect(`/forgot-password?error=${encodeURIComponent(error.message)}`);
+  }
+
+  redirect(`/forgot-password?sent=1&email=${encodeURIComponent(email)}`);
+}
+
+export async function updatePassword(formData: FormData) {
+  const supabase = createClient();
+  const password = formData.get('password') as string;
+
+  const { error } = await supabase.auth.updateUser({ password });
+
+  if (error) {
+    return redirect(`/update-password?error=${encodeURIComponent(error.message)}`);
+  }
+
+  redirect('/login?message=password_updated');
 }

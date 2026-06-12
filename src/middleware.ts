@@ -37,7 +37,7 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
 
   // 保護需要登入的路由
-  const protectedPaths = ['/admin', '/profile'];
+  const protectedPaths = ['/admin', '/profile', '/dashboard'];
   const isProtected = protectedPaths.some(p =>
     request.nextUrl.pathname.startsWith(p)
   );
