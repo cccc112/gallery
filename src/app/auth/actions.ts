@@ -4,8 +4,17 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { createClient as createPlainClient } from '@supabase/supabase-js';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+
+// plain client（不依賴 cookies），專用於不需要使用者 session 的操作
+function createAuthClient() {
+  return createPlainClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+}
 
 export async function signUp(formData: FormData) {
   const supabase = createClient();
@@ -83,14 +92,18 @@ export async function signOut() {
 }
 
 export async function forgotPassword(formData: FormData) {
-  const supabase = createClient();
+  const supabase = createAuthClient();
   const email = formData.get('email') as string;
+
+  console.log('[forgotPassword] SUPABASE_URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
+  console.log('[forgotPassword] redirectTo:', `${SITE_URL}/update-password`);
 
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: `${SITE_URL}/update-password`,
   });
 
   if (error) {
+    console.error('[forgotPassword] error:', error.message);
     return redirect(`/forgot-password?error=${encodeURIComponent(error.message)}`);
   }
 
@@ -98,6 +111,7 @@ export async function forgotPassword(formData: FormData) {
 }
 
 export async function updatePassword(formData: FormData) {
+  // updateUser 需要 session，維持使用 SSR client
   const supabase = createClient();
   const password = formData.get('password') as string;
 
