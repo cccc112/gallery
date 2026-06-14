@@ -27,9 +27,12 @@ export function ArtworkGallery({ images, title }: ArtworkGalleryProps) {
   const imageUrl = images[currentImage] || '';
 
   return (
-    <div className="relative">
+    <div className="relative select-none">
       {/* Main Image Frame (Atelier Blanc style) */}
-      <div className="relative aspect-[4/5] lg:aspect-[3/4] bg-card rounded-sm overflow-hidden shadow-lg shadow-black/5 border border-border/40">
+      <div 
+        className="relative aspect-[4/5] lg:aspect-[3/4] bg-card rounded-sm overflow-hidden shadow-lg shadow-black/5 border border-border/40"
+        onContextMenu={(e) => e.preventDefault()}
+      >
         {!imageUrl || imageError ? (
           <ImagePlaceholder label="Artwork Placement" />
         ) : (
@@ -40,11 +43,36 @@ export function ArtworkGallery({ images, title }: ArtworkGalleryProps) {
                 src={imageUrl}
                 alt={`${title}`}
                 fill
-                className="object-cover transition-all duration-700 hover:scale-105"
+                className="object-cover transition-all duration-700 hover:scale-105 pointer-events-none"
                 sizes="(max-w-7xl) 50vw, 100vw"
                 priority
                 onError={() => setImageError(true)}
+                onContextMenu={(e) => e.preventDefault()}
+                onDragStart={(e) => e.preventDefault()}
               />
+              {/* 浮水印 Overlay — 對角線斜紋，截圖可見 */}
+              <div
+                aria-hidden="true"
+                className="absolute inset-0 pointer-events-none select-none z-10 overflow-hidden"
+                style={{
+                  backgroundImage: `repeating-linear-gradient(
+                    -45deg,
+                    transparent 0px,
+                    transparent 60px,
+                    rgba(100,80,40,0.055) 60px,
+                    rgba(100,80,40,0.055) 61px
+                  )`,
+                }}
+              >
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span
+                    className="font-serif text-xl text-stone-600/20 tracking-[0.5em] uppercase select-none whitespace-nowrap"
+                    style={{ transform: 'rotate(-30deg)' }}
+                  >
+                    Atelier Blanc · Preview Only
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -88,7 +116,8 @@ export function ArtworkGallery({ images, title }: ArtworkGalleryProps) {
                 src={image}
                 alt={`${title} thumbnail ${index + 1}`}
                 fill
-                className="object-cover"
+                className="object-cover pointer-events-none"
+                onDragStart={(e) => e.preventDefault()}
               />
             </button>
           ))}

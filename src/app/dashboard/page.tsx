@@ -203,6 +203,27 @@ export default async function DashboardPage() {
           ))}
         </div>
 
+        {/* AI 生成工作室入口 */}
+        <Link
+          href="/generate"
+          className="mt-3 flex items-center justify-between p-4 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200/60 rounded-sm hover:from-indigo-100 hover:to-purple-100 transition-all group"
+        >
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 rounded-sm bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-sm flex-shrink-0">
+              <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-indigo-900">✦ AI 藝術生成工作室</p>
+              <p className="text-[10px] text-indigo-600/70">由 NVIDIA FLUX.1 驅動 · 輸入描述，秒出精緻畫作</p>
+            </div>
+          </div>
+          <svg className="h-4 w-4 text-indigo-400 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </Link>
+
       </div>
     </div>
   );
