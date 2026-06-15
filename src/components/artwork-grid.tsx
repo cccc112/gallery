@@ -93,13 +93,43 @@ export function ArtworkGrid({ artworks, title, viewAllLink }: ArtworkGridProps) 
                         <span className="text-[10px] font-medium tracking-wider text-stone-500 uppercase">Artwork Placement</span>
                       </div>
                     ) : (
-                      <Image
-                        src={artwork.preview_file_url}
-                        alt={artwork.title}
-                        fill
-                        className="object-cover transition-transform duration-500 group-hover:scale-105"
-                        onError={() => handleImageError(artwork.id)}
-                      />
+                      <>
+                        <Image
+                          src={artwork.preview_file_url}
+                          alt={artwork.title}
+                          fill
+                          className="object-cover transition-transform duration-500 group-hover:scale-105 pointer-events-none select-none"
+                          onError={() => handleImageError(artwork.id)}
+                          draggable={false}
+                        />
+                        {/* 浮水印 */}
+                        <div
+                          aria-hidden="true"
+                          className="absolute inset-0 pointer-events-none select-none z-10"
+                          style={{
+                            backgroundImage: `repeating-linear-gradient(
+                              -45deg,
+                              transparent 0px, transparent 40px,
+                              rgba(80,60,20,0.10) 40px, rgba(80,60,20,0.10) 41px
+                            )`,
+                          }}
+                        >
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <span
+                              className="font-serif text-[10px] text-stone-700/30 tracking-[0.3em] uppercase select-none whitespace-nowrap font-medium"
+                              style={{ transform: 'rotate(-30deg)' }}
+                            >
+                              Atelier Blanc
+                            </span>
+                          </div>
+                        </div>
+                        {/* 右鍵防護 */}
+                        <div
+                          className="absolute inset-0 z-20"
+                          onContextMenu={e => e.preventDefault()}
+                          onDragStart={e => e.preventDefault()}
+                        />
+                      </>
                     )}
                     
                     {/* Overlay on Hover */}

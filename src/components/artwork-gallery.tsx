@@ -100,27 +100,34 @@ export function ArtworkGallery({ images, title, artworkId }: ArtworkGalleryProps
                   onError={() => setImageError(true)}
                   draggable={false}
                 />
-                {/* 浮水印 */}
-                <div
-                  aria-hidden="true"
-                  className="absolute inset-0 pointer-events-none select-none z-10 overflow-hidden"
-                  style={{
-                    backgroundImage: `repeating-linear-gradient(
-                      -45deg,
-                      transparent 0px, transparent 60px,
-                      rgba(100,80,40,0.055) 60px, rgba(100,80,40,0.055) 61px
-                    )`,
-                  }}
-                >
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span
-                      className="font-serif text-xl text-stone-600/20 tracking-[0.5em] uppercase select-none whitespace-nowrap"
-                      style={{ transform: 'rotate(-30deg)' }}
-                    >
-                      Atelier Blanc · Preview Only
-                    </span>
-                  </div>
+                {/* 浮水印 — 對角斜線加強版 */}
+              <div
+                aria-hidden="true"
+                className="absolute inset-0 pointer-events-none select-none z-10 overflow-hidden"
+                style={{
+                  backgroundImage: `repeating-linear-gradient(
+                    -45deg,
+                    transparent 0px, transparent 50px,
+                    rgba(80,60,20,0.12) 50px, rgba(80,60,20,0.12) 51px
+                  )`,
+                }}
+              >
+                {/* 中央斜文字 */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span
+                    className="font-serif text-lg text-stone-800/25 tracking-[0.6em] uppercase select-none whitespace-nowrap font-semibold"
+                    style={{ transform: 'rotate(-30deg)', textShadow: '0 1px 2px rgba(0,0,0,0.05)' }}
+                  >
+                    Atelier Blanc
+                  </span>
                 </div>
+                {/* 右下角固定版權標示 */}
+                <div className="absolute bottom-2 right-3">
+                  <span className="text-[9px] text-stone-600/40 font-light tracking-widest select-none">
+                    © Atelier Blanc · Preview Only
+                  </span>
+                </div>
+              </div>
                 {/* 右鍵防護層 */}
                 <div
                   className="absolute inset-0 z-20"
