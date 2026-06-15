@@ -1,4 +1,8 @@
-import Link from "next/link"
+'use client';
+
+import Link from 'next/link';
+import { useState } from 'react';
+import { CheckCircle2, Loader2 } from 'lucide-react';
 
 const InstagramIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
@@ -13,6 +17,76 @@ const TwitterIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"/>
   </svg>
 );
+
+function NewsletterForm() {
+  const [email, setEmail] = useState('');
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [message, setMessage] = useState('');
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!email.trim()) return;
+    setStatus('loading');
+
+    try {
+      const res = await fetch('/api/newsletter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        setStatus('success');
+        setMessage(data.alreadySubscribed ? '您已經是訂閱者了！' : '訂閱成功！感謝您的加入。');
+        setEmail('');
+      } else {
+        setStatus('error');
+        setMessage(data.error || '訂閱失敗，請稍後再試');
+      }
+    } catch {
+      setStatus('error');
+      setMessage('連線失敗，請稍後再試');
+    }
+  }
+
+  if (status === 'success') {
+    return (
+      <div className="flex items-center gap-3 py-2">
+        <CheckCircle2 className="h-5 w-5 text-emerald-400 flex-shrink-0" />
+        <p className="text-sm text-primary-foreground/80">{message}</p>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <form onSubmit={handleSubmit} className="flex gap-2">
+        <input
+          type="email"
+          value={email}
+          onChange={e => setEmail(e.target.value)}
+          placeholder="電子郵件"
+          required
+          disabled={status === 'loading'}
+          className="flex-1 px-4 py-2.5 bg-primary-foreground/10 border border-primary-foreground/20 rounded-sm text-sm placeholder:text-primary-foreground/45 focus:outline-none focus:border-primary-foreground/40 text-white disabled:opacity-60"
+        />
+        <button
+          type="submit"
+          disabled={status === 'loading'}
+          className="px-4 py-2.5 bg-primary-foreground text-primary text-sm font-semibold rounded-sm hover:bg-primary-foreground/90 transition-colors disabled:opacity-60 flex items-center gap-1.5 flex-shrink-0"
+        >
+          {status === 'loading' ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : '訂閱'}
+        </button>
+      </form>
+      {status === 'error' && (
+        <p className="mt-2 text-xs text-rose-300">{message}</p>
+      )}
+    </>
+  );
+}
 
 export default function Footer() {
   return (
@@ -53,11 +127,6 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/admin" className="text-primary-foreground/70 hover:text-primary-foreground transition-colors">
-                  管理後台
-                </Link>
-              </li>
-              <li>
                 <Link href="/gallery?type=digital" className="text-primary-foreground/70 hover:text-primary-foreground transition-colors">
                   數位藝術品
                 </Link>
@@ -65,6 +134,11 @@ export default function Footer() {
               <li>
                 <Link href="/gallery?type=physical" className="text-primary-foreground/70 hover:text-primary-foreground transition-colors">
                   實體藝術品
+                </Link>
+              </li>
+              <li>
+                <Link href="/generate" className="text-primary-foreground/70 hover:text-primary-foreground transition-colors">
+                  AI 藝術生成
                 </Link>
               </li>
             </ul>
@@ -107,19 +181,7 @@ export default function Footer() {
             <p className="text-sm text-primary-foreground/70 mb-4 font-light">
               訂閱以獲取獨家預展資訊與藝術家專訪。
             </p>
-            <form className="flex gap-2">
-              <input
-                type="email"
-                placeholder="電子郵件"
-                className="flex-1 px-4 py-2.5 bg-primary-foreground/10 border border-primary-foreground/20 rounded-sm text-sm placeholder:text-primary-foreground/45 focus:outline-none focus:border-primary-foreground/40 text-white"
-              />
-              <button
-                type="submit"
-                className="px-4 py-2.5 bg-primary-foreground text-primary text-sm font-semibold rounded-sm hover:bg-primary-foreground/90 transition-colors"
-              >
-                訂閱
-              </button>
-            </form>
+            <NewsletterForm />
           </div>
         </div>
 
@@ -139,5 +201,5 @@ export default function Footer() {
         </div>
       </div>
     </footer>
-  )
+  );
 }
