@@ -144,9 +144,10 @@ export default async function ArtworkPage({ params }: ArtworkPageProps) {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 xl:gap-20">
             {/* Left: Gallery */}
             <div className="lg:sticky lg:top-28 lg:self-start">
-              <ArtworkGallery 
-                images={[artwork.preview_file_url]} 
-                title={artwork.title} 
+              <ArtworkGallery
+                images={[artwork.preview_file_url]}
+                title={artwork.title}
+                artworkId={artwork.id}
               />
             </div>
 

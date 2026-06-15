@@ -6,6 +6,7 @@ import { useState, useEffect, useRef } from 'react';
 import {
   Compass, Home, Upload, LogIn, UserPlus,
   Menu, X, LogOut, ChevronDown, User, LayoutDashboard,
+  Heart, Sparkles,
 } from 'lucide-react';
 import { signOut } from '@/app/auth/actions';
 import { ConnectWalletButton } from '@/components/ConnectWalletButton';
@@ -167,6 +168,22 @@ export default function NavbarClient({ user, profile, navLinks }: NavbarClientPr
                         上傳新作品
                       </Link>
                       <Link
+                        href="/favorites"
+                        onClick={() => setDropdownOpen(false)}
+                        className="flex items-center gap-2.5 px-4 py-2.5 text-xs font-medium text-foreground hover:bg-secondary/60 transition-colors"
+                      >
+                        <Heart className="h-3.5 w-3.5 text-muted-foreground" />
+                        我的最愛
+                      </Link>
+                      <Link
+                        href="/generate"
+                        onClick={() => setDropdownOpen(false)}
+                        className="flex items-center gap-2.5 px-4 py-2.5 text-xs font-medium text-indigo-700 hover:bg-indigo-50 transition-colors"
+                      >
+                        <Sparkles className="h-3.5 w-3.5 text-indigo-500" />
+                        AI 藝術生成
+                      </Link>
+                      <Link
                         href="/gallery"
                         onClick={() => setDropdownOpen(false)}
                         className="flex items-center gap-2.5 px-4 py-2.5 text-xs font-medium text-foreground hover:bg-secondary/60 transition-colors"
@@ -256,6 +273,12 @@ export default function NavbarClient({ user, profile, navLinks }: NavbarClientPr
                   </div>
                   <Link href="/profile" className="flex items-center gap-2.5 px-3 py-3 text-sm font-medium text-foreground hover:bg-secondary/50 rounded-md transition-colors">
                     <User className="h-4 w-4 text-muted-foreground" /> 個人資訊
+                  </Link>
+                  <Link href="/favorites" className="flex items-center gap-2.5 px-3 py-3 text-sm font-medium text-foreground hover:bg-secondary/50 rounded-md transition-colors">
+                    <Heart className="h-4 w-4 text-muted-foreground" /> 我的最愛
+                  </Link>
+                  <Link href="/generate" className="flex items-center gap-2.5 px-3 py-3 text-sm font-medium text-indigo-700 hover:bg-indigo-50 rounded-md transition-colors">
+                    <Sparkles className="h-4 w-4 text-indigo-500" /> AI 藝術生成
                   </Link>
                   <Link href="/profile/upload" className="flex items-center gap-2.5 px-3 py-3 text-sm font-medium text-foreground hover:bg-secondary/50 rounded-md transition-colors">
                     <Upload className="h-4 w-4 text-muted-foreground" /> 上傳作品
