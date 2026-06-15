@@ -3,15 +3,30 @@
 import { sql } from '@/lib/db';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
+import { createClient } from '@/lib/supabase/server';
 
 export async function createArtwork(formData: FormData) {
-  const artistId = '94c64b59-994c-41c3-882d-127e9086e927'; // 模擬藝術家 ID
-  
+  // 從 session 取得真實登入用戶 ID
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect('/login?redirect=/admin/new');
+
+  const artistId = user.id;
+
   const title = formData.get('title') as string;
   const description = formData.get('description') as string;
-  const artType = formData.get('artType') as string; // 'physical' | 'digital'
-  const previewFileUrl = formData.get('previewFileUrl') as string || 'https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?q=80&w=600';
-  
+  const artType = formData.get('artType') as string;
+
+  // 驗證 art_type 是有效值
+  if (artType !== 'physical' && artType !== 'digital') {
+    throw new Error('無效的藝術品類型');
+  }
+
+  const previewFileUrl = formData.get('previewFileUrl') as string;
+  if (!previewFileUrl?.trim()) {
+    throw new Error('請填寫預覽圖片連結');
+  }
+
   const priceInput = formData.get('price') as string;
   const price = priceInput ? Number(priceInput) : null;
 
@@ -33,13 +48,13 @@ export async function createArtwork(formData: FormData) {
   const stockInput = formData.get('stock') as string;
   const stock = artType === 'physical' && stockInput ? Number(stockInput) : null;
 
-  // 數位欄位
+  // 數位欄位（無 fallback，必填）
   const highResFileUrlInput = formData.get('highResFileUrl') as string;
-  const highResFileUrl = artType === 'digital' 
-    ? (highResFileUrlInput || 'https://example.com/private/custom-art-highres.png') 
-    : null;
+  const highResFileUrl = artType === 'digital' ? (highResFileUrlInput?.trim() || null) : null;
 
-  // 伺服器端資料庫整合驗證 (對應 DB Check Constraints)
+  // 伺服器端驗證
+  if (!title?.trim()) throw new Error('請填寫作品名稱');
+
   if (artType === 'physical') {
     if (!width || !height || stock === null) {
       throw new Error('實體藝術品必須填寫寬度、高度與庫存！');
@@ -56,13 +71,12 @@ export async function createArtwork(formData: FormData) {
     }
   }
 
-  // 寫入 Supabase 資料庫
   try {
     await sql`
       INSERT INTO public.artworks (
-        artist_id, title, description, art_type, price, 
-        is_rentable, monthly_rent_price, deposit_amount, 
-        width, height, depth, weight, stock, 
+        artist_id, title, description, art_type, price,
+        is_rentable, monthly_rent_price, deposit_amount,
+        width, height, depth, weight, stock,
         high_res_file_url, preview_file_url
       ) VALUES (
         ${artistId}, ${title}, ${description}, ${artType}, ${price},
@@ -73,7 +87,7 @@ export async function createArtwork(formData: FormData) {
     `;
   } catch (error) {
     console.error('Database write error:', error);
-    throw new Error('資料庫上架失敗，請檢查資料結構限制！');
+    throw new Error('資料庫上架失敗，請檢查資料是否完整！');
   }
 
   revalidatePath('/gallery');

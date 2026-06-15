@@ -95,8 +95,7 @@ export async function forgotPassword(formData: FormData) {
   const supabase = createAuthClient();
   const email = formData.get('email') as string;
 
-  console.log('[forgotPassword] SUPABASE_URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
-  console.log('[forgotPassword] redirectTo:', `${SITE_URL}/update-password`);
+
 
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: `${SITE_URL}/update-password`,

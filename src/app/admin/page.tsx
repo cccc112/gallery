@@ -1,19 +1,29 @@
 import Link from 'next/link';
 import { sql } from '@/lib/db';
-import { getCurrentUser } from '@/lib/auth';
-import { 
-  Plus, ShoppingCart, Layers, Calendar, User, ShieldAlert, BadgeCheck 
+import { createClient } from '@/lib/supabase/server';
+import { redirect } from 'next/navigation';
+import {
+  Plus, ShoppingCart, Layers, Calendar, User, ShieldAlert, BadgeCheck
 } from 'lucide-react';
 
 export const revalidate = 0; // 停用快取以呈現最新管理數據
 
 export default async function AdminDashboard() {
-  const user = await getCurrentUser();
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect('/login?redirect=/admin');
+
+  // 從 DB 取得 role
+  let userRole = 'buyer';
+  try {
+    const rows = await sql`SELECT role FROM public.users WHERE id = ${user.id} LIMIT 1`;
+    userRole = rows[0]?.role || 'buyer';
+  } catch {}
 
   let artworks: any[] = [];
   let orders: any[] = [];
   let rentals: any[] = [];
-  let errorMsg = '';
+  let hasError = false;
 
   try {
     artworks = await sql`
@@ -40,7 +50,7 @@ export default async function AdminDashboard() {
     `;
   } catch (err: any) {
     console.error('Failed to load admin dashboard data:', err);
-    errorMsg = err.message || '資料庫讀取失敗';
+    hasError = true;
   }
 
   const formatPrice = (price: number | null) => {
@@ -57,26 +67,24 @@ export default async function AdminDashboard() {
       <div className="mx-auto max-w-7xl px-6 lg:px-8 py-10">
         {/* Role Notice */}
         <div className={`mb-8 p-4 rounded-xl border flex items-start gap-3 text-sm shadow-sm ${
-          user.role === 'artist' 
-            ? 'bg-emerald-50 border-emerald-200 text-emerald-800' 
+          userRole === 'artist'
+            ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
             : 'bg-amber-50 border-amber-200 text-amber-800'
         }`}>
-          {user.role === 'artist' ? (
+          {userRole === 'artist' ? (
             <>
               <BadgeCheck className="h-5 w-5 shrink-0 mt-0.5 text-emerald-600" />
               <div>
-                <p className="font-semibold text-emerald-950">當前模擬身份為「藝術家 (陳畫家)」</p>
-                <p className="text-xs text-emerald-800/90 mt-0.5">您已具備完整管理權限，包括上架藝術品、編輯規格與查看交易/租用合約狀態。</p>
+                <p className="font-semibold text-emerald-950">藝術家帳號</p>
+                <p className="text-xs text-emerald-800/90 mt-0.5">您已具備完整管理權限，包括上架藝術品、查看交易/租用合約狀態。</p>
               </div>
             </>
           ) : (
             <>
               <ShieldAlert className="h-5 w-5 shrink-0 mt-0.5 text-amber-600" />
               <div>
-                <p className="font-semibold text-amber-950">當前模擬身份為「買家 (林買家)」</p>
-                <p className="text-xs text-amber-800/90 mt-0.5">
-                  目前為買家身分。如需測試「上架新作品」或模擬藝術家操作，請在上方導覽列快速切換模式。
-                </p>
+                <p className="font-semibold text-amber-950">買家帳號</p>
+                <p className="text-xs text-amber-800/90 mt-0.5">您目前是買家身分，僅供查閱。上架作品請聯絡管理員開通藝術家權限。</p>
               </div>
             </>
           )}
@@ -88,7 +96,7 @@ export default async function AdminDashboard() {
             <h1 className="text-3xl font-serif font-semibold tracking-tight text-foreground">藝廊控制台</h1>
             <p className="mt-2 text-sm text-muted-foreground font-light">管理所有的藝術品上架、純買賣訂單與短期租賃合約。</p>
           </div>
-          {user.role === 'artist' && (
+          {userRole === 'artist' && (
             <Link
               href="/admin/new"
               className="rounded-lg bg-primary text-primary-foreground hover:bg-primary/95 px-5 py-2.5 text-sm font-semibold shadow-sm transition-all flex items-center justify-center gap-1.5 self-start"
@@ -99,9 +107,9 @@ export default async function AdminDashboard() {
           )}
         </div>
 
-        {errorMsg && (
+        {hasError && (
           <div className="bg-red-50 border border-red-200 p-4 rounded-xl text-sm text-red-700 mb-8">
-            資料載入錯誤: {errorMsg}
+            資料載入失敗，請稍後再試或聯絡管理員。
           </div>
         )}
 
@@ -201,8 +209,14 @@ export default async function AdminDashboard() {
                           <td className="py-3 px-2 text-foreground font-serif">{order.artwork_title}</td>
                           <td className="py-3 px-2 font-mono font-bold text-foreground">{formatPrice(Number(order.amount))}</td>
                           <td className="py-3 px-2">
-                            <span className="px-2 py-0.5 rounded text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-100 font-bold">
-                              SUCCESS
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                              order.payment_status === 'paid'
+                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+                                : order.payment_status === 'pending'
+                                ? 'bg-amber-50 text-amber-700 border border-amber-100'
+                                : 'bg-stone-100 text-stone-500'
+                            }`}>
+                              {order.payment_status === 'paid' ? '已付款' : order.payment_status === 'pending' ? '待付款' : order.payment_status}
                             </span>
                           </td>
                           <td className="py-3 px-2 text-muted-foreground">
