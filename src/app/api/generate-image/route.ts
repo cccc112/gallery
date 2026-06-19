@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: '請先登入' }, { status: 401 });
   }
 
-  const { prompt, width = 1024, height = 1024, steps = 4 } = await req.json();
+  const { prompt, width = 1024, height = 1024, steps = 2, seed, negative_prompt } = await req.json();
 
   if (!prompt?.trim()) {
     return NextResponse.json({ error: '請輸入描述文字' }, { status: 400 });
@@ -30,13 +30,20 @@ export async function POST(req: NextRequest) {
   const safeHeight = snapTo16(height);
   const safeSteps = Math.min(Math.max(Math.floor(steps), 1), 4); // schnell 最多 4 步
 
-  const body = {
+  const useSeed = (seed !== undefined && Number.isInteger(seed)) ? seed : Math.floor(Math.random() * 2147483647);
+
+  const body: Record<string, unknown> = {
     prompt: prompt.trim(),
     width: safeWidth,
     height: safeHeight,
     num_inference_steps: safeSteps,
-    seed: Math.floor(Math.random() * 2147483647),
+    seed: useSeed,
   };
+
+  // negative_prompt 僅在非空時才傳（某些模型版本不支援）
+  if (negative_prompt?.trim()) {
+    body.negative_prompt = negative_prompt.trim();
+  }
 
   console.log('[NVIDIA] request body:', JSON.stringify(body));
 
