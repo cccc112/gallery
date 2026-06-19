@@ -193,9 +193,9 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
                 }}
               >
                 {/* Image */}
-                <div className="aspect-[4/5] w-full bg-stone-50 overflow-hidden relative">
-                  <div className="absolute inset-0 p-3 flex items-center justify-center">
-                    <div className="relative w-full h-full border border-stone-200/60 shadow-md bg-white overflow-hidden">
+                <Link href={`/artwork/${artwork.id}`} className="aspect-[4/5] w-full bg-stone-50 overflow-hidden relative block cursor-pointer">
+                  <div className="absolute inset-0 p-3 flex items-center justify-center pointer-events-none">
+                    <div className="relative w-full h-full border border-stone-200/60 shadow-md bg-white overflow-hidden pointer-events-auto">
                       <Image
                         src={artwork.preview_file_url}
                         alt={artwork.title}
@@ -220,7 +220,7 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
                       </Badge>
                     )}
                   </div>
-                </div>
+                </Link>
 
                 {/* Info */}
                 <div className="flex flex-1 flex-col p-5 bg-card border-t border-border/30">

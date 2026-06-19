@@ -81,7 +81,7 @@ export function ProtectedImage({
         style={{ userSelect: 'none', WebkitUserSelect: 'none' } as React.CSSProperties}
       />
 
-      {/* ── 浮水印層（雙色光暈，任何背景皆可見）── */}
+      {/* ── 浮水印層（強化可見度）── */}
       {showWatermark && (
         <div
           aria-hidden="true"
@@ -90,24 +90,25 @@ export function ProtectedImage({
             backgroundImage: `repeating-linear-gradient(
               -45deg,
               transparent 0px, transparent 48px,
-              rgba(255,255,255,0.16) 48px, rgba(255,255,255,0.16) 49px,
-              transparent 49px, transparent 50px,
-              rgba(0,0,0,0.07) 50px, rgba(0,0,0,0.07) 51px
+              rgba(255,255,255,0.25) 48px, rgba(255,255,255,0.25) 50px,
+              transparent 50px, transparent 52px,
+              rgba(0,0,0,0.15) 52px, rgba(0,0,0,0.15) 54px
             )`,
           }}
         >
           {/* 中央斜向文字 */}
           <div className="absolute inset-0 flex items-center justify-center">
             <span
-              className={`font-serif ${textSizeMap[watermarkSize]} ${trackingMap[watermarkSize]} uppercase select-none whitespace-nowrap font-semibold`}
+              className={`font-serif ${textSizeMap[watermarkSize]} ${trackingMap[watermarkSize]} uppercase select-none whitespace-nowrap font-bold`}
               style={{
                 transform: 'rotate(-30deg)',
-                color: 'rgba(255,255,255,0.5)',
+                color: 'rgba(255, 255, 255, 0.85)',
                 textShadow: [
-                  '0 0 4px rgba(0,0,0,0.95)',
-                  '0 0 10px rgba(0,0,0,0.7)',
-                  '1px 1px 0 rgba(0,0,0,0.6)',
-                  '-1px -1px 0 rgba(0,0,0,0.6)',
+                  '0 0 6px rgba(0,0,0,0.95)',
+                  '0 0 12px rgba(0,0,0,0.85)',
+                  '1px 1px 1px rgba(0,0,0,0.9)',
+                  '-1px -1px 1px rgba(0,0,0,0.9)',
+                  '2px 2px 0px rgba(0,0,0,0.7)',
                 ].join(', '),
               }}
             >
@@ -118,10 +119,10 @@ export function ProtectedImage({
           {/* 右下角版權標示 */}
           <div className="absolute bottom-2 right-3">
             <span
-              className="text-[9px] font-light tracking-widest select-none"
+              className="text-[10px] font-medium tracking-widest select-none"
               style={{
-                color: 'rgba(255,255,255,0.55)',
-                textShadow: '0 0 3px rgba(0,0,0,0.98), 0 0 8px rgba(0,0,0,0.8)',
+                color: 'rgba(255,255,255,0.9)',
+                textShadow: '0 0 4px rgba(0,0,0,0.98), 0 0 10px rgba(0,0,0,0.9)',
               }}
             >
               © Atelier Blanc · Preview Only

@@ -71,10 +71,10 @@ function Lightbox({ artwork, onClose }: LightboxProps) {
 
         {/* 防護圖片 */}
         <div
-          className="relative w-full rounded-sm overflow-hidden shadow-2xl"
-          style={{ maxHeight: 'calc(85vh - 100px)' }}
+          className="relative w-full rounded-sm overflow-hidden shadow-2xl flex items-center justify-center"
+          style={{ height: 'calc(85vh - 100px)' }}
         >
-          <div className="relative aspect-square">
+          <div className="relative aspect-square w-full h-full max-w-3xl">
             <ProtectedImage
               src={artwork.preview_file_url}
               alt={artwork.title}
