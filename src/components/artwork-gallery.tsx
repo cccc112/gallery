@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { useState, useEffect, useCallback } from 'react';
 import { ZoomIn, Heart, ImageIcon, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ProtectedImage } from '@/components/protected-image';
 
 interface ArtworkGalleryProps {
   images: string[];
@@ -90,66 +91,16 @@ export function ArtworkGallery({ images, title, artworkId }: ArtworkGalleryProps
           ) : (
             <div className="relative w-full h-full p-4 sm:p-6 md:p-8 bg-stone-50/50 flex items-center justify-center">
               <div className="relative w-full h-full shadow-2xl shadow-black/10 border border-stone-200 overflow-hidden bg-white">
-                <Image
+                <ProtectedImage
                   src={imageUrl}
                   alt={title}
                   fill
-                  className="object-cover transition-all duration-700 hover:scale-105 pointer-events-none"
                   sizes="(max-width: 1280px) 50vw, 640px"
                   priority
+                  className="object-cover transition-all duration-700 hover:scale-105"
+                  showWatermark={true}
+                  watermarkSize="md"
                   onError={() => setImageError(true)}
-                  draggable={false}
-                />
-                {/* 浮水印 — 雙色光暈版，深淺背景皆可見 */}
-              <div
-                aria-hidden="true"
-                className="absolute inset-0 pointer-events-none select-none z-10 overflow-hidden"
-                style={{
-                  backgroundImage: `repeating-linear-gradient(
-                    -45deg,
-                    transparent 0px, transparent 48px,
-                    rgba(255,255,255,0.18) 48px, rgba(255,255,255,0.18) 49px,
-                    transparent 49px, transparent 50px,
-                    rgba(0,0,0,0.08) 50px, rgba(0,0,0,0.08) 51px
-                  )`,
-                }}
-              >
-                {/* 中央斜文字 */}
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span
-                    className="font-serif text-lg tracking-[0.6em] uppercase select-none whitespace-nowrap font-semibold"
-                    style={{
-                      transform: 'rotate(-30deg)',
-                      color: 'rgba(255,255,255,0.55)',
-                      textShadow: [
-                        '0 0 4px rgba(0,0,0,0.9)',
-                        '0 0 8px rgba(0,0,0,0.6)',
-                        '1px 1px 0 rgba(0,0,0,0.5)',
-                        '-1px -1px 0 rgba(0,0,0,0.5)',
-                      ].join(', '),
-                    }}
-                  >
-                    Atelier Blanc
-                  </span>
-                </div>
-                {/* 右下角版權標示 */}
-                <div className="absolute bottom-2 right-3">
-                  <span
-                    className="text-[9px] font-light tracking-widest select-none"
-                    style={{
-                      color: 'rgba(255,255,255,0.6)',
-                      textShadow: '0 0 3px rgba(0,0,0,0.95), 0 0 6px rgba(0,0,0,0.7)',
-                    }}
-                  >
-                    © Atelier Blanc · Preview Only
-                  </span>
-                </div>
-              </div>
-                {/* 右鍵防護層 */}
-                <div
-                  className="absolute inset-0 z-20"
-                  onContextMenu={e => e.preventDefault()}
-                  onDragStart={e => e.preventDefault()}
                 />
               </div>
             </div>
@@ -249,23 +200,20 @@ export function ArtworkGallery({ images, title, artworkId }: ArtworkGalleryProps
           <div
             className="relative max-w-[90vw] max-h-[88vh] w-full h-full flex items-center justify-center"
             onClick={e => e.stopPropagation()}
-            onContextMenu={e => e.preventDefault()}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={imageUrl}
-              alt={title}
-              className="max-w-full max-h-[88vh] object-contain select-none pointer-events-none rounded-sm shadow-2xl"
-              draggable={false}
-              onContextMenu={e => e.preventDefault()}
-            />
-            {/* 燈箱內浮水印 */}
-            <div
-              className="absolute inset-0 pointer-events-none select-none flex items-end justify-end p-4"
-            >
-              <span className="text-white/20 text-xs font-serif tracking-widest">
-                Atelier Blanc · Preview Only
-              </span>
+            <div className="relative w-full h-full" style={{ maxWidth: '90vw', maxHeight: '88vh' }}>
+              <div className="relative" style={{ width: '80vw', height: '80vh', maxWidth: '900px' }}>
+                <ProtectedImage
+                  src={imageUrl}
+                  alt={title}
+                  fill
+                  sizes="90vw"
+                  className="object-contain rounded-sm"
+                  showWatermark={true}
+                  watermarkSize="lg"
+                  priority
+                />
+              </div>
             </div>
           </div>
 
