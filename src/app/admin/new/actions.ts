@@ -47,7 +47,7 @@ export async function createArtwork(formData: FormData) {
   const weightInput = formData.get('weight') as string;
   const weight = isPhysical && weightInput ? Number(weightInput) : null;
   const stockInput = formData.get('stock') as string;
-  const stock = isPhysical && stockInput ? Number(stockInput) : null;
+  const stock = isPhysical && stockInput ? Number(stockInput) : (artType === 'digital' ? 1 : null);
 
   // ── 數位專屬 ──
   const highResFileUrlInput = formData.get('highResFileUrl') as string;

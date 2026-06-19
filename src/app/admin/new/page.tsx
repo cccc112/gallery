@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import { createArtwork } from './actions';
 import Link from 'next/link';
-import { ArrowLeft, Upload, Sparkles, Box, Lock, Camera } from 'lucide-react';
+import { ArrowLeft, Upload, Sparkles, Box, Lock, Camera, Loader2, Image as ImageIcon } from 'lucide-react';
+import { ProtectedImage } from '@/components/protected-image';
 
 type ArtType = 'physical' | 'digital' | 'photography';
 
@@ -21,6 +22,7 @@ export default function NewArtworkPage() {
   const [isRentable, setIsRentable] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [previewUrl, setPreviewUrl] = useState('');
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -123,14 +125,38 @@ export default function NewArtworkPage() {
 
             {/* Preview Image URL */}
             <div>
-              <label className="block text-foreground font-semibold mb-2">公開預覽圖 URL *</label>
+              <label className="block text-foreground font-semibold mb-2">公開預覽圖 URL (或貼上圖床連結) *</label>
               <input
                 type="url"
                 name="previewFileUrl"
                 placeholder="https://..."
                 required
+                value={previewUrl}
+                onChange={(e) => setPreviewUrl(e.target.value)}
                 className="block w-full rounded-lg border border-border bg-background py-2.5 px-3.5 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary transition-colors"
               />
+              
+              {/* 即時預覽區塊 */}
+              {previewUrl && (
+                <div className="mt-4 p-2 border border-border/80 bg-secondary/30 rounded-xl">
+                  <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1.5 px-1">
+                    <ImageIcon className="h-3.5 w-3.5" />
+                    圖片預覽
+                  </p>
+                  <div className="relative aspect-square sm:aspect-video w-full rounded-lg overflow-hidden bg-stone-100 shadow-inner">
+                    <ProtectedImage
+                      src={previewUrl}
+                      alt="預覽圖片"
+                      fill
+                      className="object-contain"
+                      showWatermark={false}
+                      onError={() => {
+                        // 載入失敗時不顯示破圖，可以選擇清空或顯示提示
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* ── Physical 實體 ── */}
@@ -321,8 +347,17 @@ export default function NewArtworkPage() {
                 disabled={loading}
                 className="rounded-lg bg-primary hover:bg-primary/95 disabled:bg-stone-300 disabled:text-stone-500 px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow transition-all flex items-center gap-1.5"
               >
-                <Upload className="h-4 w-4" />
-                {loading ? '上架中...' : '確認上架'}
+                {loading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    上架中...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="h-4 w-4" />
+                    確認上架
+                  </>
+                )}
               </button>
             </div>
           </form>
