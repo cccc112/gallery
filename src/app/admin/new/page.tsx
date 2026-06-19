@@ -3,10 +3,21 @@
 import { useState } from 'react';
 import { createArtwork } from './actions';
 import Link from 'next/link';
-import { ArrowLeft, Upload, Sparkles, Box, Lock } from 'lucide-react';
+import { ArrowLeft, Upload, Sparkles, Box, Lock, Camera } from 'lucide-react';
+
+type ArtType = 'physical' | 'digital' | 'photography';
+
+const PRINT_MATERIALS = [
+  '藝術微噴 (Giclée)',
+  '無酸棉紙',
+  '相紙 (RC Paper)',
+  '鋁板 (Aluminum)',
+  '壓克力背裱',
+  '典藏絨面紙',
+];
 
 export default function NewArtworkPage() {
-  const [artType, setArtType] = useState<'physical' | 'digital'>('physical');
+  const [artType, setArtType] = useState<ArtType>('physical');
   const [isRentable, setIsRentable] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -15,10 +26,8 @@ export default function NewArtworkPage() {
     e.preventDefault();
     setLoading(true);
     setErrorMsg('');
-    
     const formData = new FormData(e.currentTarget);
     formData.append('isRentable', isRentable ? 'true' : 'false');
-    
     try {
       await createArtwork(formData);
     } catch (err: any) {
@@ -28,12 +37,13 @@ export default function NewArtworkPage() {
     }
   };
 
+  const isPhysical = artType === 'physical' || artType === 'photography';
+
   return (
     <div className="marble-bg min-h-screen">
       <div className="mx-auto max-w-3xl px-6 lg:px-8 py-10">
-        {/* Back Button */}
-        <Link 
-          href="/admin" 
+        <Link
+          href="/admin"
           className="inline-flex items-center gap-1.5 text-xs font-semibold tracking-widest uppercase text-muted-foreground hover:text-foreground mb-8 transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -71,7 +81,7 @@ export default function NewArtworkPage() {
               <textarea
                 name="description"
                 rows={4}
-                placeholder="寫下您創作此畫作的靈感背景、技法或特別的故事..."
+                placeholder="寫下您創作此作品的靈感背景、技法或特別的故事..."
                 className="block w-full rounded-lg border border-border bg-background py-2.5 px-3.5 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary transition-colors"
               />
             </div>
@@ -84,12 +94,18 @@ export default function NewArtworkPage() {
                 <select
                   name="artType"
                   value={artType}
-                  onChange={(e) => setArtType(e.target.value as 'physical' | 'digital')}
+                  onChange={e => setArtType(e.target.value as ArtType)}
                   className="block w-full rounded-lg border border-border bg-background py-2.5 px-3.5 text-foreground focus:outline-none focus:border-primary transition-colors"
                 >
                   <option value="physical">實體畫作/雕塑 (Physical)</option>
                   <option value="digital">數位授權藝術 (Digital)</option>
+                  <option value="photography">攝影作品 (Photography)</option>
                 </select>
+                {artType === 'photography' && (
+                  <p className="text-[10px] text-amber-700 mt-1.5 bg-amber-50 px-2 py-1 rounded border border-amber-100">
+                    攝影作品需填寫沖印尺寸、版數與材質
+                  </p>
+                )}
               </div>
 
               {/* Price */}
@@ -111,59 +127,39 @@ export default function NewArtworkPage() {
               <input
                 type="url"
                 name="previewFileUrl"
-                placeholder="例如：https://images.unsplash.com/..."
-                defaultValue="https://images.unsplash.com/photo-1549887534-1541e9326642?q=80&w=600"
+                placeholder="https://..."
                 required
                 className="block w-full rounded-lg border border-border bg-background py-2.5 px-3.5 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary transition-colors"
               />
             </div>
 
-            {/* Physical Specific Fields */}
+            {/* ── Physical 實體 ── */}
             {artType === 'physical' && (
-              <div className="bg-secondary/40 p-5 rounded-xl border border-border/60 space-y-4">
-                <h3 className="text-xs text-primary font-bold uppercase tracking-wider flex items-center gap-1.5">
+              <div className="bg-amber-50/60 p-5 rounded-xl border border-amber-200/60 space-y-4">
+                <h3 className="text-xs text-amber-800 font-bold uppercase tracking-wider flex items-center gap-1.5">
                   <Box className="h-4 w-4" />
                   實體藝術品專屬屬性
                 </h3>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                  <div>
-                    <label className="block text-xs text-muted-foreground mb-1">寬度 (cm) *</label>
-                    <input
-                      type="number"
-                      name="width"
-                      step="0.01"
-                      required={artType === 'physical'}
-                      className="block w-full rounded border border-border bg-background py-1.5 px-3 text-foreground focus:outline-none focus:border-primary"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-muted-foreground mb-1">高度 (cm) *</label>
-                    <input
-                      type="number"
-                      name="height"
-                      step="0.01"
-                      required={artType === 'physical'}
-                      className="block w-full rounded border border-border bg-background py-1.5 px-3 text-foreground focus:outline-none focus:border-primary"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-muted-foreground mb-1">深度 (cm)</label>
-                    <input
-                      type="number"
-                      name="depth"
-                      step="0.01"
-                      className="block w-full rounded border border-border bg-background py-1.5 px-3 text-foreground focus:outline-none focus:border-primary"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-muted-foreground mb-1">重量 (kg)</label>
-                    <input
-                      type="number"
-                      name="weight"
-                      step="0.01"
-                      className="block w-full rounded border border-border bg-background py-1.5 px-3 text-foreground focus:outline-none focus:border-primary"
-                    />
-                  </div>
+                  {[
+                    { label: '寬度 (cm)', name: 'width' },
+                    { label: '高度 (cm)', name: 'height' },
+                    { label: '深度 (cm)', name: 'depth' },
+                    { label: '重量 (kg)', name: 'weight' },
+                  ].map(f => (
+                    <div key={f.name}>
+                      <label className="block text-xs text-muted-foreground mb-1">
+                        {f.label}{(f.name === 'width' || f.name === 'height') ? ' *' : ''}
+                      </label>
+                      <input
+                        type="number"
+                        name={f.name}
+                        step="0.01"
+                        required={f.name === 'width' || f.name === 'height'}
+                        className="block w-full rounded border border-border bg-background py-1.5 px-3 text-foreground focus:outline-none focus:border-primary"
+                      />
+                    </div>
+                  ))}
                 </div>
                 <div>
                   <label className="block text-xs text-muted-foreground mb-1">初始庫存件數 *</label>
@@ -171,17 +167,17 @@ export default function NewArtworkPage() {
                     type="number"
                     name="stock"
                     defaultValue="1"
-                    required={artType === 'physical'}
+                    required
                     className="block w-full rounded border border-border bg-background py-1.5 px-3 text-foreground focus:outline-none focus:border-primary max-w-xs"
                   />
                 </div>
               </div>
             )}
 
-            {/* Digital Specific Fields */}
+            {/* ── Digital 數位 ── */}
             {artType === 'digital' && (
-              <div className="bg-secondary/40 p-5 rounded-xl border border-border/60 space-y-4">
-                <h3 className="text-xs text-primary font-bold uppercase tracking-wider flex items-center gap-1.5">
+              <div className="bg-blue-50/60 p-5 rounded-xl border border-blue-200/60 space-y-4">
+                <h3 className="text-xs text-blue-800 font-bold uppercase tracking-wider flex items-center gap-1.5">
                   <Lock className="h-4 w-4" />
                   數位作品版權下載連結
                 </h3>
@@ -190,11 +186,84 @@ export default function NewArtworkPage() {
                   <input
                     type="url"
                     name="highResFileUrl"
-                    placeholder="https://example.com/private/..."
-                    defaultValue="https://example.com/private/custom-art-highres.png"
-                    required={artType === 'digital'}
+                    placeholder="https://your-storage.com/private/..."
+                    required
                     className="block w-full rounded border border-border bg-background py-1.5 px-3 text-foreground focus:outline-none focus:border-primary"
                   />
+                </div>
+              </div>
+            )}
+
+            {/* ── Photography 攝影 ── */}
+            {artType === 'photography' && (
+              <div className="bg-violet-50/60 p-5 rounded-xl border border-violet-200/60 space-y-5">
+                <h3 className="text-xs text-violet-800 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                  <Camera className="h-4 w-4" />
+                  攝影作品專屬屬性
+                </h3>
+
+                {/* 沖印尺寸（共用物理欄位） */}
+                <div>
+                  <p className="text-xs font-semibold text-foreground mb-3">沖印尺寸 *</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    {[
+                      { label: '寬度 (cm)', name: 'width', req: true },
+                      { label: '高度 (cm)', name: 'height', req: true },
+                      { label: '重量 (kg)', name: 'weight', req: false },
+                      { label: '庫存件數', name: 'stock', req: true, defaultValue: '1' },
+                    ].map(f => (
+                      <div key={f.name}>
+                        <label className="block text-xs text-muted-foreground mb-1">
+                          {f.label}{f.req ? ' *' : ''}
+                        </label>
+                        <input
+                          type="number"
+                          name={f.name}
+                          step={f.name === 'weight' ? '0.01' : '1'}
+                          required={f.req}
+                          defaultValue={f.defaultValue}
+                          className="block w-full rounded border border-border bg-background py-1.5 px-3 text-foreground focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 攝影專屬欄位 */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-violet-200/50">
+                  {/* edition_size */}
+                  <div>
+                    <label className="block text-xs font-semibold text-foreground mb-1">
+                      版數 (Edition Size)
+                    </label>
+                    <input
+                      type="number"
+                      name="edition_size"
+                      min="1"
+                      placeholder="例如：50（代表限量 50 張）"
+                      className="block w-full rounded border border-border bg-background py-1.5 px-3 text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary"
+                    />
+                    <p className="text-[10px] text-muted-foreground mt-1">留空表示不限版數</p>
+                  </div>
+
+                  {/* print_material */}
+                  <div>
+                    <label className="block text-xs font-semibold text-foreground mb-1">
+                      沖印材質 (Print Material)
+                    </label>
+                    <select
+                      name="print_material"
+                      className="block w-full rounded border border-border bg-background py-1.5 px-3 text-foreground focus:outline-none focus:border-primary"
+                    >
+                      <option value="">— 請選擇材質（選填）—</option>
+                      {PRINT_MATERIALS.map(m => (
+                        <option key={m} value={m}>{m}</option>
+                      ))}
+                    </select>
+                    <p className="text-[10px] text-muted-foreground mt-1">
+                      可在作品詳情頁向買家展示沖印規格
+                    </p>
+                  </div>
                 </div>
               </div>
             )}
@@ -209,11 +278,10 @@ export default function NewArtworkPage() {
                 <input
                   type="checkbox"
                   checked={isRentable}
-                  onChange={(e) => setIsRentable(e.target.checked)}
+                  onChange={e => setIsRentable(e.target.checked)}
                   className="h-5 w-5 rounded border-border text-primary focus:ring-primary cursor-pointer"
                 />
               </div>
-
               {isRentable && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3 border-t border-border/65">
                   <div>
@@ -232,7 +300,7 @@ export default function NewArtworkPage() {
                       type="number"
                       name="depositAmount"
                       required={isRentable}
-                      placeholder="例如：5000 (Stripe 授權凍結不請款)"
+                      placeholder="例如：5000"
                       className="block w-full rounded border border-border bg-background py-1.5 px-3 text-foreground focus:outline-none focus:border-primary"
                     />
                   </div>

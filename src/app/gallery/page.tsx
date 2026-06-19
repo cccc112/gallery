@@ -85,6 +85,7 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
               <option value="all">所有藝術品類型</option>
               <option value="physical">實體藝術品 (Physical)</option>
               <option value="digital">數位藝術品 (Digital)</option>
+              <option value="photography">攝影作品 (Photography)</option>
             </select>
           </div>
 
@@ -143,8 +144,16 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
                   
                   {/* Tags */}
                   <div className="absolute top-5 left-5 flex gap-2 z-10">
-                    <Badge variant="secondary" className={`text-[9px] font-semibold tracking-wider px-2 py-0.5 border ${artwork.art_type === 'physical' ? 'bg-amber-50/90 text-amber-700 border-amber-200' : 'bg-blue-50/90 text-blue-700 border-blue-200'}`}>
-                      {artwork.art_type === 'physical' ? '實體' : '數位'}
+                    <Badge variant="secondary" className={`text-[9px] font-semibold tracking-wider px-2 py-0.5 border ${
+                      artwork.art_type === 'physical'
+                        ? 'bg-amber-50/90 text-amber-700 border-amber-200'
+                        : artwork.art_type === 'photography'
+                        ? 'bg-violet-50/90 text-violet-700 border-violet-200'
+                        : 'bg-blue-50/90 text-blue-700 border-blue-200'
+                    }`}>
+                      {artwork.art_type === 'physical' ? '實體'
+                        : artwork.art_type === 'photography' ? '攝影'
+                        : '數位'}
                     </Badge>
                     {artwork.is_rentable && (
                       <Badge className="bg-emerald-600/90 text-white text-[9px] font-semibold tracking-wider px-2 py-0.5 border-transparent">

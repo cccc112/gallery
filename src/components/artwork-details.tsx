@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Check, Truck, Shield, RotateCcw, Box, Lock, RefreshCw, CreditCard, LogIn } from "lucide-react"
+import { Check, Truck, Shield, RotateCcw, Box, Lock, RefreshCw, CreditCard, LogIn, Camera } from "lucide-react"
 import { CheckoutModal } from '@/components/CheckoutModal';
 
 interface ArtworkDetailsProps {
@@ -13,7 +13,7 @@ interface ArtworkDetailsProps {
     title: string;
     artist_name: string;
     artist_email?: string;
-    art_type: 'physical' | 'digital';
+    art_type: 'physical' | 'digital' | 'photography';
     price: number | null;
     is_rentable: boolean;
     monthly_rent_price: number | null;
@@ -26,6 +26,8 @@ interface ArtworkDetailsProps {
     preview_file_url: string;
     high_res_file_url?: string;
     description: string;
+    edition_size?: number | null;
+    print_material?: string | null;
   }
 }
 
@@ -52,7 +54,8 @@ export function ArtworkDetails({ artwork, isLoggedIn = false }: ArtworkDetailsPr
   };
 
   const isPhysical = artwork.art_type === 'physical';
-  const hasStock = !isPhysical || (artwork.stock !== null && artwork.stock > 0);
+  const isPhotography = artwork.art_type === 'photography';
+  const hasStock = (!isPhysical && !isPhotography) || (artwork.stock !== null && artwork.stock > 0);
 
   return (
     <div className="space-y-8">
@@ -65,21 +68,27 @@ export function ArtworkDetails({ artwork, isLoggedIn = false }: ArtworkDetailsPr
           {artwork.title}
         </h1>
         <p className="mt-3 text-sm text-muted-foreground">
-          {isPhysical ? '實體創作品 · 獨一無二' : '數位授權藝術 · 限量發行'}
+          {isPhysical ? '實體創作品 · 獨一無二' : isPhotography ? '攝影藝術 · 限量沖印版' : '數位授權藝術 · 限量發行'}
         </p>
       </div>
 
       {/* Badges */}
       <div className="flex flex-wrap gap-2">
-        <Badge variant="secondary" className="px-3 py-1 text-xs font-medium tracking-wide bg-secondary text-secondary-foreground">
-          {isPhysical ? 'Physical Canvas' : 'Digital Release'}
+        <Badge variant="secondary" className={`px-3 py-1 text-xs font-medium tracking-wide ${
+          isPhotography
+            ? 'bg-violet-50 text-violet-700 border border-violet-200'
+            : isPhysical
+            ? 'bg-secondary text-secondary-foreground'
+            : 'bg-blue-50 text-blue-700 border border-blue-200'
+        }`}>
+          {isPhysical ? 'Physical Canvas' : isPhotography ? 'Photography Print' : 'Digital Release'}
         </Badge>
         {artwork.is_rentable && (
           <Badge variant="outline" className="px-3 py-1 text-xs font-medium tracking-wide border-emerald-300 text-emerald-700 bg-emerald-50/50">
             支援短期租賃
           </Badge>
         )}
-        {isPhysical && (
+        {(isPhysical || isPhotography) && (
           <Badge variant="outline" className={`px-3 py-1 text-xs font-medium tracking-wide ${hasStock ? 'text-emerald-700 border-emerald-200 bg-emerald-50/30' : 'text-rose-700 border-rose-200 bg-rose-50/30'}`}>
             {hasStock ? (
               <span className="flex items-center gap-1">
@@ -141,6 +150,41 @@ export function ArtworkDetails({ artwork, isLoggedIn = false }: ArtworkDetailsPr
               <dt className="text-xs text-muted-foreground">重量</dt>
               <dd className="font-semibold text-foreground mt-0.5">
                 {artwork.weight ? `${Number(artwork.weight)} kg` : '未載明'}
+              </dd>
+            </div>
+          </dl>
+        </div>
+      ) : isPhotography ? (
+        <div className="space-y-3">
+          <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase flex items-center gap-1.5">
+            <Camera className="h-4 w-4 text-violet-600" />
+            攝影作品規格
+          </p>
+          <dl className="grid grid-cols-2 gap-4 text-sm bg-violet-50/40 p-4 rounded-lg border border-violet-200/50">
+            <div>
+              <dt className="text-xs text-muted-foreground">沖印尺寸</dt>
+              <dd className="font-semibold text-foreground mt-0.5">
+                {artwork.width && artwork.height
+                  ? `${Number(artwork.width)} × ${Number(artwork.height)} cm`
+                  : '未載明'}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs text-muted-foreground">版數 (Edition)</dt>
+              <dd className="font-semibold text-foreground mt-0.5">
+                {artwork.edition_size ? `限量 ${artwork.edition_size} 張` : '不限版數'}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs text-muted-foreground">沖印材質</dt>
+              <dd className="font-semibold text-foreground mt-0.5">
+                {artwork.print_material || '未載明'}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs text-muted-foreground">庫存</dt>
+              <dd className="font-semibold text-foreground mt-0.5">
+                {artwork.stock !== null ? `${artwork.stock} 張` : '未載明'}
               </dd>
             </div>
           </dl>
