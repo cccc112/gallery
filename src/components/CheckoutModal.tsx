@@ -23,7 +23,7 @@ interface CheckoutModalProps {
     price: number | null;
     monthly_rent_price: number | null;
     deposit_amount: number | null;
-    art_type: 'physical' | 'digital';
+    art_type: 'physical' | 'digital' | 'photography';
     is_rentable: boolean;
   };
   actionType: ActionType;

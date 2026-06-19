@@ -260,18 +260,6 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
         )}
       </div>
 
-      {/* 入場動畫 keyframe */}
-      <style jsx global>{`
-        @keyframes fadeInUp {
-          from { opacity: 0; transform: translateY(24px); }
-          to   { opacity: 1; transform: translateY(0);    }
-        }
-        @keyframes fade-in {
-          from { opacity: 0; }
-          to   { opacity: 1; }
-        }
-        .animate-fade-in { animation: fade-in 0.6s ease both; }
-      `}</style>
     </div>
   );
 }
