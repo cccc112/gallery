@@ -102,22 +102,28 @@ export function ArtworkGrid({ artworks, title, viewAllLink }: ArtworkGridProps) 
                           onError={() => handleImageError(artwork.id)}
                           draggable={false}
                         />
-                        {/* 浮水印 */}
+                        {/* 浮水印 — 雙色光暈版 */}
                         <div
                           aria-hidden="true"
                           className="absolute inset-0 pointer-events-none select-none z-10"
                           style={{
                             backgroundImage: `repeating-linear-gradient(
                               -45deg,
-                              transparent 0px, transparent 40px,
-                              rgba(80,60,20,0.10) 40px, rgba(80,60,20,0.10) 41px
+                              transparent 0px, transparent 38px,
+                              rgba(255,255,255,0.15) 38px, rgba(255,255,255,0.15) 39px,
+                              transparent 39px, transparent 40px,
+                              rgba(0,0,0,0.07) 40px, rgba(0,0,0,0.07) 41px
                             )`,
                           }}
                         >
                           <div className="absolute inset-0 flex items-center justify-center">
                             <span
-                              className="font-serif text-[10px] text-stone-700/30 tracking-[0.3em] uppercase select-none whitespace-nowrap font-medium"
-                              style={{ transform: 'rotate(-30deg)' }}
+                              className="font-serif text-[10px] tracking-[0.3em] uppercase select-none whitespace-nowrap font-medium"
+                              style={{
+                                transform: 'rotate(-30deg)',
+                                color: 'rgba(255,255,255,0.5)',
+                                textShadow: '0 0 3px rgba(0,0,0,0.95), 0 0 6px rgba(0,0,0,0.7), 1px 1px 0 rgba(0,0,0,0.5)',
+                              }}
                             >
                               Atelier Blanc
                             </span>

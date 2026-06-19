@@ -100,30 +100,47 @@ export function ArtworkGallery({ images, title, artworkId }: ArtworkGalleryProps
                   onError={() => setImageError(true)}
                   draggable={false}
                 />
-                {/* 浮水印 — 對角斜線加強版 */}
+                {/* 浮水印 — 雙色光暈版，深淺背景皆可見 */}
               <div
                 aria-hidden="true"
                 className="absolute inset-0 pointer-events-none select-none z-10 overflow-hidden"
                 style={{
                   backgroundImage: `repeating-linear-gradient(
                     -45deg,
-                    transparent 0px, transparent 50px,
-                    rgba(80,60,20,0.12) 50px, rgba(80,60,20,0.12) 51px
+                    transparent 0px, transparent 48px,
+                    rgba(255,255,255,0.18) 48px, rgba(255,255,255,0.18) 49px,
+                    transparent 49px, transparent 50px,
+                    rgba(0,0,0,0.08) 50px, rgba(0,0,0,0.08) 51px
                   )`,
                 }}
               >
                 {/* 中央斜文字 */}
                 <div className="absolute inset-0 flex items-center justify-center">
                   <span
-                    className="font-serif text-lg text-stone-800/25 tracking-[0.6em] uppercase select-none whitespace-nowrap font-semibold"
-                    style={{ transform: 'rotate(-30deg)', textShadow: '0 1px 2px rgba(0,0,0,0.05)' }}
+                    className="font-serif text-lg tracking-[0.6em] uppercase select-none whitespace-nowrap font-semibold"
+                    style={{
+                      transform: 'rotate(-30deg)',
+                      color: 'rgba(255,255,255,0.55)',
+                      textShadow: [
+                        '0 0 4px rgba(0,0,0,0.9)',
+                        '0 0 8px rgba(0,0,0,0.6)',
+                        '1px 1px 0 rgba(0,0,0,0.5)',
+                        '-1px -1px 0 rgba(0,0,0,0.5)',
+                      ].join(', '),
+                    }}
                   >
                     Atelier Blanc
                   </span>
                 </div>
-                {/* 右下角固定版權標示 */}
+                {/* 右下角版權標示 */}
                 <div className="absolute bottom-2 right-3">
-                  <span className="text-[9px] text-stone-600/40 font-light tracking-widest select-none">
+                  <span
+                    className="text-[9px] font-light tracking-widest select-none"
+                    style={{
+                      color: 'rgba(255,255,255,0.6)',
+                      textShadow: '0 0 3px rgba(0,0,0,0.95), 0 0 6px rgba(0,0,0,0.7)',
+                    }}
+                  >
                     © Atelier Blanc · Preview Only
                   </span>
                 </div>
