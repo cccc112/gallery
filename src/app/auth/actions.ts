@@ -77,7 +77,9 @@ export async function signIn(formData: FormData) {
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
-    return redirect(`/login?error=${encodeURIComponent(error.message)}`);
+    const params = new URLSearchParams({ error: error.message });
+    if (redirectTo && redirectTo !== '/') params.set('redirect', redirectTo);
+    return redirect(`/login?${params.toString()}`);
   }
 
   revalidatePath('/', 'layout');

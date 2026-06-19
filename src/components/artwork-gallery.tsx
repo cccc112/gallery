@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { ZoomIn, Heart, ImageIcon, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ProtectedImage } from '@/components/protected-image';
+import { toast } from 'sonner';
 
 interface ArtworkGalleryProps {
   images: string[];
@@ -53,9 +54,25 @@ export function ArtworkGallery({ images, title, artworkId }: ArtworkGalleryProps
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ artwork_id: artworkId }),
       });
+      if (res.status === 401) {
+        toast.error('請先登入才能收藏作品', {
+          action: { label: '前往登入', onClick: () => window.location.href = `/login?redirect=${window.location.pathname}` },
+        });
+        setLikeLoading(false);
+        return;
+      }
       const d = await res.json();
-      if (res.ok) setIsLiked(d.liked);
-    } catch {}
+      if (res.ok) {
+        setIsLiked(d.liked);
+        if (d.liked) {
+          toast.success('已加入收藏 ❤️', { description: '可在「我的收藏」頁面查看' });
+        } else {
+          toast('已移除收藏');
+        }
+      }
+    } catch {
+      toast.error('操作失敗，請稍後再試');
+    }
     setLikeLoading(false);
   }
 

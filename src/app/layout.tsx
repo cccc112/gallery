@@ -6,6 +6,7 @@ import Footer from '@/components/Footer';
 import { Web3Providers } from '@/components/Web3Providers';
 import { GoogleAnalytics } from '@/components/GoogleAnalytics';
 import { Suspense } from 'react';
+import { Toaster } from 'sonner';
 
 const geistSans = localFont({
   src: './fonts/GeistVF.woff',
@@ -92,6 +93,13 @@ export default function RootLayout({
           </main>
           <Footer />
         </Web3Providers>
+        <Toaster
+          position="bottom-right"
+          richColors
+          toastOptions={{
+            style: { fontFamily: 'var(--font-geist-sans)' },
+          }}
+        />
       </body>
     </html>
   );
