@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
-export const maxDuration = 60; // FLUX 生圖需要較長時間
+export const maxDuration = 60;
+
+// width/height 必須是 16 的倍數，且在 256-1440 之間
+function snapTo16(n: number): number {
+  return Math.round(Math.min(Math.max(n, 256), 1440) / 16) * 16;
+}
 
 export async function POST(req: NextRequest) {
-  // 驗證登入
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
@@ -22,6 +26,20 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'NVIDIA API 未設定' }, { status: 500 });
   }
 
+  const safeWidth = snapTo16(width);
+  const safeHeight = snapTo16(height);
+  const safeSteps = Math.min(Math.max(Math.floor(steps), 1), 4); // schnell 最多 4 步
+
+  const body = {
+    prompt: prompt.trim(),
+    width: safeWidth,
+    height: safeHeight,
+    num_inference_steps: safeSteps,
+    seed: Math.floor(Math.random() * 2147483647),
+  };
+
+  console.log('[NVIDIA] request body:', JSON.stringify(body));
+
   try {
     const res = await fetch(
       'https://ai.api.nvidia.com/v1/genai/black-forest-labs/flux.1-schnell',
@@ -32,20 +50,13 @@ export async function POST(req: NextRequest) {
           'Content-Type': 'application/json',
           Accept: 'application/json',
         },
-        body: JSON.stringify({
-          prompt: prompt.trim(),
-          width: Math.min(Math.max(width, 256), 1440),
-          height: Math.min(Math.max(height, 256), 1440),
-          num_inference_steps: Math.min(Math.max(steps, 1), 50),
-          guidance: 3.5,
-          seed: Math.floor(Math.random() * 2147483647),
-        }),
+        body: JSON.stringify(body),
       }
     );
 
     if (!res.ok) {
       const errText = await res.text();
-      console.error('[NVIDIA] Error:', errText);
+      console.error('[NVIDIA] Error:', res.status, errText);
       return NextResponse.json(
         { error: `生成失敗：${res.status} ${res.statusText}` },
         { status: res.status }
@@ -56,6 +67,7 @@ export async function POST(req: NextRequest) {
     const b64 = data?.artifacts?.[0]?.b64_json;
 
     if (!b64) {
+      console.error('[NVIDIA] No b64 in response:', JSON.stringify(data));
       return NextResponse.json({ error: '未收到圖片資料' }, { status: 500 });
     }
 

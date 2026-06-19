@@ -3,6 +3,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
 import { ArrowRight, ShieldCheck, Gift, HelpCircle, Eye, Sparkles } from 'lucide-react';
+import { HomeAISection } from '@/components/HomeAISection';
 
 export const revalidate = 0;
 
@@ -235,6 +236,9 @@ export default async function HomePage() {
           </div>
         </section>
       )}
+
+      {/* ── AI 藝術生成 ── */}
+      <HomeAISection />
 
       {/* ── Brand Values ── */}
       <section className="py-16 lg:py-24 border-t border-border/40 bg-stone-50/40">
