@@ -2,12 +2,12 @@ import Link from 'next/link';
 import { signIn } from '@/app/auth/actions';
 
 interface LoginPageProps {
-  searchParams: { error?: string; redirect?: string; message?: string };
+  searchParams: { error?: string; redirectTo?: string; message?: string };
 }
 
 export default function LoginPage({ searchParams }: LoginPageProps) {
   const error = searchParams.error;
-  const redirectTo = searchParams.redirect || '/';
+  const redirectTo = searchParams.redirectTo || '/';
   const message = searchParams.message;
 
   return (
@@ -50,7 +50,7 @@ export default function LoginPage({ searchParams }: LoginPageProps) {
           )}
 
           <form action={signIn} className="space-y-5">
-            <input type="hidden" name="redirect" value={redirectTo} />
+            <input type="hidden" name="redirectTo" value={redirectTo} />
 
             <div>
               <label htmlFor="email" className="block text-xs font-semibold tracking-wider uppercase text-muted-foreground mb-2">

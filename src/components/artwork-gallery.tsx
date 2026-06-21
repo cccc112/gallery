@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import { useState, useEffect, useCallback } from 'react';
+import { motion } from 'framer-motion';
 import { ZoomIn, Heart, ImageIcon, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ProtectedImage } from '@/components/protected-image';
@@ -56,7 +57,7 @@ export function ArtworkGallery({ images, title, artworkId }: ArtworkGalleryProps
       });
       if (res.status === 401) {
         toast.error('請先登入才能收藏作品', {
-          action: { label: '前往登入', onClick: () => window.location.href = `/login?redirect=${window.location.pathname}` },
+          action: { label: '前往登入', onClick: () => window.location.href = `/login?redirectTo=${window.location.pathname}` },
         });
         setLikeLoading(false);
         return;
@@ -125,23 +126,25 @@ export function ArtworkGallery({ images, title, artworkId }: ArtworkGalleryProps
 
           {/* Top Actions */}
           <div className="absolute top-4 right-4 flex items-center gap-2 z-30">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleLike}
-              disabled={likeLoading}
-              className={`h-10 w-10 rounded-full bg-background/90 hover:bg-background shadow-md border border-border/40 transition-all ${
-                isLiked ? 'border-rose-300 bg-rose-50/90' : ''
-              }`}
-              title={isLiked ? '已加入最愛' : '加入最愛'}
-            >
-              <Heart
-                className={`h-4 w-4 transition-all duration-200 ${
-                  isLiked ? 'fill-rose-500 text-rose-500 scale-110' : 'text-foreground'
+            <motion.div whileTap={{ scale: 0.85 }} whileHover={{ scale: 1.05 }}>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleLike}
+                disabled={likeLoading}
+                className={`h-10 w-10 rounded-full bg-background/90 hover:bg-background shadow-md border border-border/40 transition-all ${
+                  isLiked ? 'border-rose-300 bg-rose-50/90' : ''
                 }`}
-              />
-              <span className="sr-only">{isLiked ? '取消最愛' : '加入最愛'}</span>
-            </Button>
+                title={isLiked ? '已加入最愛' : '加入最愛'}
+              >
+                <Heart
+                  className={`h-4 w-4 transition-all duration-200 ${
+                    isLiked ? 'fill-rose-500 text-rose-500 scale-110' : 'text-foreground'
+                  }`}
+                />
+                <span className="sr-only">{isLiked ? '取消最愛' : '加入最愛'}</span>
+              </Button>
+            </motion.div>
 
             {imageUrl && !imageError && (
               <Button

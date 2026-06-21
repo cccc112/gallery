@@ -11,7 +11,7 @@ export default async function DashboardPage() {
   // 1. 驗證登入
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect('/login?redirect=/dashboard');
+  if (!user) redirect('/login?redirectTo=/dashboard');
 
   // 2. 取 profile
   let profile: any = null;

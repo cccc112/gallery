@@ -38,7 +38,7 @@ export function ArtworkDetails({ artwork, isLoggedIn = false }: ArtworkDetailsPr
 
   const openCheckout = (actionType: 'buy' | 'rent') => {
     if (!isLoggedIn) {
-      router.push(`/login?redirect=/artwork/${artwork.id}`);
+      router.push(`/login?redirectTo=/artwork/${artwork.id}`);
       return;
     }
     setModalAction(actionType);

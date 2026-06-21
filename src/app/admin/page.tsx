@@ -11,7 +11,7 @@ export const revalidate = 0; // 停用快取以呈現最新管理數據
 export default async function AdminDashboard() {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect('/login?redirect=/admin');
+  if (!user) redirect('/login?redirectTo=/admin');
 
   // 從 DB 取得 role
   let userRole = 'buyer';

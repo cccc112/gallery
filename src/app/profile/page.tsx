@@ -12,7 +12,7 @@ export default async function ProfilePage() {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user) redirect('/login?redirect=/profile');
+  if (!user) redirect('/login?redirectTo=/profile');
 
   // 取 profile + 上傳的作品
   let profile: any = null;

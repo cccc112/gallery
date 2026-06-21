@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';
 import { ArrowRight, ImageIcon, ZoomIn, X } from 'lucide-react';
 import { ProtectedImage } from '@/components/protected-image';
@@ -121,8 +122,13 @@ function ArtworkCard({ artwork, gridClass, aspectClass, formatPrice, onZoom }: A
     : artwork.art_type === 'photography' ? 'Photography'
     : 'Physical';
 
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: 'easeOut' as const } }
+  };
+
   return (
-    <article className={`group relative ${gridClass}`}>
+    <motion.article variants={itemVariants} className={`group relative ${gridClass}`}>
       <div
         className={`relative ${aspectClass} bg-card rounded-sm overflow-hidden shadow-md shadow-black/5 hover:shadow-xl hover:shadow-black/10 transition-all duration-300 border border-border/20`}
       >
@@ -194,7 +200,7 @@ function ArtworkCard({ artwork, gridClass, aspectClass, formatPrice, onZoom }: A
           </div>
         </Link>
       </div>
-    </article>
+    </motion.article>
   );
 }
 
@@ -248,7 +254,15 @@ export function ArtworkGrid({ artworks, title, viewAllLink }: ArtworkGridProps) 
         </div>
 
         {/* Asymmetric Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-6 lg:gap-8">
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: '-50px' }}
+          variants={{
+            visible: { transition: { staggerChildren: 0.1 } }
+          }}
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-6 lg:gap-8"
+        >
           {artworks.map((artwork, index) => (
             <ArtworkCard
               key={artwork.id}
@@ -259,7 +273,7 @@ export function ArtworkGrid({ artworks, title, viewAllLink }: ArtworkGridProps) 
               onZoom={setLightboxArtwork}
             />
           ))}
-        </div>
+        </motion.div>
 
         {viewAllLink && (
           <div className="sm:hidden mt-8 text-center">

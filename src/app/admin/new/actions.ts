@@ -11,7 +11,7 @@ type ArtType = typeof VALID_ART_TYPES[number];
 export async function createArtwork(formData: FormData) {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect('/login?redirect=/admin/new');
+  if (!user) redirect('/login?redirectTo=/admin/new');
 
   const artistId = user.id;
   const title = (formData.get('title') as string)?.trim();

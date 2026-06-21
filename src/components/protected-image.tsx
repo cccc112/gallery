@@ -41,9 +41,9 @@ export function ProtectedImage({
   onError,
 }: ProtectedImageProps) {
   const textSizeMap = {
-    sm: 'text-[10px]',
-    md: 'text-base',
-    lg: 'text-xl',
+    sm: 'text-xs',
+    md: 'text-xl',
+    lg: 'text-3xl',
   };
 
   const trackingMap = {
@@ -90,25 +90,24 @@ export function ProtectedImage({
             backgroundImage: `repeating-linear-gradient(
               -45deg,
               transparent 0px, transparent 48px,
-              rgba(255,255,255,0.25) 48px, rgba(255,255,255,0.25) 50px,
+              rgba(255,255,255,0.35) 48px, rgba(255,255,255,0.35) 50px,
               transparent 50px, transparent 52px,
-              rgba(0,0,0,0.15) 52px, rgba(0,0,0,0.15) 54px
+              rgba(0,0,0,0.25) 52px, rgba(0,0,0,0.25) 54px
             )`,
           }}
         >
-          {/* 中央斜向文字 */}
-          <div className="absolute inset-0 flex items-center justify-center">
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-30">
             <span
-              className={`font-serif ${textSizeMap[watermarkSize]} ${trackingMap[watermarkSize]} uppercase select-none whitespace-nowrap font-bold`}
+              className={`font-serif ${textSizeMap[watermarkSize]} ${trackingMap[watermarkSize]} uppercase whitespace-nowrap font-bold`}
               style={{
                 transform: 'rotate(-30deg)',
-                color: 'rgba(255, 255, 255, 0.85)',
+                color: 'rgba(255, 255, 255, 0.9)',
                 textShadow: [
-                  '0 0 6px rgba(0,0,0,0.95)',
-                  '0 0 12px rgba(0,0,0,0.85)',
-                  '1px 1px 1px rgba(0,0,0,0.9)',
-                  '-1px -1px 1px rgba(0,0,0,0.9)',
-                  '2px 2px 0px rgba(0,0,0,0.7)',
+                  '0 0 8px rgba(0,0,0,1)',
+                  '0 0 16px rgba(0,0,0,0.9)',
+                  '2px 2px 2px rgba(0,0,0,1)',
+                  '-1px -1px 2px rgba(0,0,0,1)',
+                  '0px 4px 6px rgba(0,0,0,0.8)',
                 ].join(', '),
               }}
             >

@@ -72,13 +72,13 @@ export async function signIn(formData: FormData) {
 
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
-  const redirectTo = (formData.get('redirect') as string) || '/';
+  const redirectTo = (formData.get('redirectTo') as string) || '/';
 
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
     const params = new URLSearchParams({ error: error.message });
-    if (redirectTo && redirectTo !== '/') params.set('redirect', redirectTo);
+    if (redirectTo) params.set('redirectTo', redirectTo);
     return redirect(`/login?${params.toString()}`);
   }
 
