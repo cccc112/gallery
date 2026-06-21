@@ -12,7 +12,8 @@ export function OAuthButtons({ redirectTo = '/' }: OAuthButtonsProps) {
   const supabase = createClient();
 
   const handleOAuth = async (provider: 'google' | 'apple') => {
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
+    // 直接用當下的 origin，避免 NEXT_PUBLIC_SITE_URL 指向 localhost 導致 Vercel 上 redirect 失敗
+    const siteUrl = window.location.origin;
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
