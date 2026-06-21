@@ -73,13 +73,27 @@ export default async function ProfilePage() {
               </div>
 
               {/* Action buttons */}
-              <div className="flex items-center gap-2 pb-1">
+              <div className="flex items-center gap-2 pb-1 flex-wrap">
                 <Link
                   href="/profile/upload"
                   className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold tracking-wide rounded-sm bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-sm"
                 >
                   <Upload className="h-3.5 w-3.5" />
                   上傳作品
+                </Link>
+                <Link
+                  href="/profile/edit"
+                  className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold tracking-wide rounded-sm border border-border text-foreground hover:bg-secondary/60 transition-all"
+                >
+                  <Edit3 className="h-3.5 w-3.5" />
+                  編輯個人資料
+                </Link>
+                <Link
+                  href={`/artist/${user.id}`}
+                  className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold tracking-wide rounded-sm border border-border text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-all"
+                >
+                  <Eye className="h-3.5 w-3.5" />
+                  查看公開頁面
                 </Link>
                 <form action={signOut}>
                   <button

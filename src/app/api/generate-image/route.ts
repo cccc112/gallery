@@ -8,6 +8,27 @@ function snapTo16(n: number): number {
   return Math.round(Math.min(Math.max(n, 256), 1440) / 16) * 16;
 }
 
+// NVIDIA NIM genai 可能回傳 polling 狀態，需要等待
+async function pollForResult(fetchId: string, apiKey: string): Promise<string | null> {
+  const pollUrl = `https://ai.api.nvidia.com/v1/status/${fetchId}`;
+  for (let i = 0; i < 20; i++) {
+    await new Promise(r => setTimeout(r, 2000));
+    const r = await fetch(pollUrl, {
+      headers: { Authorization: `Bearer ${apiKey}` },
+    });
+    if (!r.ok) break;
+    const d = await r.json();
+    console.log(`[NVIDIA] poll #${i + 1}:`, JSON.stringify(d).substring(0, 200));
+    const b64 =
+      d?.artifacts?.[0]?.base64 ||
+      d?.artifacts?.[0]?.b64_json ||
+      d?.data?.[0]?.b64_json;
+    if (b64) return b64;
+    if (d?.status === 'failed') break;
+  }
+  return null;
+}
+
 export async function POST(req: NextRequest) {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -15,7 +36,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: '請先登入' }, { status: 401 });
   }
 
-  const { prompt, width = 1024, height = 1024, steps = 2, seed, negative_prompt } = await req.json();
+  const { prompt, width = 1024, height = 1024, steps = 4, seed, negative_prompt } = await req.json();
 
   if (!prompt?.trim()) {
     return NextResponse.json({ error: '請輸入描述文字' }, { status: 400 });
@@ -28,19 +49,17 @@ export async function POST(req: NextRequest) {
 
   const safeWidth = snapTo16(width);
   const safeHeight = snapTo16(height);
-  const safeSteps = Math.min(Math.max(Math.floor(steps), 1), 4); // schnell 最多 4 步
-
+  const safeSteps = Math.min(Math.max(Math.floor(steps), 1), 4);
   const useSeed = (seed !== undefined && Number.isInteger(seed)) ? seed : Math.floor(Math.random() * 2147483647);
 
   const body: Record<string, unknown> = {
     prompt: prompt.trim(),
     width: safeWidth,
     height: safeHeight,
-    steps: safeSteps,   // NVIDIA FLUX NIM 使用 "steps"，不是 "num_inference_steps"
+    steps: safeSteps,
     seed: useSeed,
   };
 
-  // negative_prompt 僅在非空時才傳（某些模型版本不支援）
   if (negative_prompt?.trim()) {
     body.negative_prompt = negative_prompt.trim();
   }
@@ -71,18 +90,28 @@ export async function POST(req: NextRequest) {
     }
 
     const data = await res.json();
-    console.log('[NVIDIA] raw response keys:', Object.keys(data));
+    // 完整印出，方便確認實際格式
+    console.log('[NVIDIA] full response:', JSON.stringify(data).substring(0, 500));
 
-    // NVIDIA NIM genai endpoint 回傳 artifacts[].base64
-    // OpenAI 相容端點回傳 data[].b64_json，兩種都支援
-    const b64 =
+    // 支援多種回傳格式
+    let b64: string | null =
       data?.artifacts?.[0]?.base64 ||
       data?.artifacts?.[0]?.b64_json ||
-      data?.data?.[0]?.b64_json;
+      data?.data?.[0]?.b64_json ||
+      null;
+
+    // 如果是 async polling 模式（有 id 但沒有圖片）
+    if (!b64 && data?.id) {
+      console.log('[NVIDIA] async mode, polling id:', data.id);
+      b64 = await pollForResult(data.id, apiKey);
+    }
 
     if (!b64) {
-      console.error('[NVIDIA] No b64 in response:', JSON.stringify(data));
-      return NextResponse.json({ error: '未收到圖片資料' }, { status: 500 });
+      console.error('[NVIDIA] No image data. Full response:', JSON.stringify(data));
+      return NextResponse.json(
+        { error: `未收到圖片資料（回傳格式：${Object.keys(data).join(', ')}）` },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({ image: b64 });

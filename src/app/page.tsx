@@ -1,9 +1,9 @@
 import { sql } from '@/lib/db';
 import Link from 'next/link';
-import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
 import { ArrowRight, ShieldCheck, Gift, HelpCircle, Eye, Sparkles } from 'lucide-react';
 import { HomeAISection } from '@/components/HomeAISection';
+import { ProtectedImage } from '@/components/protected-image';
 
 export const revalidate = 0;
 
@@ -137,22 +137,22 @@ export default async function HomePage() {
                   <Link href={`/artwork/${artwork.id}`} className="block">
                     {/* Image */}
                     <div className="aspect-[4/5] bg-stone-50 overflow-hidden relative">
-                      <div className="absolute inset-0 p-4 flex items-center justify-center">
-                        <div className="relative w-full h-full border border-stone-200/60 shadow-sm bg-white overflow-hidden">
+                      <div className="absolute inset-0">
                           {artwork.preview_file_url ? (
-                            <Image
+                            <ProtectedImage
                               src={artwork.preview_file_url}
                               alt={artwork.title}
                               fill
                               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                               className="object-cover transition-transform duration-700 group-hover:scale-105"
+                              showWatermark={true}
+                              watermarkSize="sm"
                             />
                           ) : (
                             <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-stone-100 to-stone-200">
                               <span className="text-xs text-stone-400 tracking-widest uppercase">Artwork</span>
                             </div>
                           )}
-                        </div>
                       </div>
 
                       {/* Badges */}

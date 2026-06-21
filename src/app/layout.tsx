@@ -7,6 +7,7 @@ import { Web3Providers } from '@/components/Web3Providers';
 import { GoogleAnalytics } from '@/components/GoogleAnalytics';
 import { Suspense } from 'react';
 import { Toaster } from 'sonner';
+import { ScreenshotGuard } from '@/components/ScreenshotGuard';
 
 const geistSans = localFont({
   src: './fonts/GeistVF.woff',
@@ -100,6 +101,7 @@ export default function RootLayout({
             style: { fontFamily: 'var(--font-geist-sans)' },
           }}
         />
+        <ScreenshotGuard />
       </body>
     </html>
   );
