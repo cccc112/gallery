@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { signUp } from '@/app/auth/actions';
+import { OAuthButtons } from '@/components/OAuthButtons';
 
 interface RegisterPageProps {
   searchParams: { error?: string };
@@ -101,6 +102,11 @@ export default function RegisterPage({ searchParams }: RegisterPageProps) {
                 直接登入
               </Link>
             </p>
+          </div>
+
+          {/* OAuth 社群登入 */}
+          <div className="mt-5">
+            <OAuthButtons redirectTo="/" />
           </div>
         </div>
 

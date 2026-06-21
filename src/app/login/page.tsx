@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { signIn } from '@/app/auth/actions';
+import { OAuthButtons } from '@/components/OAuthButtons';
 
 interface LoginPageProps {
   searchParams: { error?: string; redirectTo?: string; message?: string };
@@ -101,10 +102,15 @@ export default function LoginPage({ searchParams }: LoginPageProps) {
           <div className="mt-6 pt-6 border-t border-border/60 text-center">
             <p className="text-xs text-muted-foreground">
               還沒有帳號？{' '}
-              <Link href="/register" className="text-foreground font-semibold hover:underline underline-offset-4">
+              <Link href={`/register${redirectTo !== '/' ? `?redirectTo=${encodeURIComponent(redirectTo)}` : ''}`} className="text-foreground font-semibold hover:underline underline-offset-4">
                 立即免費註冊
               </Link>
             </p>
+          </div>
+
+          {/* OAuth 社群登入 */}
+          <div className="mt-5">
+            <OAuthButtons redirectTo={redirectTo} />
           </div>
         </div>
 

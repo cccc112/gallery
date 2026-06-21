@@ -3,6 +3,7 @@ import { sql } from '@/lib/db';
 import { Search, Eye, Tag, SlidersHorizontal } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import Image from 'next/image';
+import { AnimatedGrid, AnimatedCard } from '@/components/AnimatedGrid';
 
 export const revalidate = 0;
 
@@ -182,15 +183,11 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-y-10 gap-x-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {artworks.map((artwork: any, i: number) => (
-              <div
+          <AnimatedGrid>
+            {artworks.map((artwork: any) => (
+              <AnimatedCard
                 key={artwork.id}
                 className="group relative flex flex-col overflow-hidden bg-card rounded-sm shadow-md hover:shadow-xl transition-all duration-300 border border-border/40"
-                style={{
-                  animationDelay: `${i * 60}ms`,
-                  animation: 'fadeInUp 0.5s ease both',
-                }}
               >
                 {/* Image */}
                 <Link href={`/artwork/${artwork.id}`} className="aspect-[4/5] w-full bg-stone-50 overflow-hidden relative block cursor-pointer">
@@ -254,9 +251,9 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
                     </Link>
                   </div>
                 </div>
-              </div>
+              </AnimatedCard>
             ))}
-          </div>
+          </AnimatedGrid>
         )}
       </div>
 
