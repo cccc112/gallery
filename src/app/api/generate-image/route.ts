@@ -71,7 +71,14 @@ export async function POST(req: NextRequest) {
     }
 
     const data = await res.json();
-    const b64 = data?.artifacts?.[0]?.b64_json;
+    console.log('[NVIDIA] raw response keys:', Object.keys(data));
+
+    // NVIDIA NIM genai endpoint 回傳 artifacts[].base64
+    // OpenAI 相容端點回傳 data[].b64_json，兩種都支援
+    const b64 =
+      data?.artifacts?.[0]?.base64 ||
+      data?.artifacts?.[0]?.b64_json ||
+      data?.data?.[0]?.b64_json;
 
     if (!b64) {
       console.error('[NVIDIA] No b64 in response:', JSON.stringify(data));
