@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
     prompt: prompt.trim(),
     width: safeWidth,
     height: safeHeight,
-    num_inference_steps: safeSteps,
+    steps: safeSteps,   // NVIDIA FLUX NIM 使用 "steps"，不是 "num_inference_steps"
     seed: useSeed,
   };
 
