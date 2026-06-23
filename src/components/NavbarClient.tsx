@@ -57,7 +57,7 @@ export default function NavbarClient({ user, profile, navLinks }: NavbarClientPr
   const displayName = profile?.display_name || user?.email?.split('@')[0] || '使用者';
 
   return (
-    <header className="sticky top-0 z-50 w-full bg-background border-b border-border/50 shadow-sm">
+    <header className="sticky top-0 z-50 w-full bg-background/90 backdrop-blur-md border-b border-border/50">
       <div className="mx-auto flex h-16 lg:h-18 max-w-7xl items-center justify-between px-6 lg:px-8">
 
         {/* ── Logo + Desktop Nav ── */}
@@ -66,7 +66,7 @@ export default function NavbarClient({ user, profile, navLinks }: NavbarClientPr
             <span className="text-xl lg:text-2xl font-serif font-semibold tracking-tight text-foreground group-hover:opacity-75 transition-opacity">
               Atelier Blanc
             </span>
-            <span className="hidden lg:inline text-[10px] font-light text-muted-foreground uppercase tracking-widest border-l border-border pl-2.5">
+            <span className="hidden lg:inline text-[10px] font-semibold text-foreground/60 uppercase tracking-widest border-l border-border pl-2.5">
               乙太藝廊
             </span>
           </Link>
