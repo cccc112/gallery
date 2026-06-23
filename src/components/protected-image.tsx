@@ -40,29 +40,9 @@ export function ProtectedImage({
   watermarkSize = 'md',
   onError,
 }: ProtectedImageProps) {
-  // 根據尺寸決定浮水印字體大小與間距
-  const fontSizeMap = { sm: 11, md: 15, lg: 22 };
-  const spacingMap = { sm: 90, md: 120, lg: 160 };
+  // 字體大小依 watermarkSize 決定（單一居中版本）
+  const fontSizeMap = { sm: 18, md: 26, lg: 38 };
   const fontSize = fontSizeMap[watermarkSize];
-  const spacing = spacingMap[watermarkSize];
-
-  // 使用 SVG 全版平鋪浮水印（無法透過 CSS 輕易移除，比 DOM 文字更難被工具刪除）
-  const svgWatermark = `
-    <svg xmlns='http://www.w3.org/2000/svg' width='${spacing}' height='${spacing}'>
-      <defs>
-        <style>text { font-family: Georgia, serif; font-size: ${fontSize}px; font-weight: 700; letter-spacing: 0.15em; }</style>
-      </defs>
-      <text
-        x='50%' y='50%'
-        dominant-baseline='middle'
-        text-anchor='middle'
-        transform='rotate(-30, ${spacing / 2}, ${spacing / 2})'
-        fill='rgba(255,255,255,0.75)'
-        style='paint-order: stroke; stroke: rgba(0,0,0,0.85); stroke-width: 3px;'
-      >${watermarkText}</text>
-    </svg>
-  `;
-  const svgUrl = `url("data:image/svg+xml,${encodeURIComponent(svgWatermark)}")`;
 
   return (
     <div
@@ -93,30 +73,26 @@ export function ProtectedImage({
         style={{ userSelect: 'none', WebkitUserSelect: 'none' } as React.CSSProperties}
       />
 
-      {/* ── 浮水印層：SVG 全版平鋪，任何方向裁切都能看到 ── */}
+      {/* ── 浮水印層：單一居中斜置文字 ── */}
       {showWatermark && (
         <div
           aria-hidden="true"
-          className="absolute inset-0 pointer-events-none select-none z-20"
-          style={{
-            backgroundImage: svgUrl,
-            backgroundRepeat: 'repeat',
-            backgroundSize: `${spacing}px ${spacing}px`,
-          }}
-        />
-      )}
-
-      {/* ── 右下角版權標示 ── */}
-      {showWatermark && (
-        <div className="absolute bottom-1.5 right-2 z-30 pointer-events-none select-none">
+          className="absolute inset-0 pointer-events-none select-none z-20 flex items-center justify-center"
+        >
           <span
-            className="text-[9px] font-semibold tracking-widest uppercase"
             style={{
-              color: 'rgba(255,255,255,0.95)',
-              textShadow: '0 0 6px rgba(0,0,0,1), 1px 1px 0 rgba(0,0,0,0.9)',
+              fontSize: `${fontSize}px`,
+              fontFamily: 'Georgia, serif',
+              fontWeight: 700,
+              letterSpacing: '0.2em',
+              color: 'rgba(255,255,255,0.55)',
+              textShadow: '0 0 8px rgba(0,0,0,0.9), 1px 1px 0 rgba(0,0,0,0.8), -1px -1px 0 rgba(0,0,0,0.8)',
+              transform: 'rotate(-20deg)',
+              whiteSpace: 'nowrap',
+              userSelect: 'none',
             }}
           >
-            © Atelier Blanc
+            {watermarkText}
           </span>
         </div>
       )}
