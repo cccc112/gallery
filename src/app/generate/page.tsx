@@ -5,8 +5,9 @@ import Link from 'next/link';
 import {
   Wand2, Download, Loader2, Sparkles, RefreshCw,
   ImageIcon, AlertCircle, ChevronDown, Shuffle, Lock,
-  SlidersHorizontal,
+  SlidersHorizontal, Upload,
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 const STYLE_PRESETS = [
   { label: '水彩', en: 'watercolor painting, soft washes of color, delicate brushstrokes' },
@@ -85,6 +86,9 @@ export default function GeneratePage() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [lastSeed, setLastSeed] = useState<number | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const router = useRouter();
+  const [uploadState, setUploadState] = useState<'idle' | 'uploading' | 'done' | 'error'>('idle');
+  const [uploadError, setUploadError] = useState('');
 
   const basePrompt = [prompt.trim(), selectedStyle].filter(Boolean).join(', ');
   const finalPrompt = basePrompt + ', high quality, detailed artwork, gallery quality';
@@ -135,6 +139,36 @@ export default function GeneratePage() {
     a.href = `data:image/png;base64,${imageB64}`;
     a.download = `atelier-blanc-ai-${Date.now()}.png`;
     a.click();
+  }
+
+  async function handleUploadToGallery() {
+    if (!imageB64 || !prompt.trim()) return;
+    setUploadState('uploading');
+    setUploadError('');
+    try {
+      // 1. base64 → Blob
+      const byteChars = atob(imageB64);
+      const byteArr = new Uint8Array(byteChars.length);
+      for (let i = 0; i < byteChars.length; i++) byteArr[i] = byteChars.charCodeAt(i);
+      const blob = new Blob([byteArr], { type: 'image/png' });
+
+      // 2. 上傳到 /api/artworks/upload-ai
+      const form = new FormData();
+      form.append('file', blob, `ai-${Date.now()}.png`);
+      form.append('title', prompt.slice(0, 60));
+      form.append('description', `AI 生成 · Prompt: ${finalPrompt}`);
+      form.append('art_type', 'digital');
+
+      const res = await fetch('/api/artworks/upload-ai', { method: 'POST', body: form });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || '上傳失敗');
+
+      setUploadState('done');
+      setTimeout(() => router.push(`/admin/new?draft=${data.artworkId}`), 1200);
+    } catch (e: any) {
+      setUploadError(e.message);
+      setUploadState('error');
+    }
   }
 
   const imgSrc = imageB64 ? `data:image/png;base64,${imageB64}` : null;
@@ -369,7 +403,8 @@ export default function GeneratePage() {
               <div className="flex items-center justify-between mb-4">
                 <p className="text-xs font-semibold tracking-widest uppercase text-muted-foreground">生成結果</p>
                 {imgSrc && (
-                  <div className="flex gap-2">
+                  <>
+                  <div className="flex gap-2 flex-wrap">
                     <button
                       onClick={handleGenerate}
                       disabled={loading}
@@ -379,11 +414,28 @@ export default function GeneratePage() {
                     </button>
                     <button
                       onClick={handleDownload}
-                      className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-sm bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                      className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-sm border border-border hover:bg-white/80 transition-colors text-muted-foreground hover:text-foreground"
                     >
                       <Download className="h-3 w-3" /> 下載原圖
                     </button>
+                    <button
+                      onClick={handleUploadToGallery}
+                      disabled={uploadState === 'uploading' || uploadState === 'done'}
+                      className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-sm bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-60 transition-colors"
+                    >
+                      {uploadState === 'uploading' ? (
+                        <><Loader2 className="h-3 w-3 animate-spin" /> 上傳中…</>
+                      ) : uploadState === 'done' ? (
+                        <>✓ 已上傳，跳轉中…</>
+                      ) : (
+                        <><Upload className="h-3 w-3" /> 上傳到藝廊</>
+                      )}
+                    </button>
                   </div>
+                  {uploadError && (
+                    <p className="text-[10px] text-rose-600 mt-1">{uploadError}</p>
+                  )}
+                </>
                 )}
               </div>
 
