@@ -109,6 +109,24 @@ export async function POST(request: Request) {
       });
     }
 
+    // ── 加入 10% 平台服務費 ──────────────────────────
+    const PLATFORM_FEE_RATE = 0.10;
+    const subtotal = lineItems.reduce((sum, item) => sum + item.price_data.unit_amount * item.quantity, 0);
+    const platformFee = Math.round(subtotal * PLATFORM_FEE_RATE);
+    if (platformFee > 0) {
+      lineItems.push({
+        price_data: {
+          currency: 'twd',
+          product_data: {
+            name: 'Atelier Blanc 平台服務費',
+            description: '安全交易、版權保護、平台維運費用（10%）',
+          },
+          unit_amount: platformFee,
+        },
+        quantity: 1,
+      });
+    }
+
     // 6. Stripe Checkout Session 設定
     const sessionConfig: any = {
       payment_method_types: ['card'],

@@ -1,5 +1,8 @@
+'use client';
+
 import Link from 'next/link';
-import { CheckCircle, ArrowRight, Home } from 'lucide-react';
+import { CheckCircle, ArrowRight, Home, Download, Loader2 } from 'lucide-react';
+import { useState } from 'react';
 
 interface SuccessPageProps {
   searchParams: {
@@ -7,15 +10,69 @@ interface SuccessPageProps {
     artworkId?: string;
     type?: string;
     mock?: string;
+    art_type?: string;
   };
+}
+
+function DownloadButton({ artworkId }: { artworkId: string }) {
+  const [state, setState] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
+  const [errMsg, setErrMsg] = useState('');
+
+  const handleDownload = async () => {
+    setState('loading');
+    try {
+      const res = await fetch(`/api/download/${artworkId}`);
+      const data = await res.json();
+      if (!res.ok) {
+        setErrMsg(data.error || '下載失敗');
+        setState('error');
+        return;
+      }
+      // 觸發下載
+      const a = document.createElement('a');
+      a.href = data.url;
+      a.download = data.filename || 'artwork';
+      a.click();
+      setState('done');
+    } catch {
+      setErrMsg('網路錯誤，請稍後再試');
+      setState('error');
+    }
+  };
+
+  return (
+    <div className="space-y-2">
+      <button
+        onClick={handleDownload}
+        disabled={state === 'loading' || state === 'done'}
+        className="flex items-center justify-center gap-2 w-full rounded-sm bg-emerald-600 text-white py-3 text-sm font-semibold hover:bg-emerald-700 disabled:opacity-60 transition-colors shadow-sm"
+      >
+        {state === 'loading' ? (
+          <><Loader2 className="h-4 w-4 animate-spin" /> 產生下載連結中…</>
+        ) : state === 'done' ? (
+          <><CheckCircle className="h-4 w-4" /> 已開始下載</>
+        ) : (
+          <><Download className="h-4 w-4" /> 下載高畫質原檔</>
+        )}
+      </button>
+      {state === 'error' && (
+        <p className="text-xs text-rose-600 text-center">{errMsg}</p>
+      )}
+      {state === 'done' && (
+        <p className="text-xs text-muted-foreground text-center">連結 15 分鐘內有效，若需重新下載請重新整理頁面</p>
+      )}
+    </div>
+  );
 }
 
 export default function CheckoutSuccessPage({ searchParams }: SuccessPageProps) {
   const isMock = searchParams.mock === 'true';
   const checkoutType = searchParams.type || 'buy';
   const artworkId = searchParams.artworkId;
+  const artType = searchParams.art_type;
 
   const isRental = checkoutType === 'rent';
+  const isDigital = artType === 'digital' || artType === 'photography';
 
   return (
     <div className="marble-bg min-h-screen flex items-center justify-center px-6 py-16">
@@ -36,6 +93,8 @@ export default function CheckoutSuccessPage({ searchParams }: SuccessPageProps) 
         <p className="text-sm text-muted-foreground font-light leading-relaxed mb-2">
           {isRental
             ? '您的租賃申請已完成付款，押金已預授權。我們將於 2 個工作天內安排配送。'
+            : isDigital
+            ? '感謝您的典藏！您可以立即下載高畫質原檔。'
             : '感謝您的典藏。我們將於 2-3 個工作天內處理您的訂單並安排配送。'}
         </p>
 
@@ -61,13 +120,20 @@ export default function CheckoutSuccessPage({ searchParams }: SuccessPageProps) 
             )}
             <div className="flex justify-between">
               <span className="text-muted-foreground">後續步驟</span>
-              <span className="font-semibold text-foreground">等待出貨通知</span>
+              <span className="font-semibold text-foreground">
+                {isDigital && !isRental ? '立即下載原檔' : '等待出貨通知'}
+              </span>
             </div>
           </div>
         </div>
 
         {/* CTA buttons */}
         <div className="mt-8 flex flex-col gap-3">
+          {/* 數位作品買斷 → 顯示下載按鈕 */}
+          {isDigital && !isRental && artworkId && !isMock && (
+            <DownloadButton artworkId={artworkId} />
+          )}
+
           {artworkId && (
             <Link
               href={`/artwork/${artworkId}`}
