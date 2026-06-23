@@ -57,7 +57,7 @@ export default function NavbarClient({ user, profile, navLinks }: NavbarClientPr
   const displayName = profile?.display_name || user?.email?.split('@')[0] || '使用者';
 
   return (
-    <header className="sticky top-0 z-50 w-full bg-background/90 backdrop-blur-md border-b border-border/50">
+    <header className="sticky top-0 z-50 w-full bg-background border-b border-border/50 shadow-sm">
       <div className="mx-auto flex h-16 lg:h-18 max-w-7xl items-center justify-between px-6 lg:px-8">
 
         {/* ── Logo + Desktop Nav ── */}
@@ -81,7 +81,7 @@ export default function NavbarClient({ user, profile, navLinks }: NavbarClientPr
                   className={`flex items-center gap-1.5 px-3 py-2 rounded-md transition-all duration-150 ${
                     isActive(href)
                       ? 'text-foreground bg-secondary font-semibold'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-secondary/60'
+                      : 'text-foreground/70 hover:text-foreground hover:bg-secondary/60'
                   }`}
                 >
                   <Icon className="h-3.5 w-3.5" />
