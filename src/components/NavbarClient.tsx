@@ -129,9 +129,9 @@ export default function NavbarClient({ user, profile, navLinks }: NavbarClientPr
                 </button>
 
                 {dropdownOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-56 bg-card/98 backdrop-blur-md border border-border/60 rounded-sm shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
+                  <div className="absolute right-0 top-full mt-2 w-56 bg-white border border-border/80 rounded-sm shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
                     {/* User info header */}
-                    <div className="px-4 py-3.5 border-b border-border/50 bg-secondary/20">
+                    <div className="px-4 py-3.5 border-b border-border/50 bg-stone-50">
                       <div className="flex items-center gap-3">
                         <img src={avatarUrl} alt="" className="h-8 w-8 rounded-full border border-border bg-stone-100" />
                         <div className="min-w-0">
