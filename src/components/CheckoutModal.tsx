@@ -14,7 +14,7 @@ import { PLATFORM_WALLET, USDC_CONTRACTS, USDC_ABI } from '@/lib/wagmi';
 
 type ActionType = 'buy' | 'rent';
 type PaymentMethod = 'card' | 'crypto';
-type Step = 'select' | 'card-form' | 'crypto-confirm' | 'processing' | 'success' | 'error';
+type Step = 'select' | 'stripe-loading' | 'crypto-confirm' | 'processing' | 'success' | 'error';
 
 interface CheckoutModalProps {
   artwork: {
@@ -106,33 +106,20 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isTxConfirmed, pendingTxHash]);
 
-  // ── Fiat checkout ──
-  const handleCardSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setStep('processing');
-    await new Promise(r => setTimeout(r, 400)); // 模擬 TapPay token 化
-
+  // ── Stripe Checkout redirect ──
+  const handleStripeCheckout = async () => {
+    setStep('stripe-loading');
     try {
-      const res = await fetch('/api/checkout/fiat', {
+      const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          artworkId: artwork.id,
-          actionType,
-          shippingAddress: (isPhysical || isRental) ? {
-            name: form.name, phone: form.phone,
-            address: form.address, city: form.city, zip: form.zip,
-          } : null,
-          cardInfo: { lastFour: form.cardNumber.replace(/\s/g, '').slice(-4) },
-        }),
+        body: JSON.stringify({ artworkId: artwork.id, actionType }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      setTxId(data.transactionId);
-      setSuccessMsg(data.message);
-      setStep('success');
+      if (!res.ok) throw new Error(data.error || '建立結帳失敗');
+      window.location.href = data.url;
     } catch (err: any) {
-      setErrorMsg(err.message || '付款失敗，請稍後再試');
+      setErrorMsg(err.message || '無法連線至付款平台，請稍後再試');
       setStep('error');
     }
   };
@@ -214,13 +201,13 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center px-4 py-6">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
-      <div className="relative w-full max-w-md bg-background/98 backdrop-blur-md border border-border/60 rounded-sm shadow-2xl overflow-hidden max-h-[92vh] flex flex-col">
+      <div className="relative w-full max-w-md bg-white border border-border/60 rounded-sm shadow-2xl overflow-hidden max-h-[92vh] flex flex-col">
 
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border/50 bg-secondary/20 flex-shrink-0">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border/50 bg-stone-50 flex-shrink-0">
           <div>
             <h2 className="font-serif text-base font-semibold text-foreground">
               {isRental ? '短期租賃結帳' : '收藏作品'}
@@ -258,15 +245,15 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
 
               {/* 信用卡 */}
               <button
-                onClick={() => { setPayMethod('card'); setStep('card-form'); }}
-                className="w-full flex items-center gap-4 p-4 border border-border rounded-sm bg-white/60 hover:bg-white hover:border-primary/40 hover:shadow-sm transition-all group text-left"
+                onClick={handleStripeCheckout}
+                className="w-full flex items-center gap-4 p-4 border border-border rounded-sm bg-white hover:border-primary/40 hover:shadow-sm transition-all group text-left"
               >
                 <div className="h-10 w-10 rounded-full bg-secondary flex items-center justify-center border border-border flex-shrink-0">
                   <CreditCard className="h-5 w-5 text-foreground" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-semibold text-foreground">信用卡付款</p>
-                  <p className="text-xs text-muted-foreground font-light">Visa / MasterCard · TapPay 安全加密</p>
+                  <p className="text-sm font-semibold text-foreground">信用卡 / Google Pay / Apple Pay</p>
+                  <p className="text-xs text-muted-foreground font-light">Visa · MasterCard · 安全導向 Stripe</p>
                 </div>
                 <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
               </button>
@@ -302,76 +289,13 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
             </div>
           )}
 
-          {/* ── 信用卡表單 ── */}
-          {step === 'card-form' && (
-            <form onSubmit={handleCardSubmit} className="p-6 space-y-5">
-              {(isPhysical || isRental) && (
-                <div className="space-y-3">
-                  <h3 className="text-xs font-semibold tracking-widest uppercase text-muted-foreground flex items-center gap-1.5">
-                    <MapPin className="h-3.5 w-3.5" /> 收件資訊
-                  </h3>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="field-label">收件人</label>
-                      <input required value={form.name} onChange={e => updateForm('name', e.target.value)} placeholder="王大明" className="field-input" />
-                    </div>
-                    <div>
-                      <label className="field-label">電話</label>
-                      <input required value={form.phone} onChange={e => updateForm('phone', e.target.value)} placeholder="0912-345-678" className="field-input" />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="field-label">詳細地址</label>
-                    <input required value={form.address} onChange={e => updateForm('address', e.target.value)} placeholder="台北市信義區信義路五段7號" className="field-input" />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="field-label">城市</label>
-                      <input value={form.city} onChange={e => updateForm('city', e.target.value)} placeholder="台北市" className="field-input" />
-                    </div>
-                    <div>
-                      <label className="field-label">郵遞區號</label>
-                      <input value={form.zip} onChange={e => updateForm('zip', e.target.value)} placeholder="110" className="field-input" />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <div className="space-y-3">
-                <h3 className="text-xs font-semibold tracking-widest uppercase text-muted-foreground flex items-center gap-1.5">
-                  <CreditCard className="h-3.5 w-3.5" /> 信用卡資訊
-                </h3>
-                <div className="border border-border/60 rounded-sm bg-stone-50/60 p-4 text-center space-y-1.5">
-                  <p className="text-sm font-medium text-foreground">🔒 TapPay 安全輸入框</p>
-                  <p className="text-xs text-muted-foreground font-light">正式環境將嵌入 TapPay SDK iframe</p>
-                </div>
-                <div className="border border-amber-200 bg-amber-50/60 rounded-sm px-3 py-2 text-[10px] text-amber-700 font-medium">
-                  ⚠️ 下方為開發測試模擬輸入框
-                </div>
-                <div>
-                  <label className="field-label">卡號</label>
-                  <input required value={form.cardNumber} onChange={e => updateForm('cardNumber', fmtCard(e.target.value))} placeholder="1234 5678 9012 3456" maxLength={19} className="field-input font-mono" />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="field-label">有效期限</label>
-                    <input required value={form.cardExpiry} onChange={e => updateForm('cardExpiry', fmtExp(e.target.value))} placeholder="MM/YY" maxLength={5} className="field-input font-mono" />
-                  </div>
-                  <div>
-                    <label className="field-label">CVV</label>
-                    <input required value={form.cardCvc} onChange={e => updateForm('cardCvc', e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="123" type="password" maxLength={4} className="field-input font-mono" />
-                  </div>
-                </div>
-              </div>
-
-              <button type="submit" className="w-full rounded-sm bg-primary text-primary-foreground py-3.5 text-sm font-semibold tracking-wide hover:bg-primary/90 transition-all shadow-sm flex items-center justify-center gap-2">
-                <Lock className="h-4 w-4" />
-                {isRental ? '確認租賃 · 預授權押金' : `確認付款 · ${formatNTD(amount)}`}
-              </button>
-              <button type="button" onClick={() => setStep('select')} className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors py-1">
-                ← 返回選擇付款方式
-              </button>
-            </form>
+          {/* ── Stripe 跳轉 loading ── */}
+          {step === 'stripe-loading' && (
+            <div className="p-10 flex flex-col items-center justify-center gap-4">
+              <Loader2 className="h-10 w-10 animate-spin text-primary" />
+              <p className="text-sm font-medium text-foreground">正在連接安全付款頁面…</p>
+              <p className="text-xs text-muted-foreground">即將導向 Stripe 安全結帳，請稍候</p>
+            </div>
           )}
 
           {/* ── Crypto 確認頁 ── */}
@@ -539,7 +463,7 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
         </div>
 
         {/* Footer */}
-        {(step === 'select' || step === 'card-form' || step === 'crypto-confirm') && (
+        {(step === 'select' || step === 'crypto-confirm') && (
           <div className="flex items-center justify-center gap-4 px-6 py-3 border-t border-border/40 bg-secondary/10 flex-shrink-0">
             <span className="flex items-center gap-1 text-[10px] text-muted-foreground"><Lock className="h-3 w-3" /> SSL 加密</span>
             <span className="flex items-center gap-1 text-[10px] text-muted-foreground"><Shield className="h-3 w-3" /> PCI DSS</span>

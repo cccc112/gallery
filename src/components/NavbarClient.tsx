@@ -241,7 +241,7 @@ export default function NavbarClient({ user, profile, navLinks }: NavbarClientPr
 
       {/* ── Mobile Drawer ── */}
       {mobileOpen && (
-        <div className="md:hidden border-t border-border/50 bg-background/97 backdrop-blur-md">
+        <div className="md:hidden border-t border-border/50 bg-white">
           <nav className="flex flex-col px-5 py-3 gap-1">
             {navLinks.map(({ href, label, icon }) => {
               const Icon = IconMap[icon] || Home;
