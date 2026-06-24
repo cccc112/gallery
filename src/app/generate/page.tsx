@@ -160,8 +160,12 @@ export default function GeneratePage() {
       form.append('art_type', 'digital');
 
       const res = await fetch('/api/artworks/upload-ai', { method: 'POST', body: form });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || '上傳失敗');
+      const rawText = await res.text();
+      let data: any = {};
+      try { data = JSON.parse(rawText); } catch {
+        throw new Error(`伺服器錯誤（${res.status}）：${rawText.slice(0, 120)}`);
+      }
+      if (!res.ok) throw new Error(data.error || `上傳失敗（${res.status}）`);
 
       setUploadState('done');
       setTimeout(() => router.push(`/admin/new?draft=${data.artworkId}`), 1200);
