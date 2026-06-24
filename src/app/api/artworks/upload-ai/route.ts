@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     const arrayBuf = await file.arrayBuffer();
 
     const { error: uploadErr } = await supabase.storage
-      .from('artworks')
+      .from('artwork-images')
       .upload(storagePath, arrayBuf, {
         contentType: 'image/png',
         upsert: false,
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 2. 取得公開 URL
-    const { data: urlData } = supabase.storage.from('artworks').getPublicUrl(storagePath);
+    const { data: urlData } = supabase.storage.from('artwork-images').getPublicUrl(storagePath);
     const publicUrl = urlData.publicUrl;
 
     // 3. 在 artworks 表建立草稿記錄
