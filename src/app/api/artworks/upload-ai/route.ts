@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
         description,
         art_type: artType,
         preview_file_url: publicUrl,
-        price: null,
+        price: 0,           // 草稿用 0，上架前在 admin 頁面更新
         is_rentable: false,
         created_at: new Date().toISOString(),
       })
