@@ -151,22 +151,22 @@ export default function Footer() {
             </h4>
             <ul className="space-y-3 font-light text-sm">
               <li>
-                <Link href="#" className="text-primary-foreground/70 hover:text-primary-foreground transition-colors">
+                <Link href="/contact" className="text-primary-foreground/70 hover:text-primary-foreground transition-colors">
                   聯絡我們
                 </Link>
               </li>
               <li>
-                <Link href="#" className="text-primary-foreground/70 hover:text-primary-foreground transition-colors">
+                <Link href="/shipping" className="text-primary-foreground/70 hover:text-primary-foreground transition-colors">
                   運送與退還政策
                 </Link>
               </li>
               <li>
-                <Link href="#" className="text-primary-foreground/70 hover:text-primary-foreground transition-colors">
+                <Link href="/consulting" className="text-primary-foreground/70 hover:text-primary-foreground transition-colors">
                   藝術諮詢服務
                 </Link>
               </li>
               <li>
-                <Link href="#" className="text-primary-foreground/70 hover:text-primary-foreground transition-colors">
+                <Link href="/faq" className="text-primary-foreground/70 hover:text-primary-foreground transition-colors">
                   常見問題 FAQ
                 </Link>
               </li>
@@ -191,10 +191,10 @@ export default function Footer() {
             &copy; {new Date().getFullYear()} Atelier Blanc. All rights reserved. 買賣與租賃雙軌制線上藝廊
           </p>
           <div className="flex items-center gap-6 text-xs text-primary-foreground/50">
-            <Link href="#" className="hover:text-primary-foreground/70 transition-colors">
+            <Link href="/faq#privacy" className="hover:text-primary-foreground/70 transition-colors">
               隱私權政策
             </Link>
-            <Link href="#" className="hover:text-primary-foreground/70 transition-colors">
+            <Link href="/faq#terms" className="hover:text-primary-foreground/70 transition-colors">
               服務條款
             </Link>
           </div>

@@ -56,7 +56,6 @@ export async function POST(req: NextRequest) {
         description,
         art_type: artType,
         preview_file_url: publicUrl,
-        full_file_url: publicUrl,
         price: null,
         is_rentable: false,
         created_at: new Date().toISOString(),
