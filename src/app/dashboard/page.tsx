@@ -30,7 +30,7 @@ export default async function DashboardPage() {
     orders = await sql`
       SELECT
         o.id, o.artwork_id, o.amount, o.payment_status,
-        o.stripe_payment_intent_id, o.created_at,
+        o.payment_transaction_id, o.created_at,
         a.title, a.art_type, a.preview_file_url, a.high_res_file_url
       FROM public.orders o
       JOIN public.artworks a ON o.artwork_id = a.id
@@ -98,13 +98,13 @@ export default async function DashboardPage() {
   let totalCryptoRevenue = 0;
   try {
     const revRows = await sql`
-      SELECT amount, stripe_payment_intent_id
+      SELECT amount, payment_transaction_id
       FROM public.orders o
       JOIN public.artworks a ON o.artwork_id = a.id
       WHERE a.artist_id = ${user.id} AND o.payment_status = 'paid'
     `;
     for (const row of revRows) {
-      const txId = row.stripe_payment_intent_id || '';
+      const txId = row.payment_transaction_id || '';
       const amt = Number(row.amount);
       if (txId.startsWith('0x') || txId.startsWith('0xMOCK')) {
         totalCryptoRevenue += amt;

@@ -15,7 +15,7 @@ interface OrderRow {
   artwork_id: string;
   amount: number;
   payment_status: string;
-  stripe_payment_intent_id: string;
+  payment_transaction_id: string;
   created_at: string;
   title: string;
   art_type: string;
@@ -154,7 +154,7 @@ function CollectionTab({ orders, rentals }: { orders: OrderRow[]; rentals: Renta
                   <div className="flex items-center gap-2 flex-wrap">
                     <p className="text-sm font-semibold text-foreground truncate">{o.title}</p>
                     <TypeBadge type={o.art_type} />
-                    <PayBadge txId={o.stripe_payment_intent_id} />
+                    <PayBadge txId={o.payment_transaction_id} />
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
                     {fmtDate(o.created_at)} · {fmt(Number(o.amount))}

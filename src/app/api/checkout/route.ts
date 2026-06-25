@@ -1,20 +1,26 @@
 import { NextResponse } from 'next/server';
 import { sql } from '@/lib/db';
-import { stripe, isStripeConfigured } from '@/lib/stripe';
 import { createClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
+function generateTradeNo() {
+  const date = new Date();
+  const timestamp = date.getTime().toString().slice(-8); // 後 8 碼
+  const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+  return `AB${timestamp}${random}`; // 長度 14，綠界限制為 20 以內
+}
+
 export async function POST(request: Request) {
   try {
-    // 1. 驗證登入狀態（Supabase Auth）
+    // 1. 驗證登入狀態
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       return NextResponse.json({ error: '請先登入才能結帳' }, { status: 401 });
     }
 
-    // 2. 解析請求（支援 JSON 與 FormData）
+    // 2. 解析請求
     let artworkId: string, actionType: string;
     const contentType = request.headers.get('content-type') || '';
 
@@ -39,131 +45,52 @@ export async function POST(request: Request) {
     }
     const artwork = artworks[0];
 
-    const host = request.headers.get('host') || 'localhost:3000';
-    const proto = process.env.NODE_ENV === 'production' ? 'https' : 'http';
-    const baseUrl = `${proto}://${host}`;
-    const successUrl = `${baseUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}&artworkId=${artworkId}&type=${actionType}&art_type=${artwork.art_type}`;
-    const cancelUrl = `${baseUrl}/artwork/${artworkId}?cancelled=true`;
-
-    // 4. 若 Stripe key 未設定，走 Mock 模式
-    if (!isStripeConfigured()) {
-      console.log('[Mock Checkout] Stripe key not configured, redirecting to mock success.');
-      const mockUrl = `${baseUrl}/checkout/success?mock=true&artworkId=${artworkId}&type=${actionType}&art_type=${artwork.art_type}`;
-      return NextResponse.json({ url: mockUrl });
-    }
-
     const isRental = actionType === 'rent';
-    const isPhysical = artwork.art_type === 'physical';
+    const tradeNo = generateTradeNo();
 
-    // 5. 建構 Line Items
-    const lineItems: any[] = [];
-
+    // 4. 計算金額並寫入 Pending 訂單
     if (isRental) {
-      const rentAmount = Math.round(Number(artwork.monthly_rent_price) * 100);
-      const depositAmount = Math.round(Number(artwork.deposit_amount) * 100);
+      const rentAmount = Math.round(Number(artwork.monthly_rent_price));
+      const depositAmount = Math.round(Number(artwork.deposit_amount));
 
       if (!rentAmount || !depositAmount) {
         return NextResponse.json({ error: '此作品未設定租賃金額' }, { status: 400 });
       }
+      
+      const rentalMonths = 1;
+      const startDate = new Date().toISOString().slice(0, 10);
+      const endDate = new Date(Date.now() + rentalMonths * 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
-      lineItems.push({
-        price_data: {
-          currency: 'twd',
-          product_data: {
-            name: `${artwork.title} — 首月租金`,
-            description: '短期租賃首月租金（之後按月自動扣款）',
-          },
-          unit_amount: rentAmount,
-        },
-        quantity: 1,
-      });
-
-      lineItems.push({
-        price_data: {
-          currency: 'twd',
-          product_data: {
-            name: `${artwork.title} — 租賃押金`,
-            description: '租賃押金（保管期間預授權；歸還無損則全額退還）',
-          },
-          unit_amount: depositAmount,
-        },
-        quantity: 1,
-      });
+      await sql`
+        INSERT INTO public.rentals (
+          artwork_id, tenant_id, start_date, end_date,
+          monthly_rent, deposit_amount, status, created_at, payment_transaction_id
+        ) VALUES (
+          ${artworkId}, ${user.id},
+          ${startDate}, ${endDate},
+          ${rentAmount}, ${depositAmount},
+          ${'pending'}, NOW(), ${tradeNo}
+        )
+      `;
     } else {
-      const purchaseAmount = Math.round(Number(artwork.price) * 100);
+      const purchaseAmount = Math.round(Number(artwork.price));
       if (!purchaseAmount) {
         return NextResponse.json({ error: '此作品未設定售價' }, { status: 400 });
       }
-      lineItems.push({
-        price_data: {
-          currency: 'twd',
-          product_data: {
-            name: `${artwork.title}（買斷收藏）`,
-            description: isPhysical
-              ? '實體藝術品 · 含安全包裝與運輸保險'
-              : '數位藝術品 · 付款後可下載高解析度原檔',
-          },
-          unit_amount: purchaseAmount,
-        },
-        quantity: 1,
-      });
+
+      await sql`
+        INSERT INTO public.orders (
+          artwork_id, buyer_id, amount,
+          payment_status, payment_transaction_id, created_at
+        ) VALUES (
+          ${artworkId}, ${user.id}, ${purchaseAmount},
+          ${'pending'}, ${tradeNo}, NOW()
+        )
+      `;
     }
 
-    // ── 加入 10% 平台服務費 ──────────────────────────
-    const PLATFORM_FEE_RATE = 0.10;
-    const subtotal = lineItems.reduce((sum, item) => sum + item.price_data.unit_amount * item.quantity, 0);
-    const platformFee = Math.round(subtotal * PLATFORM_FEE_RATE);
-    if (platformFee > 0) {
-      lineItems.push({
-        price_data: {
-          currency: 'twd',
-          product_data: {
-            name: 'Atelier Blanc 平台服務費',
-            description: '安全交易、版權保護、平台維運費用（10%）',
-          },
-          unit_amount: platformFee,
-        },
-        quantity: 1,
-      });
-    }
-
-    // 6. Stripe Checkout Session 設定
-    const sessionConfig: any = {
-      payment_method_types: ['card'],
-      line_items: lineItems,
-      mode: 'payment',
-      success_url: successUrl,
-      cancel_url: cancelUrl,
-      customer_email: user.email,
-      metadata: {
-        artwork_id: artworkId,
-        buyer_id: user.id,
-        checkout_type: actionType,
-      },
-    };
-
-    // 實體或租賃 → 收集收件地址
-    if (isPhysical || isRental) {
-      sessionConfig.shipping_address_collection = {
-        allowed_countries: ['TW', 'HK', 'US', 'JP', 'SG'],
-      };
-    }
-
-    // 租賃 → 押金使用 manual capture（預授權，不立即請款）
-    if (isRental) {
-      sessionConfig.payment_intent_data = {
-        capture_method: 'manual',
-        metadata: {
-          rental_deposit: String(artwork.deposit_amount),
-          rental_months: '1',
-        },
-      };
-    }
-
-    const session = await stripe.checkout.sessions.create(sessionConfig);
-
-    // 7. 回傳 session URL（前端使用 window.location.href 跳轉）
-    return NextResponse.json({ url: session.url });
+    // 5. 回傳跳轉至中繼頁面的 URL
+    return NextResponse.json({ url: `/checkout/ecpay?tradeNo=${tradeNo}` });
   } catch (error: any) {
     console.error('[Checkout Error]', error);
     return NextResponse.json(
