@@ -54,10 +54,12 @@ export async function POST(req: NextRequest) {
         artist_id: user.id,
         title,
         description,
-        art_type: artType,
+        art_type: 'digital',       // constraint 只允許 physical/digital
         preview_file_url: publicUrl,
-        price: 0,           // 草稿用 0，上架前在 admin 頁面更新
+        high_res_file_url: publicUrl, // constraint 要求 digital 必須有此欄位
+        price: 0,
         is_rentable: false,
+        // 確保 width/height/depth/weight/stock 都是 NULL（constraint 要求）
         created_at: new Date().toISOString(),
       })
       .select('id')

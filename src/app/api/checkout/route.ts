@@ -42,13 +42,13 @@ export async function POST(request: Request) {
     const host = request.headers.get('host') || 'localhost:3000';
     const proto = process.env.NODE_ENV === 'production' ? 'https' : 'http';
     const baseUrl = `${proto}://${host}`;
-    const successUrl = `${baseUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}&artworkId=${artworkId}&type=${actionType}`;
+    const successUrl = `${baseUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}&artworkId=${artworkId}&type=${actionType}&art_type=${artwork.art_type}`;
     const cancelUrl = `${baseUrl}/artwork/${artworkId}?cancelled=true`;
 
     // 4. 若 Stripe key 未設定，走 Mock 模式
     if (!isStripeConfigured()) {
       console.log('[Mock Checkout] Stripe key not configured, redirecting to mock success.');
-      const mockUrl = `${baseUrl}/checkout/success?mock=true&artworkId=${artworkId}&type=${actionType}`;
+      const mockUrl = `${baseUrl}/checkout/success?mock=true&artworkId=${artworkId}&type=${actionType}&art_type=${artwork.art_type}`;
       return NextResponse.json({ url: mockUrl });
     }
 
