@@ -3,8 +3,6 @@
 import { useChat } from '@ai-sdk/react';
 import { useState, useEffect, useRef } from 'react';
 import { Loader2, Bot, Send, BarChart3, Users, MessageSquare, TrendingUp } from 'lucide-react';
-import Navbar from '@/components/Navbar';
-import { Footer } from '@/components/Footer';
 
 export default function AdminDashboard() {
   const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
@@ -32,8 +30,6 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen flex flex-col bg-stone-50">
-      <Navbar />
-      
       <main className="flex-1 container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-2xl font-serif font-bold text-foreground">管理員戰情室 (Super Admin)</h1>
@@ -131,8 +127,6 @@ export default function AdminDashboard() {
           </div>
         </div>
       </main>
-
-      <Footer />
     </div>
   );
 }
