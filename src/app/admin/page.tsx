@@ -1,9 +1,9 @@
 'use client';
 
-import { useChat } from 'ai/react';
+import { useChat } from '@ai-sdk/react';
 import { useState, useEffect, useRef } from 'react';
 import { Loader2, Bot, Send, BarChart3, Users, MessageSquare, TrendingUp } from 'lucide-react';
-import { DashboardNavbar } from '@/components/DashboardNavbar';
+import Navbar from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 
 export default function AdminDashboard() {
@@ -32,7 +32,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen flex flex-col bg-stone-50">
-      <DashboardNavbar />
+      <Navbar />
       
       <main className="flex-1 container mx-auto px-4 py-8">
         <div className="mb-8">

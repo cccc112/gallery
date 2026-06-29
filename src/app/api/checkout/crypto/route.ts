@@ -29,7 +29,7 @@ async function verifyTransaction(txHash: string, chainId: number): Promise<{
 
   try {
     const client = createPublicClient({ chain, transport: http() });
-    const receipt = await client.getTransactionReceipt({ hash: txHash as \`0x\${string}\` });
+    const receipt = await client.getTransactionReceipt({ hash: txHash as any });
     
     // 基礎驗證：確認交易在區塊鏈上成功
     // (進階實作應 parseLog 驗證 To Address 與 Amount 是否相符)
