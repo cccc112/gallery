@@ -1,16 +1,44 @@
 'use client';
 
-import { useChat } from '@ai-sdk/react';
 import { useState, useEffect, useRef } from 'react';
 import { Loader2, Bot, Send, BarChart3, Users, MessageSquare, TrendingUp } from 'lucide-react';
 
+type Message = { id: string; role: 'user' | 'assistant'; content: string };
+
 export default function AdminDashboard() {
-  const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
-    api: '/api/chat',
-    initialMessages: [
-      { id: '1', role: 'assistant', content: '您好！我是 Atelier Blanc 的 AI 營運助理。我可以幫您分析全站流量、銷售數據，或是草擬客服回覆。請問今天需要什麼協助？' }
-    ]
-  });
+  const [messages, setMessages] = useState<Message[]>([
+    { id: '1', role: 'assistant', content: '您好！我是 Atelier Blanc 的 AI 營運助理。我可以幫您分析全站流量、銷售數據，或是草擬客服回覆。請問今天需要什麼協助？' }
+  ]);
+  const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim() || isLoading) return;
+    const userMsg: Message = { id: Date.now().toString(), role: 'user', content: input };
+    setMessages(prev => [...prev, userMsg]);
+    setInput('');
+    setIsLoading(true);
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: [...messages, userMsg].map(m => ({ role: m.role, content: m.content })) }),
+      });
+      // Read plain text response (non-streaming fallback)
+      const text = await res.text();
+      // Strip SSE data prefixes if present
+      const content = text.split('\n')
+        .filter(l => l.startsWith('0:'))
+        .map(l => l.slice(3).replace(/^"/, '').replace(/"$/, '').replace(/\\n/g, '\n'))
+        .join('') || text;
+      setMessages(prev => [...prev, { id: Date.now().toString(), role: 'assistant', content: content || '抱歉，目前無法連接 AI 服務，請確認 GOOGLE_GENERATIVE_AI_API_KEY 已設定。' }]);
+    } catch {
+      setMessages(prev => [...prev, { id: Date.now().toString(), role: 'assistant', content: '連線失敗，請稍後再試。' }]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -84,7 +112,7 @@ export default function AdminDashboard() {
               <div>
                 <h2 className="text-sm font-semibold text-foreground">AI 營運助理</h2>
                 <p className="text-[10px] text-emerald-600 flex items-center gap-1">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 inline-block" /> 在線中 (Gemini 3.1 Pro)
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 inline-block" /> 在線中 (Gemini 1.5 Pro)
                 </p>
               </div>
             </div>
@@ -112,7 +140,7 @@ export default function AdminDashboard() {
             <form onSubmit={handleSubmit} className="p-3 border-t border-border bg-white flex gap-2">
               <input
                 value={input}
-                onChange={handleInputChange}
+                onChange={e => setInput(e.target.value)}
                 placeholder="輸入指令，例如：幫我分析這週的銷售狀況..."
                 className="flex-1 text-sm bg-stone-50 border border-border rounded-sm px-3 py-2 outline-none focus:border-primary transition-colors"
               />

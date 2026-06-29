@@ -1,6 +1,5 @@
 import { google } from '@ai-sdk/google';
 import { streamText } from 'ai';
-import { sql } from '@/lib/db';
 
 export const maxDuration = 30;
 
@@ -19,7 +18,7 @@ export async function POST(req: Request) {
 請用繁體中文，並以專業、友善且精簡的語氣回覆。如果用戶要求你分析銷售狀況，你可以用上方的假資料進行生動的分析。如果用戶要求處理客訴，你可以草擬一段得體的回覆。`,
     });
 
-    return result.toDataStreamResponse();
+    return result.toTextStreamResponse();
   } catch (error: any) {
     console.error('Chat API Error:', error);
     return new Response('Error', { status: 500 });

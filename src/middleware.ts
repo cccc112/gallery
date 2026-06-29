@@ -49,6 +49,17 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  // 額外保護 /admin：只允許白名單 email 進入
+  const isAdmin = request.nextUrl.pathname.startsWith('/admin');
+  if (isAdmin && user) {
+    const adminEmails = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase());
+    if (!adminEmails.includes((user.email || '').toLowerCase())) {
+      const url = request.nextUrl.clone();
+      url.pathname = '/';
+      return NextResponse.redirect(url);
+    }
+  }
+
   return supabaseResponse;
 }
 
