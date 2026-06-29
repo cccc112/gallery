@@ -11,6 +11,7 @@ import {
   AlertTriangle, ExternalLink,
 } from 'lucide-react';
 import { PLATFORM_WALLET, USDC_CONTRACTS, USDC_ABI } from '@/lib/wagmi';
+import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 
 type ActionType = 'buy' | 'rent';
 type PaymentMethod = 'card' | 'crypto';
@@ -83,8 +84,8 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
   // Reset on open
   useEffect(() => {
     if (isOpen) {
-      setStep('crypto-confirm');
-      setPayMethod('crypto');
+      setStep('select');
+      setPayMethod(null);
       setErrorMsg('');
       setPendingTxHash(undefined);
       setForm({ name: '', phone: '', address: '', city: '', zip: '', cardNumber: '', cardExpiry: '', cardCvc: '' });
@@ -105,6 +106,39 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isTxConfirmed, pendingTxHash]);
+
+  // ── PayPal Checkout ──
+  const handlePayPalCreateOrder = async () => {
+    const res = await fetch('/api/checkout/paypal', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'create', artworkId: artwork.id, actionType }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to create order');
+    return data.id;
+  };
+
+  const handlePayPalApprove = async (data: any) => {
+    setStep('processing');
+    setPayMethod('card');
+    try {
+      const res = await fetch('/api/checkout/paypal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'capture', artworkId: artwork.id, orderID: data.orderID, actionType }),
+      });
+      const captureData = await res.json();
+      if (!res.ok) throw new Error(captureData.error || 'Failed to capture');
+      
+      setTxId(captureData.captureId);
+      setSuccessMsg('PayPal 付款成功');
+      setStep('success');
+    } catch (err: any) {
+      setErrorMsg(err.message || 'PayPal 授權失敗');
+      setStep('error');
+    }
+  };
 
   // ── Stripe Checkout redirect ──
   const handleStripeCheckout = async () => {
@@ -238,10 +272,47 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
 
         <div className="flex-1 overflow-y-auto">
 
-          {/* ── 選擇付款方式 (已隱藏，全站改走 Web3) ── */}
+          {/* ── 選擇付款方式 ── */}
           {step === 'select' && (
             <div className="p-6 space-y-3">
-              <p className="text-xs text-muted-foreground mb-3 font-light">正在進入 Web3 結帳流程...</p>
+              <p className="text-xs text-muted-foreground mb-3 font-light">請選擇您的付款方式：</p>
+
+              {/* PayPal */}
+              <div className="w-full relative z-10 border border-border rounded-sm bg-white p-4 hover:border-primary/40 transition-all">
+                <p className="text-sm font-semibold text-foreground mb-2">信用卡 / PayPal</p>
+                <PayPalScriptProvider options={{ clientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || "test", currency: "USD" }}>
+                    <PayPalButtons 
+                        createOrder={handlePayPalCreateOrder}
+                        onApprove={handlePayPalApprove}
+                        style={{ layout: "horizontal", height: 40 }}
+                        onError={(err) => { setErrorMsg("PayPal 元件載入失敗或取消交易"); setStep('error'); }}
+                    />
+                </PayPalScriptProvider>
+              </div>
+
+              {/* Web3 */}
+              <button
+                onClick={() => { setPayMethod('crypto'); setStep('crypto-confirm'); }}
+                className="w-full flex items-center gap-4 p-4 border border-border rounded-sm bg-white/60 hover:bg-white hover:border-purple-300 hover:shadow-sm transition-all group text-left"
+              >
+                <div className="h-10 w-10 rounded-full bg-purple-50 flex items-center justify-center border border-purple-100 flex-shrink-0">
+                  <Wallet className="h-5 w-5 text-purple-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-foreground">Web3 錢包支付</p>
+                  <p className="text-xs text-muted-foreground font-light">
+                    MetaMask / WalletConnect · <span className="font-semibold text-purple-600">{usdcAmount}</span>
+                  </p>
+                </div>
+                {isConnected ? (
+                  <div className="flex items-center gap-1.5 text-[10px] text-emerald-600 font-semibold">
+                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                    已連接
+                  </div>
+                ) : (
+                  <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+                )}
+              </button>
             </div>
           )}
 
@@ -314,8 +385,8 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
                 <Wallet className="h-4 w-4" />
                 {isConnected ? `發送 ${usdcAmount}` : '連接錢包並支付'}
               </button>
-              <button type="button" onClick={onClose} className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors py-1">
-                取消結帳
+              <button type="button" onClick={() => setStep('select')} className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors py-1">
+                ← 返回選擇付款方式
               </button>
             </div>
           )}
@@ -407,9 +478,9 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
                 <p className="font-serif text-lg font-semibold text-foreground">付款未完成</p>
                 <p className="text-sm text-rose-600 font-light mt-1.5 leading-relaxed">{errorMsg}</p>
               </div>
-              <button onClick={onClose}
+              <button onClick={() => setStep('select')}
                 className="w-full rounded-sm border border-border py-3 text-sm font-semibold text-foreground hover:bg-secondary/50 transition-colors">
-                關閉
+                重新選擇付款方式
               </button>
               <button onClick={onClose} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
                 取消

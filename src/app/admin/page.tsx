@@ -1,289 +1,138 @@
-import Link from 'next/link';
-import { sql } from '@/lib/db';
-import { createClient } from '@/lib/supabase/server';
-import { redirect } from 'next/navigation';
-import {
-  Plus, ShoppingCart, Layers, Calendar, User, ShieldAlert, BadgeCheck
-} from 'lucide-react';
+'use client';
 
-export const revalidate = 0; // 停用快取以呈現最新管理數據
+import { useChat } from 'ai/react';
+import { useState, useEffect, useRef } from 'react';
+import { Loader2, Bot, Send, BarChart3, Users, MessageSquare, TrendingUp } from 'lucide-react';
+import { DashboardNavbar } from '@/components/DashboardNavbar';
+import { Footer } from '@/components/Footer';
 
-export default async function AdminDashboard() {
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect('/login?redirectTo=/admin');
+export default function AdminDashboard() {
+  const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
+    api: '/api/chat',
+    initialMessages: [
+      { id: '1', role: 'assistant', content: '您好！我是 Atelier Blanc 的 AI 營運助理。我可以幫您分析全站流量、銷售數據，或是草擬客服回覆。請問今天需要什麼協助？' }
+    ]
+  });
 
-  // 從 DB 取得 role
-  let userRole = 'buyer';
-  try {
-    const rows = await sql`SELECT role FROM public.users WHERE id = ${user.id} LIMIT 1`;
-    userRole = rows[0]?.role || 'buyer';
-  } catch {}
+  const scrollRef = useRef<HTMLDivElement>(null);
 
-  let artworks: any[] = [];
-  let orders: any[] = [];
-  let rentals: any[] = [];
-  let hasError = false;
+  // 假資料用作圖表展示
+  const mockStats = [
+    { title: '今日訪客', value: '1,284', icon: <Users className="h-4 w-4" />, change: '+12%' },
+    { title: '本週銷售額', value: '$84,500', icon: <TrendingUp className="h-4 w-4" />, change: '+5.4%' },
+    { title: '待處理客訴', value: '3', icon: <MessageSquare className="h-4 w-4" />, change: '-2' },
+    { title: '轉換率', value: '2.8%', icon: <BarChart3 className="h-4 w-4" />, change: '+0.4%' },
+  ];
 
-  try {
-    artworks = await sql`
-      SELECT a.*, u.display_name as artist_name 
-      FROM public.artworks a
-      JOIN public.users u ON a.artist_id = u.id
-      ORDER BY a.created_at DESC
-    `;
-
-    orders = await sql`
-      SELECT o.*, a.title as artwork_title, u.display_name as buyer_name
-      FROM public.orders o
-      JOIN public.artworks a ON o.artwork_id = a.id
-      JOIN public.users u ON o.buyer_id = u.id
-      ORDER BY o.created_at DESC
-    `;
-
-    rentals = await sql`
-      SELECT r.*, a.title as artwork_title, u.display_name as tenant_name
-      FROM public.rentals r
-      JOIN public.artworks a ON r.artwork_id = a.id
-      JOIN public.users u ON r.tenant_id = u.id
-      ORDER BY r.created_at DESC
-    `;
-  } catch (err: any) {
-    console.error('Failed to load admin dashboard data:', err);
-    hasError = true;
-  }
-
-  const formatPrice = (price: number | null) => {
-    if (price === null) return '-';
-    return new Intl.NumberFormat("zh-TW", {
-      style: "currency",
-      currency: "TWD",
-      minimumFractionDigits: 0,
-    }).format(price);
-  };
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages]);
 
   return (
-    <div className="marble-bg min-h-screen">
-      <div className="mx-auto max-w-7xl px-6 lg:px-8 py-10">
-        {/* Role Notice */}
-        <div className={`mb-8 p-4 rounded-xl border flex items-start gap-3 text-sm shadow-sm ${
-          userRole === 'artist'
-            ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
-            : 'bg-amber-50 border-amber-200 text-amber-800'
-        }`}>
-          {userRole === 'artist' ? (
-            <>
-              <BadgeCheck className="h-5 w-5 shrink-0 mt-0.5 text-emerald-600" />
-              <div>
-                <p className="font-semibold text-emerald-950">藝術家帳號</p>
-                <p className="text-xs text-emerald-800/90 mt-0.5">您已具備完整管理權限，包括上架藝術品、查看交易/租用合約狀態。</p>
-              </div>
-            </>
-          ) : (
-            <>
-              <ShieldAlert className="h-5 w-5 shrink-0 mt-0.5 text-amber-600" />
-              <div>
-                <p className="font-semibold text-amber-950">買家帳號</p>
-                <p className="text-xs text-amber-800/90 mt-0.5">您目前是買家身分，僅供查閱。上架作品請聯絡管理員開通藝術家權限。</p>
-              </div>
-            </>
-          )}
+    <div className="min-h-screen flex flex-col bg-stone-50">
+      <DashboardNavbar />
+      
+      <main className="flex-1 container mx-auto px-4 py-8">
+        <div className="mb-8">
+          <h1 className="text-2xl font-serif font-bold text-foreground">管理員戰情室 (Super Admin)</h1>
+          <p className="text-sm text-muted-foreground mt-1">流量監控、自動化數據分析與客服助理</p>
         </div>
 
-        {/* Title Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-10">
-          <div>
-            <h1 className="text-3xl font-serif font-semibold tracking-tight text-foreground">藝廊控制台</h1>
-            <p className="mt-2 text-sm text-muted-foreground font-light">管理所有的藝術品上架、純買賣訂單與短期租賃合約。</p>
-          </div>
-          {userRole === 'artist' && (
-            <Link
-              href="/admin/new"
-              className="rounded-lg bg-primary text-primary-foreground hover:bg-primary/95 px-5 py-2.5 text-sm font-semibold shadow-sm transition-all flex items-center justify-center gap-1.5 self-start"
-            >
-              <Plus className="h-4 w-4" />
-              上架新藝術品
-            </Link>
-          )}
+        {/* 流量與數據監控區塊 */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+          {mockStats.map((stat, i) => (
+            <div key={i} className="bg-white p-5 border border-border rounded-sm shadow-sm flex flex-col">
+              <div className="flex items-center justify-between text-muted-foreground mb-4">
+                <span className="text-sm font-medium">{stat.title}</span>
+                {stat.icon}
+              </div>
+              <div className="flex items-baseline gap-2 mt-auto">
+                <span className="text-2xl font-bold text-foreground">{stat.value}</span>
+                <span className={`text-xs font-semibold ${stat.change.startsWith('+') ? 'text-emerald-600' : 'text-rose-600'}`}>
+                  {stat.change}
+                </span>
+              </div>
+            </div>
+          ))}
         </div>
 
-        {hasError && (
-          <div className="bg-red-50 border border-red-200 p-4 rounded-xl text-sm text-red-700 mb-8">
-            資料載入失敗，請稍後再試或聯絡管理員。
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[600px]">
+          {/* 左側：數據圖表 (Mock) */}
+          <div className="lg:col-span-2 bg-white border border-border rounded-sm shadow-sm p-6 flex flex-col">
+            <h2 className="text-base font-semibold mb-6 flex items-center gap-2">
+              <BarChart3 className="h-5 w-5" /> 網站流量與轉換趨勢
+            </h2>
+            <div className="flex-1 relative border border-dashed border-border/50 rounded-sm bg-stone-50/50 flex items-end justify-between p-4 gap-2">
+              {/* 簡單 CSS 柱狀圖示意 */}
+              {[40, 65, 45, 80, 55, 90, 70].map((h, i) => (
+                <div key={i} className="w-full bg-primary/20 hover:bg-primary/40 transition-colors rounded-t-sm relative group" style={{ height: `${h}%` }}>
+                  <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-foreground text-background text-xs px-2 py-1 rounded-sm opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap">
+                    數值: {h * 12}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-between text-xs text-muted-foreground mt-2 px-2">
+              <span>週一</span><span>週二</span><span>週三</span><span>週四</span><span>週五</span><span>週六</span><span>週日</span>
+            </div>
           </div>
-        )}
 
-        {/* Tables list */}
-        <div className="space-y-12">
-          {/* Table 1: Artworks */}
-          <section className="bg-card rounded-xl border border-border/80 p-6 shadow-sm">
-            <div className="flex items-center gap-2 mb-6 border-b border-border/40 pb-4">
-              <Layers className="h-5 w-5 text-muted-foreground" />
-              <h2 className="text-lg font-serif font-semibold text-foreground">上架畫作管理 ({artworks.length})</h2>
+          {/* 右側：AI Agent 聊天室 */}
+          <div className="bg-white border border-border rounded-sm shadow-sm flex flex-col overflow-hidden">
+            <div className="p-4 border-b border-border bg-stone-50 flex items-center gap-3">
+              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                <Bot className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h2 className="text-sm font-semibold text-foreground">AI 營運助理</h2>
+                <p className="text-[10px] text-emerald-600 flex items-center gap-1">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 inline-block" /> 在線中 (Gemini 3.1 Pro)
+                </p>
+              </div>
             </div>
             
-            {artworks.length === 0 ? (
-              <p className="text-muted-foreground text-xs py-6 text-center">目前尚無上架作品。</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs border-collapse">
-                  <thead>
-                    <tr className="border-b border-border text-muted-foreground pb-3 font-semibold uppercase tracking-wider">
-                      <th className="py-3 px-2">預覽</th>
-                      <th className="py-3 px-2">作品名稱</th>
-                      <th className="py-3 px-2">藝術家</th>
-                      <th className="py-3 px-2">類型</th>
-                      <th className="py-3 px-2">買斷售價</th>
-                      <th className="py-3 px-2">可租賃</th>
-                      <th className="py-3 px-2">租金/押金</th>
-                      <th className="py-3 px-2">庫存狀態</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border/40 text-foreground font-light">
-                    {artworks.map((art: any) => (
-                      <tr key={art.id} className="hover:bg-secondary/30 transition-colors">
-                        <td className="py-3 px-2">
-                          <img src={art.preview_file_url} alt="" className="h-10 w-12 object-cover rounded border border-border bg-stone-50" />
-                        </td>
-                        <td className="py-3 px-2 font-bold text-foreground font-serif text-sm">{art.title}</td>
-                        <td className="py-3 px-2 text-muted-foreground">{art.artist_name}</td>
-                        <td className="py-3 px-2">
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${art.art_type === 'physical' ? 'bg-amber-50 text-amber-700 border border-amber-100' : 'bg-blue-50 text-blue-700 border border-blue-100'}`}>
-                            {art.art_type === 'physical' ? '實體' : '數位'}
-                          </span>
-                        </td>
-                        <td className="py-3 px-2 font-mono font-medium">
-                          {art.price ? formatPrice(Number(art.price)) : '非賣品'}
-                        </td>
-                        <td className="py-3 px-2">
-                          <span className={`px-2 py-0.5 rounded text-[10px] ${art.is_rentable ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-stone-100 text-stone-400'}`}>
-                            {art.is_rentable ? '是' : '否'}
-                          </span>
-                        </td>
-                        <td className="py-3 px-2 font-mono text-muted-foreground">
-                          {art.is_rentable 
-                            ? `${formatPrice(Number(art.monthly_rent_price))} / ${formatPrice(Number(art.deposit_amount))}` 
-                            : '-'
-                          }
-                        </td>
-                        <td className="py-3 px-2 text-muted-foreground">
-                          {art.art_type === 'physical' ? `庫存 ${art.stock} 件` : '雲端安全存儲'}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </section>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Table 2: Orders */}
-            <section className="bg-card rounded-xl border border-border/80 p-6 shadow-sm">
-              <div className="flex items-center gap-2 mb-6 border-b border-border/40 pb-4">
-                <ShoppingCart className="h-5 w-5 text-muted-foreground" />
-                <h2 className="text-lg font-serif font-semibold text-foreground">買斷交易紀錄 ({orders.length})</h2>
-              </div>
-              
-              {orders.length === 0 ? (
-                <p className="text-muted-foreground text-xs py-6 text-center">目前尚無成交紀錄。</p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs border-collapse">
-                    <thead>
-                      <tr className="border-b border-border text-muted-foreground font-semibold uppercase tracking-wider">
-                        <th className="pb-3 px-2">收藏買家</th>
-                        <th className="pb-3 px-2">購買畫作</th>
-                        <th className="pb-3 px-2">成交金額</th>
-                        <th className="pb-3 px-2">付款狀態</th>
-                        <th className="pb-3 px-2">成交日期</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border/40 text-foreground font-light">
-                      {orders.map((order: any) => (
-                        <tr key={order.id} className="hover:bg-secondary/30 transition-colors">
-                          <td className="py-3 px-2 flex items-center gap-1.5 font-medium">
-                            <User className="h-3 w-3 text-muted-foreground" />
-                            {order.buyer_name}
-                          </td>
-                          <td className="py-3 px-2 text-foreground font-serif">{order.artwork_title}</td>
-                          <td className="py-3 px-2 font-mono font-bold text-foreground">{formatPrice(Number(order.amount))}</td>
-                          <td className="py-3 px-2">
-                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                              order.payment_status === 'paid'
-                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
-                                : order.payment_status === 'pending'
-                                ? 'bg-amber-50 text-amber-700 border border-amber-100'
-                                : 'bg-stone-100 text-stone-500'
-                            }`}>
-                              {order.payment_status === 'paid' ? '已付款' : order.payment_status === 'pending' ? '待付款' : order.payment_status}
-                            </span>
-                          </td>
-                          <td className="py-3 px-2 text-muted-foreground">
-                            {new Date(order.created_at).toLocaleDateString('zh-TW')}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+            <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 bg-stone-50/30">
+              {messages.map(m => (
+                <div key={m.id} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`max-w-[85%] rounded-md px-4 py-2.5 text-sm ${
+                    m.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-white border border-border text-foreground shadow-sm'
+                  }`}>
+                    <p className="whitespace-pre-wrap leading-relaxed">{m.content}</p>
+                  </div>
+                </div>
+              ))}
+              {isLoading && (
+                <div className="flex justify-start">
+                  <div className="bg-white border border-border rounded-md px-4 py-3 flex items-center gap-2 shadow-sm">
+                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">正在分析資料...</span>
+                  </div>
                 </div>
               )}
-            </section>
+            </div>
 
-            {/* Table 3: Rentals */}
-            <section className="bg-card rounded-xl border border-border/80 p-6 shadow-sm">
-              <div className="flex items-center gap-2 mb-6 border-b border-border/40 pb-4">
-                <Calendar className="h-5 w-5 text-muted-foreground" />
-                <h2 className="text-lg font-serif font-semibold text-foreground">短期租賃合約 ({rentals.length})</h2>
-              </div>
-              
-              {rentals.length === 0 ? (
-                <p className="text-muted-foreground text-xs py-6 text-center">目前尚無租賃合約。</p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs border-collapse">
-                    <thead>
-                      <tr className="border-b border-border text-muted-foreground font-semibold uppercase tracking-wider">
-                        <th className="pb-3 px-2">承租客</th>
-                        <th className="pb-3 px-2">租用作品</th>
-                        <th className="pb-3 px-2">月租/押金</th>
-                        <th className="pb-3 px-2">租期合約起訖</th>
-                        <th className="pb-3 px-2">狀態</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border/40 text-foreground font-light">
-                      {rentals.map((rental: any) => (
-                        <tr key={rental.id} className="hover:bg-secondary/30 transition-colors">
-                          <td className="py-3 px-2 flex items-center gap-1.5 font-medium">
-                            <User className="h-3 w-3 text-muted-foreground" />
-                            {rental.tenant_name}
-                          </td>
-                          <td className="py-3 px-2 text-foreground font-serif">{rental.artwork_title}</td>
-                          <td className="py-3 px-2 font-mono text-muted-foreground">
-                            {formatPrice(Number(rental.monthly_rent))} / {formatPrice(Number(rental.deposit_amount))}
-                          </td>
-                          <td className="py-3 px-2 text-[10px] text-muted-foreground">
-                            {rental.start_date} ~ {rental.end_date}
-                          </td>
-                          <td className="py-3 px-2">
-                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                              rental.status === 'active' 
-                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' 
-                                : 'bg-stone-100 text-stone-500'
-                            }`}>
-                              {rental.status === 'active' ? '租借中' : '已歸還'}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </section>
+            <form onSubmit={handleSubmit} className="p-3 border-t border-border bg-white flex gap-2">
+              <input
+                value={input}
+                onChange={handleInputChange}
+                placeholder="輸入指令，例如：幫我分析這週的銷售狀況..."
+                className="flex-1 text-sm bg-stone-50 border border-border rounded-sm px-3 py-2 outline-none focus:border-primary transition-colors"
+              />
+              <button
+                type="submit"
+                disabled={isLoading || !input.trim()}
+                className="bg-primary text-primary-foreground px-4 py-2 rounded-sm text-sm font-medium hover:bg-primary/90 disabled:opacity-50 transition-colors flex items-center justify-center"
+              >
+                <Send className="h-4 w-4" />
+              </button>
+            </form>
           </div>
         </div>
-      </div>
+      </main>
+
+      <Footer />
     </div>
   );
 }

@@ -28,8 +28,8 @@ export const metadata: Metadata = {
     default: 'Atelier Blanc | 乙太線上藝廊',
     template: '%s | Atelier Blanc',
   },
-  description: '精選實體與數位藝術品，支援安全購買與短期租賃雙軌制。信用卡與 Web3 錢包皆可結帳。',
-  keywords: ['藝廊', '藝術品', '線上藝廊', '數位藝術', '台灣藝術', 'NFT', 'Web3', 'Atelier Blanc'],
+  description: '精選實體與數位藝術品，支援安全購買與短期租賃雙軌制。PayPal、信用卡與 Web3 錢包皆可結帳。',
+  keywords: ['藝廊', '藝術品', '線上藝廊', '數位藝術', '台灣藝術', 'NFT', 'Web3', 'Atelier Blanc', 'PayPal'],
   authors: [{ name: 'Atelier Blanc' }],
   creator: 'Atelier Blanc',
   openGraph: {
