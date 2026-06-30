@@ -91,6 +91,20 @@ export default function LoginPage({ searchParams }: LoginPageProps) {
               />
             </div>
 
+            {/* 記住登入資訊 */}
+            <div className="flex items-center gap-2.5">
+              <input
+                id="remember"
+                name="remember"
+                type="checkbox"
+                defaultChecked
+                className="h-4 w-4 rounded border-border accent-primary cursor-pointer"
+              />
+              <label htmlFor="remember" className="text-xs text-muted-foreground cursor-pointer select-none">
+                記住我的登入狀態（30 天）
+              </label>
+            </div>
+
             <button
               type="submit"
               className="w-full rounded-sm bg-primary text-primary-foreground py-3.5 text-sm font-semibold tracking-wide hover:bg-primary/90 transition-all duration-300 shadow-md mt-2"

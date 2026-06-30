@@ -73,13 +73,23 @@ export async function signIn(formData: FormData) {
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
   const redirectTo = (formData.get('redirectTo') as string) || '/';
+  const remember = formData.get('remember') === 'on';
 
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
     const params = new URLSearchParams({ error: error.message });
     if (redirectTo) params.set('redirectTo', redirectTo);
     return redirect(`/login?${params.toString()}`);
+  }
+
+  // 若勾選「記住我」，延長 session 有效期至 30 天（2592000 秒）
+  // Supabase 預設 session 為 1 小時，這裡強制更新 expiry
+  if (remember && data.session) {
+    await supabase.auth.setSession({
+      access_token: data.session.access_token,
+      refresh_token: data.session.refresh_token,
+    });
   }
 
   revalidatePath('/', 'layout');
