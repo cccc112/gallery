@@ -59,6 +59,9 @@ export const metadata: Metadata = {
     follow: true,
     googleBot: { index: true, follow: true, 'max-image-preview': 'large' },
   },
+  verification: {
+    google: 'XittMrCUot2riHhQdHe9Tr9RLR65DK-4jeAjrc9dqNs',
+  },
 };
 
 function NavbarFallback() {
