@@ -88,6 +88,7 @@ export async function POST(request: Request) {
         depth,
         weight,
         preview_file_url,
+        high_res_file_url,
         created_at
       ) VALUES (
         ${user.id},
@@ -104,6 +105,7 @@ export async function POST(request: Request) {
         ${depth},
         ${weight},
         ${previewFileUrl},
+        ${artType === 'digital' ? previewFileUrl : null},
         NOW()
       )
       RETURNING id, title
