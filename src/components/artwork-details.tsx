@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Check, Truck, Shield, RotateCcw, Box, Lock, RefreshCw, CreditCard, LogIn, Camera } from "lucide-react"
+import { Check, Truck, Shield, RotateCcw, Box, Lock, RefreshCw, CreditCard, LogIn, Camera, Trash2 } from "lucide-react"
 import { CheckoutModal } from '@/components/CheckoutModal';
 
 interface ArtworkDetailsProps {
@@ -31,10 +31,32 @@ interface ArtworkDetailsProps {
   }
 }
 
-export function ArtworkDetails({ artwork, isLoggedIn = false }: ArtworkDetailsProps & { isLoggedIn?: boolean }) {
+export function ArtworkDetails({
+  artwork,
+  isLoggedIn = false,
+  isSold = false,
+  isRented = false,
+  isOwner = false,
+}: ArtworkDetailsProps & { isLoggedIn?: boolean; isSold?: boolean; isRented?: boolean; isOwner?: boolean }) {
   const router = useRouter();
   const [modalOpen, setModalOpen] = useState(false);
   const [modalAction, setModalAction] = useState<'buy' | 'rent'>('buy');
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    if (!confirm('確定要刪除此作品嗎？此操作無法復原。')) return;
+    setDeleting(true);
+    const res = await fetch(`/api/artworks/${artwork.id}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (res.ok) {
+      alert('作品已刪除');
+      router.push('/profile/upload');
+      router.refresh();
+    } else {
+      alert(data.error || '刪除失敗');
+      setDeleting(false);
+    }
+  };
 
   const openCheckout = (actionType: 'buy' | 'rent') => {
     if (!isLoggedIn) {
@@ -212,37 +234,63 @@ export function ArtworkDetails({ artwork, isLoggedIn = false }: ArtworkDetailsPr
       </div>
 
       {/* Action Buttons */}
-      <div className="flex flex-col sm:flex-row gap-4 pt-4">
-        {artwork.price !== null && (
-          <Button
-            onClick={() => openCheckout('buy')}
-            disabled={!hasStock}
-            size="lg"
-            className="flex-1 h-14 text-base font-semibold tracking-wide bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-300 shadow-md flex items-center justify-center gap-2 disabled:opacity-60"
-          >
-            {!isLoggedIn ? (
-              <><LogIn className="h-4 w-4" /> 登入後收藏</>
-            ) : (
-              <><CreditCard className="h-4 w-4" /> {hasStock ? '立即收藏（買斷）' : '已售罄'}</>
-            )}
-          </Button>
-        )}
+      {(isSold || isRented) ? (
+        <div className="flex items-center gap-3 px-5 py-4 rounded-lg bg-rose-50 border border-rose-200">
+          <div className="h-2.5 w-2.5 rounded-full bg-rose-500 flex-shrink-0" />
+          <div>
+            <p className="text-sm font-semibold text-rose-800">
+              {isSold ? '此作品已售出，暫停交易' : '此作品租賃中，暫停交易'}
+            </p>
+            <p className="text-xs text-rose-600 mt-0.5">
+              {isSold ? '買斷交易已完成，作品已歸藏家收藏。' : '此作品目前租賃中，租期結束後可再次購買或租用。'}
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-col sm:flex-row gap-4 pt-4">
+          {artwork.price !== null && (
+            <Button
+              onClick={() => openCheckout('buy')}
+              disabled={!hasStock}
+              size="lg"
+              className="flex-1 h-14 text-base font-semibold tracking-wide bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-300 shadow-md flex items-center justify-center gap-2 disabled:opacity-60"
+            >
+              {!isLoggedIn ? (
+                <><LogIn className="h-4 w-4" /> 登入後收藏</>
+              ) : (
+                <><CreditCard className="h-4 w-4" /> {hasStock ? '立即收藏（買斷）' : '已售罄'}</>
+              )}
+            </Button>
+          )}
 
-        {artwork.is_rentable && (
-          <Button
-            onClick={() => openCheckout('rent')}
-            variant="outline"
-            size="lg"
-            className="flex-1 h-14 text-base font-semibold tracking-wide border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-300 flex items-center justify-center gap-2"
-          >
-            {!isLoggedIn ? (
-              <><LogIn className="h-4 w-4" /> 登入後租用</>
-            ) : (
-              <><RefreshCw className="h-4 w-4" /> 短期租用（月付方案）</>
-            )}
-          </Button>
-        )}
-      </div>
+          {artwork.is_rentable && (
+            <Button
+              onClick={() => openCheckout('rent')}
+              variant="outline"
+              size="lg"
+              className="flex-1 h-14 text-base font-semibold tracking-wide border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-300 flex items-center justify-center gap-2"
+            >
+              {!isLoggedIn ? (
+                <><LogIn className="h-4 w-4" /> 登入後租用</>
+              ) : (
+                <><RefreshCw className="h-4 w-4" /> 短期租用（月付方案）</>
+              )}
+            </Button>
+          )}
+        </div>
+      )}
+
+      {/* 藝術家刪除作品按鈕 */}
+      {isOwner && (
+        <button
+          onClick={handleDelete}
+          disabled={deleting}
+          className="w-full mt-2 flex items-center justify-center gap-2 text-xs text-rose-500 hover:text-rose-700 hover:bg-rose-50 border border-rose-200 rounded-lg py-2.5 transition-colors disabled:opacity-50"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+          {deleting ? '刪除中...' : '刪除此作品'}
+        </button>
+      )}
 
       {/* Checkout Modal */}
       <CheckoutModal

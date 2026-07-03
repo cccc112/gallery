@@ -63,12 +63,14 @@ export async function generateMetadata({ params }: ArtworkPageProps): Promise<Me
 export default async function ArtworkPage({ params }: ArtworkPageProps) {
   const { id } = params;
 
-  // 取得登入狀態
+  // 取得登入狀態與用戶 ID
   let isLoggedIn = false;
+  let currentUserId = '';
   try {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     isLoggedIn = !!user;
+    currentUserId = user?.id || '';
   } catch { }
 
   let artwork: any = null;
@@ -85,7 +87,7 @@ export default async function ArtworkPage({ params }: ArtworkPageProps) {
     
     if (results.length > 0) {
       artwork = results[0];
-      
+
       // 取得藝術家其他作品
       otherArtworks = await sql`
         SELECT a.*, u.display_name as artist_name
@@ -94,6 +96,20 @@ export default async function ArtworkPage({ params }: ArtworkPageProps) {
         WHERE a.id != ${id} AND a.artist_id = ${artwork.artist_id}
         LIMIT 4
       `;
+
+      // 檢查是否已售出（paid 訂單）
+      const soldCheck = await sql`
+        SELECT count(*) FROM public.orders
+        WHERE artwork_id = ${id} AND payment_status = 'paid'
+      `;
+      artwork.is_sold = Number(soldCheck[0].count) > 0;
+
+      // 檢查是否租賃中（active 租賃）
+      const rentedCheck = await sql`
+        SELECT count(*) FROM public.rentals
+        WHERE artwork_id = ${id} AND status = 'active'
+      `;
+      artwork.is_rented = Number(rentedCheck[0].count) > 0;
     }
   } catch (error) {
     console.error('Failed to fetch artwork page data:', error);
@@ -153,7 +169,13 @@ export default async function ArtworkPage({ params }: ArtworkPageProps) {
 
             {/* Right: Details */}
             <div>
-              <ArtworkDetails artwork={artwork} isLoggedIn={isLoggedIn} />
+              <ArtworkDetails
+                artwork={artwork}
+                isLoggedIn={isLoggedIn}
+                isSold={artwork.is_sold}
+                isRented={artwork.is_rented}
+                isOwner={currentUserId === artwork.artist_id}
+              />
             </div>
           </div>
         </div>
