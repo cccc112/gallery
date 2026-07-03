@@ -121,7 +121,14 @@ export default function GeneratePage() {
         }),
       });
 
-      const data = await res.json();
+      const text = await res.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (err) {
+        throw new Error(`伺服器回應異常 (可能是超時或過載，請稍後再試)。狀態碼：${res.status}`);
+      }
+
       if (!res.ok) throw new Error(data.error || '生成失敗');
 
       setImageB64(data.image);

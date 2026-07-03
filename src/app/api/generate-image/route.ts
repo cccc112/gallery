@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
+export const runtime = 'edge';
 export const maxDuration = 60;
 
 // ── 工具函式 ──────────────────────────────────────────────────────
@@ -85,8 +86,13 @@ async function generateViaReplicate(params: {
   const imgRes = await fetch(prediction.output[0]);
   if (!imgRes.ok) throw new Error('無法下載生成結果');
   const arrayBuf = await imgRes.arrayBuffer();
-  const base64 = Buffer.from(arrayBuf).toString('base64');
-  return base64;
+  // Edge Runtime 不支援 Buffer，改用 btoa
+  const bytes = new Uint8Array(arrayBuf);
+  let binary = '';
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
 }
 
 // ── NVIDIA NIM 實作（fallback）───────────────────────────────────
