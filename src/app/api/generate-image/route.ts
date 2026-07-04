@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
-export const runtime = 'edge';
-export const maxDuration = 60;
+export const maxDuration = 60; // 允許 Vercel Serverless Function 執行長達 60 秒
 
 // ── 工具函式 ──────────────────────────────────────────────────────
 function snapTo16(n: number): number {
@@ -170,11 +169,24 @@ export async function POST(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: '請先登入' }, { status: 401 });
 
-  const { prompt, width = 1024, height = 1024, steps = 4, seed, negative_prompt } = await req.json();
+  const { prompt, width = 1024, height = 1024, steps = 4, seed, negative_prompt, customApiKey } = await req.json();
   if (!prompt?.trim()) return NextResponse.json({ error: '請輸入描述文字' }, { status: 400 });
 
-  const replicateToken = process.env.REPLICATE_API_TOKEN;
-  const nvidiaKey = process.env.NVIDIA_API_KEY;
+  let replicateToken = process.env.REPLICATE_API_TOKEN;
+  let nvidiaKey = process.env.NVIDIA_API_KEY;
+  let isUsingCustomKey = false;
+
+  if (customApiKey && customApiKey.trim()) {
+    const key = customApiKey.trim();
+    if (key.startsWith('nvapi-')) {
+      nvidiaKey = key;
+      replicateToken = undefined; // 強制使用 NVIDIA
+    } else {
+      replicateToken = key;
+      nvidiaKey = undefined; // 強制使用 Replicate
+    }
+    isUsingCustomKey = true;
+  }
 
   if (!replicateToken && !nvidiaKey) {
     return NextResponse.json({ error: '尚未設定 AI 生成 API Key' }, { status: 500 });
@@ -183,6 +195,27 @@ export async function POST(req: NextRequest) {
   const useSeed = (Number.isInteger(seed) && seed >= 0) ? seed : Math.floor(Math.random() * 2147483647);
 
   try {
+    // 檢查每日額度 (如果是使用自訂金鑰則跳過檢查)
+    if (!isUsingCustomKey) {
+      const today = new Date();
+      today.setDate(today.getDate() - 1);
+      
+      const { count, error: countError } = await supabase
+        .from('ai_usage_logs')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .gte('created_at', today.toISOString());
+
+      if (countError) throw countError;
+
+      if (count !== null && count >= 5) {
+        return NextResponse.json(
+          { error: '今日免費 AI 生成額度已用盡 (5/5)，請明日再試。' },
+          { status: 429 }
+        );
+      }
+    }
+
     let base64: string;
 
     if (replicateToken) {
@@ -204,6 +237,9 @@ export async function POST(req: NextRequest) {
         apiKey: nvidiaKey!,
       });
     }
+
+    // 成功生成後，寫入使用紀錄
+    await supabase.from('ai_usage_logs').insert({ user_id: user.id });
 
     return NextResponse.json({ image: base64 });
   } catch (err: any) {
