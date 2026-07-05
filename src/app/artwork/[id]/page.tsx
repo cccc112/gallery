@@ -88,6 +88,18 @@ export default async function ArtworkPage({ params }: ArtworkPageProps) {
     if (results.length > 0) {
       artwork = results[0];
 
+      // 記錄頁面瀏覽 (不計入藝術家本人的瀏覽)
+      if (currentUserId !== artwork.artist_id) {
+        try {
+          await sql`
+            INSERT INTO public.page_views (artwork_id, viewer_id)
+            VALUES (${id}, ${currentUserId ? currentUserId : null})
+          `;
+        } catch (e: any) {
+          console.error('Failed to log page view:', e.message);
+        }
+      }
+
       // 取得藝術家其他作品
       otherArtworks = await sql`
         SELECT a.*, u.display_name as artist_name

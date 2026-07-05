@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { sql } from '@/lib/db';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { LayoutDashboard, User } from 'lucide-react';
+import { LayoutDashboard, User, MessageSquare, Upload } from 'lucide-react';
 import { DashboardTabs } from '@/components/DashboardTabs';
 
 export const revalidate = 0;
@@ -58,7 +58,7 @@ export default async function DashboardPage() {
     console.error('Rentals fetch error:', e.message);
   }
 
-  // 5. 【創作者中心】撈 artworks + 銷售統計
+  // 5. 【創作者中心】撈 artworks + 銷售統計 + 流量 + 評價
   let artworks: any[] = [];
   try {
     artworks = await sql`
@@ -68,24 +68,26 @@ export default async function DashboardPage() {
         COALESCE(oc.order_revenue, 0) AS order_revenue,
         COALESCE(rc.rental_count, 0) AS rental_count,
         COALESCE(rc.rental_revenue, 0) AS rental_revenue,
+        COALESCE(vc.view_count, 0) AS view_count,
+        COALESCE(rv.review_count, 0) AS review_count,
         COALESCE(oc.order_revenue, 0) + COALESCE(rc.rental_revenue, 0) AS total_revenue
       FROM public.artworks a
       LEFT JOIN (
-        SELECT artwork_id,
-          COUNT(*) AS order_count,
-          SUM(amount) AS order_revenue
-        FROM public.orders
-        WHERE payment_status = 'paid'
-        GROUP BY artwork_id
+        SELECT artwork_id, COUNT(*) AS order_count, SUM(amount) AS order_revenue
+        FROM public.orders WHERE payment_status = 'paid' GROUP BY artwork_id
       ) oc ON oc.artwork_id = a.id
       LEFT JOIN (
-        SELECT artwork_id,
-          COUNT(*) AS rental_count,
-          SUM(monthly_rent) AS rental_revenue
-        FROM public.rentals
-        WHERE status = 'active'
-        GROUP BY artwork_id
+        SELECT artwork_id, COUNT(*) AS rental_count, SUM(monthly_rent) AS rental_revenue
+        FROM public.rentals WHERE status = 'active' GROUP BY artwork_id
       ) rc ON rc.artwork_id = a.id
+      LEFT JOIN (
+        SELECT artwork_id, COUNT(*) AS view_count
+        FROM public.page_views GROUP BY artwork_id
+      ) vc ON vc.artwork_id = a.id
+      LEFT JOIN (
+        SELECT artwork_id, COUNT(*) AS review_count
+        FROM public.reviews GROUP BY artwork_id
+      ) rv ON rv.artwork_id = a.id
       WHERE a.artist_id = ${user.id}
       ORDER BY a.created_at DESC
     `;
@@ -93,7 +95,20 @@ export default async function DashboardPage() {
     console.error('Artworks fetch error:', e.message);
   }
 
-  // 6. 收入分類（法幣 vs USDC）
+  // 7. 【評價回饋】撈 reviews
+  let reviews: any[] = [];
+  try {
+    reviews = await sql`
+      SELECT r.id, r.rating, r.comment, r.created_at, a.title, u.display_name, u.email
+      FROM public.reviews r
+      JOIN public.artworks a ON r.artwork_id = a.id
+      JOIN auth.users au ON r.buyer_id = au.id
+      LEFT JOIN public.users u ON u.id = au.id
+      WHERE a.artist_id = ${user.id}
+      ORDER BY r.created_at DESC
+    `;
+  } catch(e) {}
+
   let totalFiatRevenue = 0;
   let totalCryptoRevenue = 0;
   try {
@@ -177,6 +192,7 @@ export default async function DashboardPage() {
             orders={orders}
             rentals={rentals}
             artworks={artworks}
+            reviews={reviews}
             totalFiatRevenue={totalFiatRevenue}
             totalCryptoRevenue={totalCryptoRevenue}
           />
@@ -185,8 +201,9 @@ export default async function DashboardPage() {
         {/* ── 底部導覽 ── */}
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-6">
           {[
+            { href: '/dashboard/chat', icon: MessageSquare, label: '客服收件匣', sub: '回覆買家私訊' },
             { href: '/profile', icon: User, label: '個人資訊', sub: '編輯頭像、顯示名稱' },
-            { href: '/profile/upload', icon: LayoutDashboard, label: '上傳新作品', sub: '發布至藝廊販售' },
+            { href: '/profile/upload', icon: Upload, label: '上傳新作品', sub: '發布至藝廊販售' },
             { href: '/gallery', icon: LayoutDashboard, label: '探索藝廊', sub: '瀏覽所有作品' },
           ].map(({ href, icon: Icon, label, sub }) => (
             <Link

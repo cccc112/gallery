@@ -7,7 +7,9 @@ import {
   Package, Palette, ShoppingBag, Clock, Download,
   TrendingUp, ImageIcon, Upload, ExternalLink,
   Coins, CreditCard, RotateCcw, CheckCircle2, AlertCircle,
+  Eye, MessageSquare, Star
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 // ── 型別定義 ────────────────────────────────────────────────────
 interface OrderRow {
@@ -50,12 +52,25 @@ interface ArtworkRow {
   order_count: number;
   rental_count: number;
   total_revenue: number;
+  view_count: number;
+  review_count: number;
+}
+
+interface ReviewRow {
+  id: string;
+  rating: number;
+  comment: string;
+  created_at: string;
+  title: string;
+  display_name: string | null;
+  email: string | null;
 }
 
 interface DashboardTabsProps {
   orders: OrderRow[];
   rentals: RentalRow[];
   artworks: ArtworkRow[];
+  reviews: ReviewRow[];
   totalFiatRevenue: number;
   totalCryptoRevenue: number;
 }
@@ -118,6 +133,39 @@ function PayBadge({ txId }: { txId: string | null }) {
 // ── My Collection Tab ────────────────────────────────────────────
 function CollectionTab({ orders, rentals }: { orders: OrderRow[]; rentals: RentalRow[] }) {
   const [subTab, setSubTab] = useState<'orders' | 'rentals'>('orders');
+  const [reviewingArtwork, setReviewingArtwork] = useState<string | null>(null);
+  const [rating, setRating] = useState(5);
+  const [comment, setComment] = useState('');
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const router = useRouter();
+
+  const handleReviewSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!reviewingArtwork) return;
+    setSubmittingReview(true);
+    try {
+      const res = await fetch('/api/reviews', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ artworkId: reviewingArtwork, rating, comment })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert('評價提交成功！');
+        setReviewingArtwork(null);
+        setComment('');
+        setRating(5);
+        router.refresh();
+      } else {
+        alert(data.error || '提交失敗');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('發生錯誤');
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -160,24 +208,33 @@ function CollectionTab({ orders, rentals }: { orders: OrderRow[]; rentals: Renta
                     {fmtDate(o.created_at)} · {fmt(Number(o.amount))}
                   </p>
                 </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  {o.art_type === 'digital' && o.high_res_file_url && (
-                    <a
-                      href={o.high_res_file_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-sm bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                  <div className="flex items-center gap-2">
+                    {o.art_type === 'digital' && o.high_res_file_url && (
+                      <a
+                        href={o.high_res_file_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-sm bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                      >
+                        <Download className="h-3 w-3" />
+                        下載
+                      </a>
+                    )}
+                    <Link
+                      href={`/artwork/${o.artwork_id}`}
+                      className="p-1.5 text-muted-foreground hover:text-foreground transition-colors"
                     >
-                      <Download className="h-3 w-3" />
-                      下載
-                    </a>
-                  )}
-                  <Link
-                    href={`/artwork/${o.artwork_id}`}
-                    className="p-1.5 text-muted-foreground hover:text-foreground transition-colors"
+                      <ExternalLink className="h-3.5 w-3.5" />
+                    </Link>
+                  </div>
+                  <button
+                    onClick={() => setReviewingArtwork(o.artwork_id)}
+                    className="text-[10px] flex items-center gap-1 px-2 py-1 border border-border/60 hover:bg-stone-100 rounded-sm font-semibold transition-colors text-muted-foreground"
                   >
-                    <ExternalLink className="h-3.5 w-3.5" />
-                  </Link>
+                    <Star className="h-3 w-3" />
+                    撰寫評價
+                  </button>
                 </div>
               </div>
             ))
@@ -226,6 +283,42 @@ function CollectionTab({ orders, rentals }: { orders: OrderRow[]; rentals: Renta
           )}
         </div>
       )}
+
+      {/* Review Modal */}
+      {reviewingArtwork && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-sm w-full max-w-md p-6 shadow-xl relative border border-border">
+            <h3 className="font-serif text-xl font-semibold mb-4">撰寫評價</h3>
+            <form onSubmit={handleReviewSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground mb-2">星級評分</label>
+                <div className="flex items-center gap-1">
+                  {[1,2,3,4,5].map(star => (
+                    <button type="button" key={star} onClick={() => setRating(star)} className="p-1 hover:scale-110 transition-transform">
+                      <Star className={`h-6 w-6 ${rating >= star ? 'fill-amber-400 text-amber-400' : 'text-stone-300'}`} />
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground mb-2">您的評語（選填）</label>
+                <textarea
+                  value={comment}
+                  onChange={e => setComment(e.target.value)}
+                  className="w-full bg-stone-50 border border-border rounded-sm p-3 text-sm focus:outline-none focus:border-primary resize-none h-24"
+                  placeholder="寫下您對這件作品或藝術家的感覺..."
+                />
+              </div>
+              <div className="flex gap-2 justify-end pt-2">
+                <button type="button" onClick={() => setReviewingArtwork(null)} className="px-4 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors">取消</button>
+                <button type="submit" disabled={submittingReview} className="px-4 py-2 text-xs font-semibold bg-primary text-primary-foreground rounded-sm hover:bg-primary/90 transition-colors disabled:opacity-50">
+                  {submittingReview ? '送出中...' : '送出評價'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -246,7 +339,7 @@ function ArtistTab({
           { label: '總收入', value: fmt(totalRevenue), icon: TrendingUp, color: 'text-emerald-600' },
           { label: '法幣收入', value: fmt(totalFiatRevenue), icon: CreditCard, color: 'text-blue-600', sub: '(信用卡)' },
           { label: 'USDC 收益', value: `≈ ${(totalCryptoRevenue * 0.031).toFixed(0)} USDC`, icon: Coins, color: 'text-purple-600', sub: fmt(totalCryptoRevenue) },
-          { label: '訂單總數', value: `${totalOrders} 筆`, icon: Package, color: 'text-amber-600', sub: `租賃 ${totalRentals} 筆` },
+          { label: '總瀏覽量', value: `${artworks.reduce((s, a) => s + Number(a.view_count), 0)} 次`, icon: Eye, color: 'text-amber-600', sub: `${artworks.length} 件作品` },
         ].map(({ label, value, icon: Icon, color, sub }) => (
           <div key={label} className="p-4 bg-white/60 border border-border/50 rounded-sm">
             <div className="flex items-center gap-2 mb-2">
@@ -308,7 +401,10 @@ function ArtistTab({
                   {fmt(Number(a.total_revenue))}
                 </p>
                 <p className="text-[10px] text-muted-foreground mt-0.5">
-                  {Number(a.order_count)} 筆訂單
+                  <Eye className="h-2.5 w-2.5 inline-block mr-1" />{Number(a.view_count)} 次觀看
+                </p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">
+                  {Number(a.order_count)} 筆購買
                   {Number(a.rental_count) > 0 && ` · ${Number(a.rental_count)} 租賃`}
                 </p>
               </div>
@@ -338,13 +434,45 @@ function EmptyState({
   );
 }
 
+// ── Feedback Tab ──────────────────────────────────────────────────
+function FeedbackTab({ reviews }: { reviews: ReviewRow[] }) {
+  if (reviews.length === 0) {
+    return <EmptyState icon={MessageSquare} label="尚未收到任何評價" action={{ href: '#', text: '累積更多買家吧！' }} />;
+  }
+
+  return (
+    <div className="space-y-4">
+      {reviews.map(r => (
+        <div key={r.id} className="p-4 bg-white/60 border border-border/50 rounded-sm hover:bg-white/80 transition-colors">
+          <div className="flex items-center justify-between mb-2">
+            <div>
+              <p className="text-sm font-semibold text-foreground">{r.title}</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">
+                買家：{r.display_name || r.email || '匿名用戶'} · {fmtDate(r.created_at)}
+              </p>
+            </div>
+            <div className="flex items-center gap-1 bg-amber-50 text-amber-600 px-2 py-1 rounded-sm border border-amber-200">
+              <Star className="h-3.5 w-3.5 fill-current" />
+              <span className="text-xs font-semibold">{r.rating}.0</span>
+            </div>
+          </div>
+          <p className="text-sm text-foreground/90 bg-stone-50 p-3 rounded-sm mt-2 border border-stone-200/50">
+            {r.comment || '（沒有留下文字評論）'}
+          </p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ── Main DashboardTabs ───────────────────────────────────────────
-export function DashboardTabs({ orders, rentals, artworks, totalFiatRevenue, totalCryptoRevenue }: DashboardTabsProps) {
-  const [tab, setTab] = useState<'collection' | 'artist'>('collection');
+export function DashboardTabs({ orders, rentals, artworks, reviews, totalFiatRevenue, totalCryptoRevenue }: DashboardTabsProps) {
+  const [tab, setTab] = useState<'collection' | 'artist' | 'feedback'>('collection');
 
   const tabs = [
-    { key: 'collection' as const, label: '我的收藏', icon: ShoppingBag, count: orders.length + rentals.length },
-    { key: 'artist' as const, label: '創作者中心', icon: Palette, count: artworks.length },
+    { key: 'collection' as const, label: '買家中心 (購買/租賃)', icon: ShoppingBag, count: orders.length + rentals.length },
+    { key: 'artist' as const, label: '賣家中心 (我的作品)', icon: Palette, count: artworks.length },
+    { key: 'feedback' as const, label: '買家評價', icon: MessageSquare, count: reviews.length },
   ];
 
   return (
@@ -374,6 +502,7 @@ export function DashboardTabs({ orders, rentals, artworks, totalFiatRevenue, tot
 
       {tab === 'collection' && <CollectionTab orders={orders} rentals={rentals} />}
       {tab === 'artist' && <ArtistTab artworks={artworks} totalFiatRevenue={totalFiatRevenue} totalCryptoRevenue={totalCryptoRevenue} />}
+      {tab === 'feedback' && <FeedbackTab reviews={reviews} />}
     </div>
   );
 }

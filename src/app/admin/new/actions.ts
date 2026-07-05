@@ -74,6 +74,10 @@ export async function createArtwork(formData: FormData) {
     throw new Error('啟動租用方案時，月租金與押金必填！');
   }
 
+  // ── 產生真品保證數位指紋 ──
+  const dataString = `${title}-${artistId}-${Date.now()}`;
+  const fingerprint = (await import('crypto')).createHash('sha256').update(dataString).digest('hex');
+
   try {
     await sql`
       INSERT INTO public.artworks (
@@ -81,20 +85,21 @@ export async function createArtwork(formData: FormData) {
         is_rentable, monthly_rent_price, deposit_amount,
         width, height, depth, weight, stock,
         high_res_file_url, preview_file_url,
-        edition_size, print_material
+        edition_size, print_material,
+        fingerprint
       ) VALUES (
         ${artistId}, ${title}, ${description}, ${artType}, ${price},
         ${isRentable}, ${monthlyRentPrice}, ${depositAmount},
         ${width}, ${height}, ${depth}, ${weight}, ${stock},
         ${highResFileUrl}, ${previewFileUrl},
-        ${editionSize}, ${printMaterial}
+        ${editionSize}, ${printMaterial},
+        ${fingerprint}
       )
     `;
   } catch (error: any) {
     console.error('Database write error:', error);
-    // 若是欄位不存在（尚未跑 migration），提示更清楚
     if (error.message?.includes('column') && error.message?.includes('does not exist')) {
-      throw new Error('請先在 Supabase 執行 Migration SQL（加入 edition_size、print_material 欄位）');
+      throw new Error('請先在 Supabase 執行 Migration SQL');
     }
     throw new Error('資料庫上架失敗，請檢查資料是否完整！');
   }

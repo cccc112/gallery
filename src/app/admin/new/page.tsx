@@ -294,20 +294,21 @@ export default function NewArtworkPage() {
               </div>
             )}
 
-            {/* Rental Toggle */}
-            <div className="bg-secondary/40 p-5 rounded-xl border border-border/60 space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-semibold text-foreground">啟用短期月租方案</h3>
-                  <p className="text-xs text-muted-foreground mt-0.5">允許客戶以按月付租金與預授權押金形式租用此作品</p>
+            {/* Rental Toggle (Only for non-digital) */}
+            {artType !== 'digital' && (
+              <div className="bg-secondary/40 p-5 rounded-xl border border-border/60 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-semibold text-foreground">啟用短期月租方案</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">允許客戶以按月付租金與預授權押金形式租用此作品</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={isRentable}
+                    onChange={e => setIsRentable(e.target.checked)}
+                    className="h-5 w-5 rounded border-border text-primary focus:ring-primary cursor-pointer"
+                  />
                 </div>
-                <input
-                  type="checkbox"
-                  checked={isRentable}
-                  onChange={e => setIsRentable(e.target.checked)}
-                  className="h-5 w-5 rounded border-border text-primary focus:ring-primary cursor-pointer"
-                />
-              </div>
               {isRentable && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3 border-t border-border/65">
                   <div>
@@ -333,6 +334,7 @@ export default function NewArtworkPage() {
                 </div>
               )}
             </div>
+            )}
 
             {/* Actions */}
             <div className="flex justify-end gap-4 pt-6 border-t border-border/50">

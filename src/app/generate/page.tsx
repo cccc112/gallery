@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import {
   Wand2, Download, Loader2, Sparkles, RefreshCw,
@@ -89,6 +89,21 @@ export default function GeneratePage() {
   const router = useRouter();
   const [uploadState, setUploadState] = useState<'idle' | 'uploading' | 'done' | 'error'>('idle');
   const [uploadError, setUploadError] = useState('');
+  const [customApiKey, setCustomApiKey] = useState('');
+
+  useEffect(() => {
+    const savedKey = localStorage.getItem('atelier_custom_api_key');
+    if (savedKey) setCustomApiKey(savedKey);
+  }, []);
+
+  const handleCustomKeyChange = (val: string) => {
+    setCustomApiKey(val);
+    if (val.trim()) {
+      localStorage.setItem('atelier_custom_api_key', val.trim());
+    } else {
+      localStorage.removeItem('atelier_custom_api_key');
+    }
+  };
 
   const basePrompt = [prompt.trim(), selectedStyle].filter(Boolean).join(', ');
   const finalPrompt = basePrompt + ', high quality, detailed artwork, gallery quality';
@@ -118,6 +133,7 @@ export default function GeneratePage() {
           height: aspect.h,
           steps,
           seed: useSeed,
+          customApiKey,
         }),
       });
 
@@ -370,6 +386,23 @@ export default function GeneratePage() {
                       className="w-full rounded-sm border border-border bg-white/80 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-indigo-400 transition-colors resize-none font-mono"
                     />
                     <p className="text-[9px] text-muted-foreground mt-1">填入不希望出現的元素（英文效果較佳）</p>
+                  </div>
+
+                  {/* 自訂 API 金鑰 (BYOK) */}
+                  <div>
+                    <label className="block text-xs font-medium text-foreground mb-2">
+                      自訂 API 金鑰 (無限制額度)
+                    </label>
+                    <input
+                      type="password"
+                      value={customApiKey}
+                      onChange={e => handleCustomKeyChange(e.target.value)}
+                      placeholder="請填入 NVIDIA NIM 或 Replicate API Token"
+                      className="w-full rounded-sm border border-border bg-white/80 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-indigo-400 transition-colors font-mono"
+                    />
+                    <p className="text-[9px] text-muted-foreground mt-1">
+                      設定金鑰後將繞過平台「每日 5 張」限制。本機儲存不外洩。
+                    </p>
                   </div>
 
                   {/* 解析度顯示 */}

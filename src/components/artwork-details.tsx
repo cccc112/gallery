@@ -4,13 +4,14 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Check, Truck, Shield, RotateCcw, Box, Lock, RefreshCw, CreditCard, LogIn, Camera, Trash2 } from "lucide-react"
+import { Check, Truck, Shield, RotateCcw, Box, Lock, RefreshCw, CreditCard, LogIn, Camera, Trash2, MessageSquare } from "lucide-react"
 import { CheckoutModal } from '@/components/CheckoutModal';
 
 interface ArtworkDetailsProps {
   artwork: {
     id: string;
     title: string;
+    artist_id: string;
     artist_name: string;
     artist_email?: string;
     art_type: 'physical' | 'digital' | 'photography';
@@ -28,6 +29,7 @@ interface ArtworkDetailsProps {
     description: string;
     edition_size?: number | null;
     print_material?: string | null;
+    fingerprint?: string | null;
   }
 }
 
@@ -42,6 +44,25 @@ export function ArtworkDetails({
   const [modalOpen, setModalOpen] = useState(false);
   const [modalAction, setModalAction] = useState<'buy' | 'rent'>('buy');
   const [deleting, setDeleting] = useState(false);
+  const [contacting, setContacting] = useState(false);
+
+  const handleContactArtist = async () => {
+    if (!isLoggedIn) {
+      router.push(`/login?redirectTo=/artwork/${artwork.id}`);
+      return;
+    }
+    setContacting(true);
+    try {
+      const res = await fetch(`/api/chat?artistId=${artwork.artist_id}&artworkId=${artwork.id}`);
+      const data = await res.json();
+      if (data.sessionId) {
+        router.push(`/dashboard/chat`);
+      }
+    } catch (e) {
+      console.error(e);
+      setContacting(false);
+    }
+  };
 
   const handleDelete = async () => {
     if (!confirm('確定要刪除此作品嗎？此操作無法復原。')) return;
@@ -233,6 +254,24 @@ export function ArtworkDetails({
         </p>
       </div>
 
+      {/* CoA Badge */}
+      {artwork.fingerprint && (
+        <a href={`/certificate/${artwork.fingerprint}`} target="_blank" rel="noreferrer" className="flex items-center justify-between p-4 rounded-xl border border-yellow-700/30 bg-gradient-to-r from-yellow-900/10 to-yellow-600/5 hover:from-yellow-900/20 hover:to-yellow-600/10 transition-colors group">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-full bg-yellow-900/20 flex items-center justify-center border border-yellow-700/30 text-yellow-600 shadow-[0_0_15px_rgba(180,83,9,0.15)] group-hover:scale-110 transition-transform">
+              <Shield className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-yellow-800 dark:text-yellow-500">數位真品保證書 (CoA)</p>
+              <p className="text-xs text-yellow-700/70 dark:text-yellow-600/70 font-mono mt-0.5">{artwork.fingerprint.slice(0, 16)}...</p>
+            </div>
+          </div>
+          <span className="text-xs font-semibold uppercase tracking-widest text-yellow-700 dark:text-yellow-600 group-hover:text-yellow-800 dark:group-hover:text-yellow-500 transition-colors">
+            驗證真偽 &rarr;
+          </span>
+        </a>
+      )}
+
       {/* Action Buttons */}
       {(isSold || isRented) ? (
         <div className="flex items-center gap-3 px-5 py-4 rounded-lg bg-rose-50 border border-rose-200">
@@ -281,7 +320,7 @@ export function ArtworkDetails({
       )}
 
       {/* 藝術家刪除作品按鈕 */}
-      {isOwner && (
+      {isOwner ? (
         <button
           onClick={handleDelete}
           disabled={deleting}
@@ -289,6 +328,15 @@ export function ArtworkDetails({
         >
           <Trash2 className="h-3.5 w-3.5" />
           {deleting ? '刪除中...' : '刪除此作品'}
+        </button>
+      ) : (
+        <button
+          onClick={handleContactArtist}
+          disabled={contacting}
+          className="w-full mt-2 flex items-center justify-center gap-2 text-xs font-semibold text-foreground hover:bg-stone-100 border border-border/60 rounded-lg py-2.5 transition-colors disabled:opacity-50"
+        >
+          <MessageSquare className="h-3.5 w-3.5" />
+          {contacting ? '正在連接對話...' : '私訊聯絡藝術家'}
         </button>
       )}
 
