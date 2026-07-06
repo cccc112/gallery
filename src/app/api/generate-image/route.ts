@@ -94,8 +94,8 @@ async function generateViaReplicate(params: {
   return btoa(binary);
 }
 
-// ── NVIDIA NIM 實作（fallback）───────────────────────────────────
-async function generateViaNvidia(params: {
+// ── Hugging Face 實作 (Tongyi-MAI/Z-Image) ───────────────────────────────────
+async function generateViaHuggingFace(params: {
   prompt: string;
   width: number;
   height: number;
@@ -104,63 +104,39 @@ async function generateViaNvidia(params: {
   negative_prompt?: string;
   apiKey: string;
 }): Promise<string> {
-  const { prompt, width, height, steps, seed, negative_prompt, apiKey } = params;
+  const { prompt, apiKey } = params;
 
-  const body: Record<string, unknown> = {
-    prompt,
-    width: snapTo16(width),
-    height: snapTo16(height),
-    steps: Math.min(Math.max(steps, 1), 4),
-    seed,
-  };
-  if (negative_prompt?.trim()) body.negative_prompt = negative_prompt.trim();
-
+  // Hugging Face Inference API 的標準格式
   const res = await fetch(
-    'https://ai.api.nvidia.com/v1/genai/black-forest-labs/flux.1-schnell',
+    'https://api-inference.huggingface.co/models/Tongyi-MAI/Z-Image',
     {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
-        Accept: 'application/json',
       },
-      body: JSON.stringify(body),
+      // HF Inference API 預設只需要 inputs 欄位
+      body: JSON.stringify({ inputs: prompt }),
     }
   );
 
   if (!res.ok) {
     const errText = await res.text();
-    throw new Error(`NVIDIA API ${res.status}: ${errText.slice(0, 200)}`);
-  }
-
-  const data = await res.json();
-  console.log('[NVIDIA] response keys:', Object.keys(data));
-
-  const b64 =
-    data?.artifacts?.[0]?.base64 ||
-    data?.artifacts?.[0]?.b64_json ||
-    data?.data?.[0]?.b64_json;
-
-  if (!b64) {
-    // async polling
-    if (data?.id) {
-      for (let i = 0; i < 15; i++) {
-        await new Promise(r => setTimeout(r, 3000));
-        const pollRes = await fetch(
-          `https://api.nvidia.com/v1/genai/status/${data.id}`,
-          { headers: { Authorization: `Bearer ${apiKey}` } }
-        );
-        if (!pollRes.ok) break;
-        const pd = await pollRes.json();
-        const polledB64 = pd?.artifacts?.[0]?.base64 || pd?.artifacts?.[0]?.b64_json;
-        if (polledB64) return polledB64;
-        if (pd?.status === 'failed') throw new Error('NVIDIA 生成失敗');
-      }
+    // 處理 Model Loading 狀態 (通常需要重試)
+    if (res.status === 503 && errText.includes('currently loading')) {
+      throw new Error(`模型正在喚醒中，請稍等約 30 秒後再試。 (Hugging Face: 503)`);
     }
-    throw new Error(`未收到圖片（NVIDIA 回傳：${Object.keys(data).join(', ')}）`);
+    throw new Error(`Hugging Face API 錯誤 ${res.status}: ${errText.slice(0, 200)}`);
   }
 
-  return b64;
+  // HF Inference API 成功時回傳的是二進位圖檔資料 (Blob)
+  const arrayBuf = await res.arrayBuffer();
+  const bytes = new Uint8Array(arrayBuf);
+  let binary = '';
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
 }
 
 // ── 主 handler ───────────────────────────────────────────────────
@@ -173,22 +149,22 @@ export async function POST(req: NextRequest) {
   if (!prompt?.trim()) return NextResponse.json({ error: '請輸入描述文字' }, { status: 400 });
 
   let replicateToken = process.env.REPLICATE_API_TOKEN;
-  let nvidiaKey = process.env.NVIDIA_API_KEY;
+  let huggingFaceKey = process.env.HUGGINGFACE_API_KEY;
   let isUsingCustomKey = false;
 
   if (customApiKey && customApiKey.trim()) {
     const key = customApiKey.trim();
-    if (key.startsWith('nvapi-')) {
-      nvidiaKey = key;
-      replicateToken = undefined; // 強制使用 NVIDIA
+    if (key.startsWith('hf_')) {
+      huggingFaceKey = key;
+      replicateToken = undefined; // 強制使用 HF
     } else {
       replicateToken = key;
-      nvidiaKey = undefined; // 強制使用 Replicate
+      huggingFaceKey = undefined; // 強制使用 Replicate
     }
     isUsingCustomKey = true;
   }
 
-  if (!replicateToken && !nvidiaKey) {
+  if (!replicateToken && !huggingFaceKey) {
     return NextResponse.json({ error: '尚未設定 AI 生成 API Key' }, { status: 500 });
   }
 
@@ -228,13 +204,13 @@ export async function POST(req: NextRequest) {
         apiToken: replicateToken,
       });
     } else {
-      // fallback NVIDIA
-      base64 = await generateViaNvidia({
+      // fallback Hugging Face Z-Image
+      base64 = await generateViaHuggingFace({
         prompt: prompt.trim(),
         width, height, steps,
         seed: useSeed,
         negative_prompt,
-        apiKey: nvidiaKey!,
+        apiKey: huggingFaceKey!,
       });
     }
 
