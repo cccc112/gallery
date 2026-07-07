@@ -22,6 +22,8 @@ export async function GET(
       contract_status,
       contract_signed_buyer_at,
       contract_signed_seller_at,
+      buyer_signature,
+      seller_signature,
       created_at,
       artworks (title, monthly_rent_price, deposit_amount),
       buyer:buyer_id (raw_user_meta_data),
@@ -59,6 +61,8 @@ export async function GET(
     contractStatus: order.contract_status,
     contractSignedBuyerAt: order.contract_signed_buyer_at,
     contractSignedSellerAt: order.contract_signed_seller_at,
+    buyerSignature: order.buyer_signature,
+    sellerSignature: order.seller_signature,
     createdAt: order.created_at,
   };
 

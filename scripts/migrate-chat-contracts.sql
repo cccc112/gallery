@@ -10,7 +10,9 @@ ALTER TABLE public.orders
   ADD COLUMN IF NOT EXISTS contact_phone text,
   ADD COLUMN IF NOT EXISTS contract_status text DEFAULT 'pending',
   ADD COLUMN IF NOT EXISTS contract_signed_buyer_at timestamptz,
-  ADD COLUMN IF NOT EXISTS contract_signed_seller_at timestamptz;
+  ADD COLUMN IF NOT EXISTS contract_signed_seller_at timestamptz,
+  ADD COLUMN IF NOT EXISTS buyer_signature text,
+  ADD COLUMN IF NOT EXISTS seller_signature text;
 
 -- 2. 建立 artwork_chats 表格（一個作品 + 一對買賣家 = 一間聊天室）
 CREATE TABLE IF NOT EXISTS public.artwork_chats (

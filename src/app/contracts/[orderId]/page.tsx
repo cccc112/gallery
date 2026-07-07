@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Shield, CheckCircle, Clock, FileText, Loader2 } from 'lucide-react';
+import { SignatureCanvas } from '@/components/SignatureCanvas';
 
 interface ContractData {
   orderId: string;
@@ -18,6 +19,8 @@ interface ContractData {
   contractStatus: string;
   contractSignedBuyerAt?: string;
   contractSignedSellerAt?: string;
+  buyerSignature?: string;
+  sellerSignature?: string;
   createdAt: string;
   rentMonths?: number;
 }
@@ -29,6 +32,7 @@ export default function ContractPage({ params }: { params: { orderId: string } }
   const [role, setRole] = useState<'buyer' | 'seller' | null>(null);
   const [signResult, setSignResult] = useState<{ status: string; message: string } | null>(null);
   const [error, setError] = useState('');
+  const [signatureUrl, setSignatureUrl] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchContract = async () => {
@@ -48,13 +52,13 @@ export default function ContractPage({ params }: { params: { orderId: string } }
   }, [params.orderId]);
 
   const handleSign = async () => {
-    if (!role || signing) return;
+    if (!role || signing || !signatureUrl) return;
     setSigning(true);
     try {
       const res = await fetch('/api/contracts/sign', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderId: params.orderId, role }),
+        body: JSON.stringify({ orderId: params.orderId, role, signature: signatureUrl }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
@@ -251,7 +255,37 @@ export default function ContractPage({ params }: { params: { orderId: string } }
               </p>
             </div>
 
-            <div className="text-xs text-stone-400 border-t border-stone-100 pt-4">
+            {/* Signatures Display */}
+            <div className="grid grid-cols-2 gap-4 mt-8 pt-6 border-t border-stone-100">
+              <div>
+                <p className="text-xs font-semibold text-stone-500 uppercase tracking-wide mb-2">藝術家（甲方）簽章</p>
+                {contract.sellerSignature ? (
+                  <div>
+                    <img src={contract.sellerSignature} alt="Seller Signature" className="h-16 object-contain mix-blend-darken" />
+                    <p className="text-[10px] text-stone-400 mt-1">
+                      簽署時間：{formatDate(contract.contractSignedSellerAt!)}
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-xs text-stone-400 italic">尚未簽署</p>
+                )}
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-stone-500 uppercase tracking-wide mb-2">看展人（乙方）簽章</p>
+                {contract.buyerSignature ? (
+                  <div>
+                    <img src={contract.buyerSignature} alt="Buyer Signature" className="h-16 object-contain mix-blend-darken" />
+                    <p className="text-[10px] text-stone-400 mt-1">
+                      簽署時間：{formatDate(contract.contractSignedBuyerAt!)}
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-xs text-stone-400 italic">尚未簽署</p>
+                )}
+              </div>
+            </div>
+
+            <div className="text-xs text-stone-400 border-t border-stone-100 pt-4 mt-8">
               合約建立時間：{formatDate(contract.createdAt)}
             </div>
           </div>
@@ -261,14 +295,19 @@ export default function ContractPage({ params }: { params: { orderId: string } }
         {role && !isSigned && !hasCurrentUserSigned && (
           <div className="bg-white rounded-xl border border-stone-200 shadow-sm p-6 mb-6">
             <h3 className="text-sm font-semibold text-stone-800 mb-2">確認並簽署合約</h3>
-            <p className="text-xs text-stone-500 mb-4">
+            <p className="text-xs text-stone-500 mb-6">
               我已詳細閱讀以上合約條款，並同意履行本合約所載之所有義務。
-              點擊「我同意並簽署」即代表您以數位方式確認本合約。
+              請在下方簽名，點擊「我同意並簽署」即代表您以數位方式確認本合約。
             </p>
+
+            <div className="mb-6">
+              <SignatureCanvas onSignature={(url) => setSignatureUrl(url)} />
+            </div>
+
             <button
               onClick={handleSign}
-              disabled={signing}
-              className="w-full h-12 bg-stone-900 hover:bg-stone-800 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-60"
+              disabled={signing || !signatureUrl}
+              className="w-full h-12 bg-stone-900 hover:bg-stone-800 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {signing ? (
                 <><Loader2 className="h-4 w-4 animate-spin" /> 簽署中...</>

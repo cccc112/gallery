@@ -7,12 +7,13 @@ export async function POST(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: '請先登入' }, { status: 401 });
 
-  const { orderId, role } = await req.json();
-  if (!orderId || !['buyer', 'seller'].includes(role)) {
+  const { orderId, role, signature } = await req.json();
+  if (!orderId || !['buyer', 'seller'].includes(role) || !signature) {
     return NextResponse.json({ error: '缺少必要欄位' }, { status: 400 });
   }
 
   const signedAtField = role === 'buyer' ? 'contract_signed_buyer_at' : 'contract_signed_seller_at';
+  const signatureField = role === 'buyer' ? 'buyer_signature' : 'seller_signature';
 
   // 取得訂單資料確認身份
   const { data: order } = await supabase
@@ -29,10 +30,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: '您沒有權限簽署此合約' }, { status: 403 });
   }
 
-  // 更新簽署時間
+  // 更新簽署時間與簽名檔
   const { error: updateError } = await supabase
     .from('orders')
-    .update({ [signedAtField]: new Date().toISOString() })
+    .update({ 
+      [signedAtField]: new Date().toISOString(),
+      [signatureField]: signature 
+    })
     .eq('id', orderId);
 
   if (updateError) return NextResponse.json({ error: updateError.message }, { status: 500 });
