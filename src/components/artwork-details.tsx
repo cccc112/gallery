@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Check, Truck, Shield, RotateCcw, Box, Lock, RefreshCw, CreditCard, LogIn, Camera, Trash2, MessageSquare } from "lucide-react"
 import { CheckoutModal } from '@/components/CheckoutModal';
+import { ArtworkChatModal } from '@/components/ArtworkChatModal';
 
 interface ArtworkDetailsProps {
   artwork: {
@@ -39,29 +40,20 @@ export function ArtworkDetails({
   isSold = false,
   isRented = false,
   isOwner = false,
-}: ArtworkDetailsProps & { isLoggedIn?: boolean; isSold?: boolean; isRented?: boolean; isOwner?: boolean }) {
+  currentUserId = '',
+}: ArtworkDetailsProps & { isLoggedIn?: boolean; isSold?: boolean; isRented?: boolean; isOwner?: boolean; currentUserId?: string }) {
   const router = useRouter();
   const [modalOpen, setModalOpen] = useState(false);
   const [modalAction, setModalAction] = useState<'buy' | 'rent'>('buy');
   const [deleting, setDeleting] = useState(false);
-  const [contacting, setContacting] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
 
-  const handleContactArtist = async () => {
+  const handleContactArtist = () => {
     if (!isLoggedIn) {
       router.push(`/login?redirectTo=/artwork/${artwork.id}`);
       return;
     }
-    setContacting(true);
-    try {
-      const res = await fetch(`/api/chat?artistId=${artwork.artist_id}&artworkId=${artwork.id}`);
-      const data = await res.json();
-      if (data.sessionId) {
-        router.push(`/dashboard/chat`);
-      }
-    } catch (e) {
-      console.error(e);
-      setContacting(false);
-    }
+    setChatOpen(true);
   };
 
   const handleDelete = async () => {
@@ -332,11 +324,10 @@ export function ArtworkDetails({
       ) : (
         <button
           onClick={handleContactArtist}
-          disabled={contacting}
-          className="w-full mt-2 flex items-center justify-center gap-2 text-xs font-semibold text-foreground hover:bg-stone-100 border border-border/60 rounded-lg py-2.5 transition-colors disabled:opacity-50"
+          className="w-full mt-2 flex items-center justify-center gap-2 text-xs font-semibold text-foreground hover:bg-stone-100 border border-border/60 rounded-lg py-2.5 transition-colors"
         >
           <MessageSquare className="h-3.5 w-3.5" />
-          {contacting ? '正在連接對話...' : '私訊聯絡藝術家'}
+          💬 詢問藝術家
         </button>
       )}
 
@@ -346,6 +337,15 @@ export function ArtworkDetails({
         actionType={modalAction}
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
+      />
+
+      {/* Artwork Chat Modal */}
+      <ArtworkChatModal
+        isOpen={chatOpen}
+        onClose={() => setChatOpen(false)}
+        artworkId={artwork.id}
+        artworkTitle={artwork.title}
+        currentUserId={currentUserId}
       />
 
       {/* Trust Badges */}

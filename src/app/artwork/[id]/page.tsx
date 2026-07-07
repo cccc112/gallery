@@ -187,6 +187,7 @@ export default async function ArtworkPage({ params }: ArtworkPageProps) {
                 isSold={artwork.is_sold}
                 isRented={artwork.is_rented}
                 isOwner={currentUserId === artwork.artist_id}
+                currentUserId={currentUserId}
               />
             </div>
           </div>

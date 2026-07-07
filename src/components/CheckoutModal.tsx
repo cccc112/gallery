@@ -15,7 +15,7 @@ import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 
 type ActionType = 'buy' | 'rent';
 type PaymentMethod = 'card' | 'crypto';
-type Step = 'select' | 'stripe-loading' | 'crypto-confirm' | 'processing' | 'success' | 'error';
+type Step = 'delivery' | 'select' | 'stripe-loading' | 'crypto-confirm' | 'processing' | 'success' | 'error';
 
 interface CheckoutModalProps {
   artwork: {
@@ -49,11 +49,15 @@ const BLOCK_EXPLORERS: Record<number, string> = {
 
 export function CheckoutModal({ artwork, actionType, isOpen, onClose }: CheckoutModalProps) {
   const router = useRouter();
-  const [step, setStep] = useState<Step>('select');
+  const [step, setStep] = useState<Step>('delivery');
   const [payMethod, setPayMethod] = useState<PaymentMethod | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
   const [txId, setTxId] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+  const [orderId, setOrderId] = useState('');
+  const [deliveryMethod, setDeliveryMethod] = useState<'shipping' | 'pickup'>('shipping');
+  const [shippingAddress, setShippingAddress] = useState('');
+  const [contactPhone, setContactPhone] = useState('');
   const [form, setForm] = useState({
     name: '', phone: '', address: '', city: '', zip: '',
     cardNumber: '', cardExpiry: '', cardCvc: '',
@@ -84,10 +88,14 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
   // Reset on open
   useEffect(() => {
     if (isOpen) {
-      setStep('select');
+      setStep('delivery');
       setPayMethod(null);
       setErrorMsg('');
       setPendingTxHash(undefined);
+      setDeliveryMethod('shipping');
+      setShippingAddress('');
+      setContactPhone('');
+      setOrderId('');
       setForm({ name: '', phone: '', address: '', city: '', zip: '', cardNumber: '', cardExpiry: '', cardCvc: '' });
     }
   }, [isOpen]);
@@ -272,6 +280,108 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
 
         <div className="flex-1 overflow-y-auto">
 
+          {/* ── 配送選擇步驟 ── */}
+          {step === 'delivery' && (
+            <div className="p-6 space-y-4">
+              <p className="text-xs text-muted-foreground font-light mb-1">請選擇取件方式：</p>
+
+              {/* 宅配 */}
+              <button
+                onClick={() => setDeliveryMethod('shipping')}
+                className={`w-full flex items-start gap-4 p-4 border rounded-sm text-left transition-all ${
+                  deliveryMethod === 'shipping'
+                    ? 'border-primary bg-primary/5'
+                    : 'border-border bg-white/60 hover:border-primary/40'
+                }`}
+              >
+                <div className="h-10 w-10 rounded-full bg-stone-50 flex items-center justify-center border border-border/40 flex-shrink-0 mt-0.5">
+                  <span className="text-lg">🚚</span>
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-foreground">宅配到府</p>
+                  <p className="text-xs text-muted-foreground font-light mt-0.5">
+                    交易成立後，平台將聯繫您安排配送事宜。運費依實際情況計算。
+                  </p>
+                  {deliveryMethod === 'shipping' && (
+                    <div className="mt-3 space-y-2">
+                      <input
+                        type="text"
+                        placeholder="收件地址（縣市 + 詳細地址）"
+                        value={shippingAddress}
+                        onChange={(e) => setShippingAddress(e.target.value)}
+                        className="w-full text-xs border border-border/60 rounded px-3 py-2 bg-white focus:outline-none focus:ring-1 focus:ring-primary/30"
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                      <input
+                        type="tel"
+                        placeholder="聯絡電話"
+                        value={contactPhone}
+                        onChange={(e) => setContactPhone(e.target.value)}
+                        className="w-full text-xs border border-border/60 rounded px-3 py-2 bg-white focus:outline-none focus:ring-1 focus:ring-primary/30"
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </div>
+                  )}
+                </div>
+                {deliveryMethod === 'shipping' && (
+                  <div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+                    <Check className="h-3 w-3 text-white" />
+                  </div>
+                )}
+              </button>
+
+              {/* 面交 */}
+              <button
+                onClick={() => setDeliveryMethod('pickup')}
+                className={`w-full flex items-start gap-4 p-4 border rounded-sm text-left transition-all ${
+                  deliveryMethod === 'pickup'
+                    ? 'border-primary bg-primary/5'
+                    : 'border-border bg-white/60 hover:border-primary/40'
+                }`}
+              >
+                <div className="h-10 w-10 rounded-full bg-stone-50 flex items-center justify-center border border-border/40 flex-shrink-0 mt-0.5">
+                  <span className="text-lg">🤝</span>
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-foreground">面交自取</p>
+                  <p className="text-xs text-muted-foreground font-light mt-0.5">
+                    付款後，可透過站內聊天室與藝術家協調面交時間與地點。建議選擇公共場所。
+                  </p>
+                  {deliveryMethod === 'pickup' && (
+                    <div className="mt-3">
+                      <input
+                        type="tel"
+                        placeholder="聯絡電話"
+                        value={contactPhone}
+                        onChange={(e) => setContactPhone(e.target.value)}
+                        className="w-full text-xs border border-border/60 rounded px-3 py-2 bg-white focus:outline-none focus:ring-1 focus:ring-primary/30"
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </div>
+                  )}
+                </div>
+                {deliveryMethod === 'pickup' && (
+                  <div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+                    <Check className="h-3 w-3 text-white" />
+                  </div>
+                )}
+              </button>
+
+              <button
+                onClick={() => {
+                  if (deliveryMethod === 'shipping' && !shippingAddress.trim()) {
+                    alert('請填寫收件地址');
+                    return;
+                  }
+                  setStep('select');
+                }}
+                className="w-full h-12 bg-stone-900 hover:bg-stone-800 text-white text-sm font-semibold rounded-sm transition-all flex items-center justify-center gap-2"
+              >
+                下一步：選擇付款方式 →
+              </button>
+            </div>
+          )}
+
           {/* ── 選擇付款方式 ── */}
           {step === 'select' && (
             <div className="p-6 space-y-3">
@@ -438,6 +548,16 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
                 <p className="text-xs text-muted-foreground font-light mt-1.5 leading-relaxed max-w-[280px]">
                   {successMsg}
                 </p>
+                {deliveryMethod === 'shipping' && (
+                  <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mt-1">
+                    🚚 我們將在 1-2 個工作天內聯絡您安排配送事宜。
+                  </p>
+                )}
+                {deliveryMethod === 'pickup' && (
+                  <p className="text-xs text-blue-700 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 mt-1">
+                    🤝 請透過站內聊天室與藝術家協調面交時間地點。
+                  </p>
+                )}
               </div>
               {txId && (
                 <div className="w-full bg-secondary/40 rounded-sm px-4 py-2.5 text-left">
@@ -456,6 +576,16 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
                     </a>
                   )}
                 </div>
+              )}
+              {orderId && (
+                <a
+                  href={`/contracts/${orderId}`}
+                  target="_blank"
+                  className="w-full flex items-center justify-center gap-2 rounded-sm border border-amber-300 bg-amber-50 text-amber-800 py-3 text-sm font-semibold hover:bg-amber-100 transition-all"
+                >
+                  <Shield className="h-4 w-4" />
+                  查看並簽署電子合約
+                </a>
               )}
               <button onClick={() => { onClose(); router.push('/profile'); }}
                 className="w-full rounded-sm bg-primary text-primary-foreground py-3 text-sm font-semibold hover:bg-primary/90 transition-all">
