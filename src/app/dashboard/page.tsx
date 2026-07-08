@@ -201,7 +201,7 @@ export default async function DashboardPage() {
         {/* ── 底部導覽 ── */}
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-6">
           {[
-            { href: '/dashboard/chat', icon: MessageSquare, label: '客服收件匣', sub: '回覆買家私訊' },
+            { href: '/dashboard/chat', icon: MessageSquare, label: '客服收件匣', sub: '回覆看展人私訊' },
             { href: '/profile', icon: User, label: '個人資訊', sub: '編輯頭像、顯示名稱' },
             { href: '/profile/upload', icon: Upload, label: '上傳新作品', sub: '發布至藝廊販售' },
             { href: '/gallery', icon: LayoutDashboard, label: '探索藝廊', sub: '瀏覽所有作品' },

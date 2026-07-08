@@ -87,7 +87,7 @@ export default function ChatDashboardPage() {
           </Link>
           <div>
             <h1 className="font-serif text-2xl font-semibold text-foreground">客服收件匣</h1>
-            <p className="text-sm text-muted-foreground mt-1">在這裡管理買家的私訊與您的客服對話</p>
+            <p className="text-sm text-muted-foreground mt-1">在這裡管理看展人的私訊與您的客服對話</p>
           </div>
         </div>
 

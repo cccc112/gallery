@@ -437,7 +437,7 @@ function EmptyState({
 // ── Feedback Tab ──────────────────────────────────────────────────
 function FeedbackTab({ reviews }: { reviews: ReviewRow[] }) {
   if (reviews.length === 0) {
-    return <EmptyState icon={MessageSquare} label="尚未收到任何評價" action={{ href: '#', text: '累積更多買家吧！' }} />;
+    return <EmptyState icon={MessageSquare} label="尚未收到任何評價" action={{ href: '#', text: '累積更多看展人吧！' }} />;
   }
 
   return (
@@ -448,7 +448,7 @@ function FeedbackTab({ reviews }: { reviews: ReviewRow[] }) {
             <div>
               <p className="text-sm font-semibold text-foreground">{r.title}</p>
               <p className="text-[10px] text-muted-foreground mt-0.5">
-                買家：{r.display_name || r.email || '匿名用戶'} · {fmtDate(r.created_at)}
+                看展人：{r.display_name || r.email || '匿名用戶'} · {fmtDate(r.created_at)}
               </p>
             </div>
             <div className="flex items-center gap-1 bg-amber-50 text-amber-600 px-2 py-1 rounded-sm border border-amber-200">
@@ -470,9 +470,9 @@ export function DashboardTabs({ orders, rentals, artworks, reviews, totalFiatRev
   const [tab, setTab] = useState<'collection' | 'artist' | 'feedback'>('collection');
 
   const tabs = [
-    { key: 'collection' as const, label: '買家中心 (購買/租賃)', icon: ShoppingBag, count: orders.length + rentals.length },
-    { key: 'artist' as const, label: '賣家中心 (我的作品)', icon: Palette, count: artworks.length },
-    { key: 'feedback' as const, label: '買家評價', icon: MessageSquare, count: reviews.length },
+    { key: 'collection' as const, label: '看展人中心 (購買/租賃)', icon: ShoppingBag, count: orders.length + rentals.length },
+    { key: 'artist' as const, label: '藝術家中心 (我的作品)', icon: Palette, count: artworks.length },
+    { key: 'feedback' as const, label: '看展人評價', icon: MessageSquare, count: reviews.length },
   ];
 
   return (
