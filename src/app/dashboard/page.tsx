@@ -233,7 +233,7 @@ export default async function DashboardPage() {
             </div>
             <div>
               <p className="text-xs font-semibold text-indigo-900">✦ AI 藝術生成工作室</p>
-              <p className="text-[10px] text-indigo-600/70">由 NVIDIA FLUX.1 驅動 · 輸入描述，秒出精緻畫作</p>
+              <p className="text-[10px] text-indigo-600/70">由 Hugging Face Z-Image 驅動 · 輸入描述，秒出精緻畫作</p>
             </div>
           </div>
           <svg className="h-4 w-4 text-indigo-400 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">

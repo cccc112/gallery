@@ -81,16 +81,16 @@ export function HomeAISection() {
               <div className="h-8 w-8 rounded-sm bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-md">
                 <Sparkles className="h-4 w-4 text-white" />
               </div>
-              <span className="text-xs font-semibold tracking-widest uppercase text-indigo-600">
-                AI 藝術生成 · NVIDIA FLUX.1
-              </span>
+              <Badge variant="secondary" className="bg-indigo-100 text-indigo-700 hover:bg-indigo-200 border-none px-3 py-1 text-[10px] sm:text-xs">
+                AI 藝術生成 · Z-Image
+              </Badge>
             </div>
 
             <h2 className="font-serif text-3xl lg:text-4xl font-semibold tracking-tight text-foreground text-balance leading-tight">
               用文字，<br />創作獨一無二的畫作
             </h2>
             <p className="mt-4 text-sm text-muted-foreground font-light leading-relaxed max-w-md">
-              輸入任何描述，NVIDIA FLUX.1 模型將在數秒內為您生成精美畫作。
+              輸入任何描述，AI 模型將在數秒內為您生成精美畫作。
               可直接下載或上架至藝廊販售。
             </p>
 
@@ -208,8 +208,8 @@ export function HomeAISection() {
                   <p className="text-sm text-muted-foreground">
                     在左側輸入描述，AI 將在此生成您的專屬畫作
                   </p>
-                  <p className="text-xs text-muted-foreground/60">
-                    由 NVIDIA FLUX.1-Schnell 提供支援
+                  <p className="text-[10px] text-muted-foreground">
+                    由 Hugging Face Z-Image 提供支援
                   </p>
                 </div>
               )}

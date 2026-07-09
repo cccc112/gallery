@@ -219,7 +219,7 @@ export default function GeneratePage() {
             </div>
             <div>
               <h1 className="font-serif text-2xl font-semibold text-foreground">AI 藝術生成工作室</h1>
-              <p className="text-xs text-muted-foreground mt-0.5">由 NVIDIA FLUX.1 驅動 · 輸入描述，秒出精緻畫作</p>
+              <p className="text-xs text-muted-foreground mt-0.5">由 Hugging Face Z-Image 驅動 · 輸入描述，秒出精緻畫作</p>
             </div>
           </div>
         </div>
