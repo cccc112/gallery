@@ -9,44 +9,68 @@ export async function GET(req: NextRequest) {
   if (!user) return NextResponse.json({ error: '請先登入' }, { status: 401 });
 
   const artworkId = req.nextUrl.searchParams.get('artworkId');
-  if (!artworkId) return NextResponse.json({ error: '缺少 artworkId' }, { status: 400 });
+  const chatIdParam = req.nextUrl.searchParams.get('chatId');
 
-  // 找到這件作品的藝術家
-  const { data: artwork } = await supabase
-    .from('artworks')
-    .select('artist_id')
-    .eq('id', artworkId)
-    .single();
+  if (!artworkId && !chatIdParam) return NextResponse.json({ error: '缺少參數' }, { status: 400 });
 
-  if (!artwork) return NextResponse.json({ error: '找不到作品' }, { status: 404 });
+  let chat: any = null;
+  let sellerId: string | null = null;
 
-  const sellerId = artwork.artist_id;
-  const buyerId = user.id;
-
-  // 如果是藝術家自己，不能跟自己聊
-  if (sellerId === buyerId) {
-    return NextResponse.json({ error: '藝術家無法詢問自己的作品' }, { status: 400 });
-  }
-
-  // 嘗試取得現有聊天室
-  let { data: chat } = await supabase
-    .from('artwork_chats')
-    .select('id')
-    .eq('artwork_id', artworkId)
-    .eq('buyer_id', buyerId)
-    .eq('seller_id', sellerId)
-    .maybeSingle();
-
-  // 若不存在則建立
-  if (!chat) {
-    const { data: newChat, error } = await supabase
+  if (chatIdParam) {
+    // 透過 chatId 取得聊天室
+    const { data } = await supabase
       .from('artwork_chats')
-      .insert({ artwork_id: artworkId, buyer_id: buyerId, seller_id: sellerId })
-      .select('id')
+      .select('id, artwork_id, buyer_id, seller_id')
+      .eq('id', chatIdParam)
+      .maybeSingle();
+      
+    if (!data) return NextResponse.json({ error: '找不到聊天室' }, { status: 404 });
+    // 確認權限
+    if (data.buyer_id !== user.id && data.seller_id !== user.id) {
+      return NextResponse.json({ error: '無權限' }, { status: 403 });
+    }
+    chat = data;
+    sellerId = data.seller_id;
+  } else if (artworkId) {
+    // 透過 artworkId 取得或建立聊天室（看展人發起）
+    const { data: artwork } = await supabase
+      .from('artworks')
+      .select('artist_id')
+      .eq('id', artworkId)
       .single();
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    chat = newChat;
+    if (!artwork) return NextResponse.json({ error: '找不到作品' }, { status: 404 });
+
+    sellerId = artwork.artist_id;
+    const buyerId = user.id;
+
+    // 如果是藝術家自己，不能跟自己聊
+    if (sellerId === buyerId) {
+      return NextResponse.json({ error: '藝術家無法詢問自己的作品' }, { status: 400 });
+    }
+
+    // 嘗試取得現有聊天室
+    const { data: existingChat } = await supabase
+      .from('artwork_chats')
+      .select('id')
+      .eq('artwork_id', artworkId)
+      .eq('buyer_id', buyerId)
+      .eq('seller_id', sellerId)
+      .maybeSingle();
+
+    if (existingChat) {
+      chat = existingChat;
+    } else {
+      // 若不存在則建立
+      const { data: newChat, error } = await supabase
+        .from('artwork_chats')
+        .insert({ artwork_id: artworkId, buyer_id: buyerId, seller_id: sellerId })
+        .select('id')
+        .single();
+
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      chat = newChat;
+    }
   }
 
   // 取得訊息歷史
@@ -55,6 +79,14 @@ export async function GET(req: NextRequest) {
     .select('id, sender_id, content, created_at')
     .eq('chat_id', chat!.id)
     .order('created_at', { ascending: true });
+
+  // 將未讀訊息標記為已讀
+  await supabase
+    .from('chat_messages')
+    .update({ is_read: true })
+    .eq('chat_id', chat!.id)
+    .neq('sender_id', user.id)
+    .eq('is_read', false);
 
   return NextResponse.json({ chatId: chat!.id, messages: messages || [], sellerId });
 }

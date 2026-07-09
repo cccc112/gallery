@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { updateProfile } from './actions';
 import { ArrowLeft, Globe, AtSign, Hash, User, BookOpen, Briefcase, Heart } from 'lucide-react';
+import { AvatarUploader } from '@/components/AvatarUploader';
 
 export const revalidate = 0;
 
@@ -60,12 +61,12 @@ export default async function ProfileEditPage({
         <form action={updateProfile} className="space-y-6">
           {/* Avatar preview */}
           <div className="bg-white/70 backdrop-blur-sm border border-border/60 rounded-sm shadow-sm p-6">
-            <div className="flex items-center gap-4 mb-6">
-              <img src={avatarUrl} alt={displayName} className="h-16 w-16 rounded-full border-2 border-white shadow-md bg-stone-100" />
+            <div className="flex items-center gap-6 mb-6">
+              <AvatarUploader initialUrl={avatarUrl} userId={user.id} />
               <div>
                 <p className="text-sm font-semibold text-foreground">{displayName}</p>
                 <p className="text-xs text-muted-foreground">{user.email}</p>
-                <p className="text-[10px] text-muted-foreground/60 mt-0.5">頭像會自動同步 Google/Facebook 大頭貼</p>
+                <p className="text-[10px] text-muted-foreground/60 mt-0.5">點擊左側圖片可更換自訂大頭貼 (上限 2MB)</p>
               </div>
             </div>
 

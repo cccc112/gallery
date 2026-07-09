@@ -6,13 +6,13 @@ import { useState, useEffect, useRef } from 'react';
 import {
   Compass, Home, Upload, LogIn, UserPlus,
   Menu, X, LogOut, ChevronDown, User, LayoutDashboard,
-  Heart, Sparkles,
+  Heart, Sparkles, FileText, Bell
 } from 'lucide-react';
 import { signOut } from '@/app/auth/actions';
 import { ConnectWalletButton } from '@/components/ConnectWalletButton';
 
 const IconMap: Record<string, React.ElementType> = {
-  Home, Compass, LayoutDashboard,
+  Home, Compass, LayoutDashboard, FileText
 };
 
 interface NavLink { href: string; label: string; icon: string; }
@@ -28,6 +28,7 @@ export default function NavbarClient({ user, profile, navLinks }: NavbarClientPr
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // 路由切換時關閉選單
@@ -35,6 +36,24 @@ export default function NavbarClient({ user, profile, navLinks }: NavbarClientPr
     setMobileOpen(false);
     setDropdownOpen(false);
   }, [pathname]);
+
+  // 取得未讀訊息數量
+  useEffect(() => {
+    if (!user) return;
+    const fetchUnread = async () => {
+      try {
+        const res = await fetch('/api/notifications');
+        const data = await res.json();
+        setUnreadCount(data.unreadCount || 0);
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    fetchUnread();
+    // 簡單的輪詢，每 30 秒更新一次
+    const interval = setInterval(fetchUnread, 30000);
+    return () => clearInterval(interval);
+  }, [user]);
 
   // 點外部關閉 dropdown
   useEffect(() => {
@@ -107,6 +126,16 @@ export default function NavbarClient({ user, profile, navLinks }: NavbarClientPr
 
               {/* Wallet Button */}
               <ConnectWalletButton />
+
+              {/* Notifications */}
+              <Link href="/dashboard/chat" className="relative p-2 rounded-full text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-all mr-1">
+                <Bell className="h-5 w-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-0 right-0 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white shadow-sm ring-1 ring-white">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </Link>
 
               {/* Avatar Dropdown */}
               <div ref={dropdownRef} className="relative">

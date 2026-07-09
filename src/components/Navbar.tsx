@@ -39,6 +39,7 @@ export default async function Navbar() {
   const navLinks = [
     { href: '/', label: '首頁', icon: 'Home' },
     { href: '/gallery', label: '探索藝廊', icon: 'Compass' },
+    { href: '/contract-template', label: '合約預覽', icon: 'FileText' },
     ...(profile?.role === 'artist' ? [{ href: '/admin', label: '管理後台', icon: 'LayoutDashboard' }] : []),
   ];
 

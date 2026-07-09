@@ -11,6 +11,7 @@ export async function updateProfile(formData: FormData) {
   if (!user) redirect('/login');
 
   const display_name = (formData.get('display_name') as string)?.trim();
+  const avatar_url = formData.get('avatar_url') as string;
   const bio = (formData.get('bio') as string)?.trim();
   const experience = (formData.get('experience') as string)?.trim();
   const story = (formData.get('story') as string)?.trim();
@@ -22,6 +23,7 @@ export async function updateProfile(formData: FormData) {
     const admin = createAdminClient();
     const { error } = await admin.from('users').update({
       display_name: display_name || undefined,
+      avatar_url: avatar_url || undefined,
       bio: bio || null,
       experience: experience || null,
       story: story || null,

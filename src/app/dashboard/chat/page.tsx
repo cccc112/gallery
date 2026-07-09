@@ -28,9 +28,9 @@ export default function ChatDashboardPage() {
 
   const fetchSessions = async () => {
     try {
-      const res = await fetch('/api/chat');
+      const res = await fetch('/api/artwork-chats/mine');
       const data = await res.json();
-      if (data.sessions) setSessions(data.sessions);
+      if (data.chats) setSessions(data.chats);
     } catch (e) {
       console.error(e);
     } finally {
@@ -41,7 +41,7 @@ export default function ChatDashboardPage() {
   const loadMessages = async (sessionId: string) => {
     setSelectedSessionId(sessionId);
     try {
-      const res = await fetch(`/api/chat?sessionId=${sessionId}`);
+      const res = await fetch(`/api/artwork-chats?chatId=${sessionId}`);
       const data = await res.json();
       if (data.messages) setMessages(data.messages);
       
@@ -61,10 +61,10 @@ export default function ChatDashboardPage() {
     setMessages(prev => [...prev, { id: 'tmp', content, sender_id: currentUser?.id, created_at: new Date().toISOString() }]);
 
     try {
-      const res = await fetch('/api/chat', {
+      const res = await fetch('/api/artwork-chats', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId: selectedSessionId, content })
+        body: JSON.stringify({ chatId: selectedSessionId, content })
       });
       const data = await res.json();
       if (data.message) {
@@ -87,7 +87,7 @@ export default function ChatDashboardPage() {
           </Link>
           <div>
             <h1 className="font-serif text-2xl font-semibold text-foreground">客服收件匣</h1>
-            <p className="text-sm text-muted-foreground mt-1">在這裡管理看展人的私訊與您的客服對話</p>
+            <p className="text-sm text-muted-foreground mt-1">在這裡管理與藝術家/看展人的客服私訊</p>
           </div>
         </div>
 
@@ -100,9 +100,17 @@ export default function ChatDashboardPage() {
                 <div className="p-6 text-center text-xs text-muted-foreground">尚無對話紀錄</div>
               ) : (
                 sessions.map(s => {
-                  const isArtist = s.artist_email === currentUser?.email;
-                  const otherName = isArtist ? (s.buyer_name || s.buyer_email) : (s.artist_name || s.artist_email);
-                  const artworkTitle = s.artwork_title ? `[詢問作品：${s.artwork_title}]` : '';
+                  const isArtist = s.seller_id === currentUser?.id;
+                  
+                  const buyerData = s.buyer?.raw_user_meta_data || {};
+                  const sellerData = s.seller?.raw_user_meta_data || {};
+                  
+                  const buyerName = buyerData.full_name || buyerData.name || '看展人';
+                  const sellerName = sellerData.full_name || sellerData.name || '藝術家';
+
+                  const otherName = isArtist ? buyerName : sellerName;
+                  const artworkTitle = s.artworks?.title ? `[詢問作品：${s.artworks.title}]` : '';
+                  const lastMsgTime = s.lastMessage?.created_at ? new Date(s.lastMessage.created_at).toLocaleString() : new Date(s.created_at).toLocaleString();
                   
                   return (
                     <button
@@ -121,8 +129,8 @@ export default function ChatDashboardPage() {
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-muted-foreground truncate">{s.last_message || '點擊開始對話'}</p>
-                      <p className="text-[9px] text-muted-foreground mt-1">{new Date(s.updated_at).toLocaleString()}</p>
+                      <p className="text-xs text-muted-foreground truncate">{s.lastMessage?.content || '點擊開始對話'}</p>
+                      <p className="text-[9px] text-muted-foreground mt-1">{lastMsgTime}</p>
                     </button>
                   );
                 })
