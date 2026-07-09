@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react';
 import Link from 'next/link';
 import { Wand2, Loader2, Sparkles, Download, ArrowRight, ImageIcon } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 const QUICK_PROMPTS = [
   '台灣阿里山日出，雲海翻騰，晨光金黃',
