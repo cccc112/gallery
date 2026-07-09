@@ -7,6 +7,7 @@ export async function GET(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: '請先登入' }, { status: 401 });
 
+  // 先取得聊天室
   const { data: chats, error } = await supabase
     .from('artwork_chats')
     .select(`
@@ -15,12 +16,28 @@ export async function GET(req: NextRequest) {
       buyer_id,
       seller_id,
       created_at,
-      artworks (title, preview_file_url),
-      buyer:buyer_id (raw_user_meta_data),
-      seller:seller_id (raw_user_meta_data)
+      artworks (title, preview_file_url)
     `)
     .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`)
     .order('created_at', { ascending: false });
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // 收集所有需要查詢的 user id
+  const userIds = new Set<string>();
+  chats?.forEach(chat => {
+    userIds.add(chat.buyer_id);
+    userIds.add(chat.seller_id);
+  });
+
+  // 查詢 public.users 取得更新的 profile
+  const { data: usersData } = await supabase
+    .from('users')
+    .select('id, display_name, avatar_url, role')
+    .in('id', Array.from(userIds));
+
+  const userMap = new Map();
+  usersData?.forEach(u => userMap.set(u.id, u));
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
@@ -35,7 +52,6 @@ export async function GET(req: NextRequest) {
         .limit(1)
         .maybeSingle();
 
-      // 計算未讀數量 (此處先假設表格有 is_read 欄位，稍後會透過 SQL 新增)
       const { count } = await supabase
         .from('chat_messages')
         .select('*', { count: 'exact', head: true })
@@ -43,7 +59,13 @@ export async function GET(req: NextRequest) {
         .neq('sender_id', user.id)
         .eq('is_read', false);
 
-      return { ...chat, lastMessage: lastMsg, unread_count: count || 0 };
+      return { 
+        ...chat, 
+        buyer: userMap.get(chat.buyer_id) || {},
+        seller: userMap.get(chat.seller_id) || {},
+        lastMessage: lastMsg, 
+        unread_count: count || 0 
+      };
     })
   );
 

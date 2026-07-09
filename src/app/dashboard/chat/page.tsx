@@ -102,13 +102,15 @@ export default function ChatDashboardPage() {
                 sessions.map(s => {
                   const isArtist = s.seller_id === currentUser?.id;
                   
-                  const buyerData = s.buyer?.raw_user_meta_data || {};
-                  const sellerData = s.seller?.raw_user_meta_data || {};
+                  const buyerData = s.buyer || {};
+                  const sellerData = s.seller || {};
                   
-                  const buyerName = buyerData.full_name || buyerData.name || '看展人';
-                  const sellerName = sellerData.full_name || sellerData.name || '藝術家';
+                  const buyerName = buyerData.display_name || buyerData.raw_user_meta_data?.full_name || '看展人';
+                  const sellerName = sellerData.display_name || sellerData.raw_user_meta_data?.full_name || '藝術家';
 
                   const otherName = isArtist ? buyerName : sellerName;
+                  const otherAvatar = (isArtist ? buyerData.avatar_url : sellerData.avatar_url) 
+                    || `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(otherName)}`;
                   const artworkTitle = s.artworks?.title ? `[詢問作品：${s.artworks.title}]` : '';
                   const lastMsgTime = s.lastMessage?.created_at ? new Date(s.lastMessage.created_at).toLocaleString() : new Date(s.created_at).toLocaleString();
                   
@@ -119,10 +121,13 @@ export default function ChatDashboardPage() {
                       className={`w-full text-left p-4 border-b border-border/50 hover:bg-stone-100/50 transition-colors ${selectedSessionId === s.id ? 'bg-stone-100' : ''}`}
                     >
                       <div className="flex justify-between items-start mb-1">
-                        <p className="text-sm font-semibold truncate flex-1">
-                          {otherName} 
-                          <span className="block text-[10px] text-indigo-600 font-medium mt-0.5">{artworkTitle}</span>
-                        </p>
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <img src={otherAvatar} alt={otherName} className="h-6 w-6 rounded-full bg-stone-100 border border-border/40 object-cover flex-shrink-0" />
+                          <p className="text-sm font-semibold truncate">
+                            {otherName} 
+                            <span className="block text-[10px] text-indigo-600 font-medium mt-0.5">{artworkTitle}</span>
+                          </p>
+                        </div>
                         {Number(s.unread_count) > 0 && (
                           <span className="bg-primary text-primary-foreground text-[10px] px-1.5 py-0.5 rounded-sm flex-shrink-0 ml-2">
                             {s.unread_count}
