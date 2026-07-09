@@ -1,12 +1,12 @@
+'use client';
+
+import { useState } from 'react';
 import { ArrowLeft, FileText, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
 
-export const metadata = {
-  title: '合約預覽 | Atelier Blanc 乙太藝廊',
-  description: '預覽乙太藝廊的數位與實體藝術品購買/租賃合約範本。',
-};
-
 export default function ContractTemplatePage() {
+  const [activeTab, setActiveTab] = useState<'buy' | 'rent'>('buy');
+
   return (
     <div className="marble-bg min-h-screen py-12 px-6">
       <div className="max-w-4xl mx-auto">
@@ -22,14 +22,38 @@ export default function ContractTemplatePage() {
           <h1 className="font-serif text-3xl font-semibold text-foreground">智慧合約範本預覽</h1>
           <p className="text-sm text-muted-foreground mt-3 max-w-xl mx-auto leading-relaxed">
             為了保障藝術家與看展人的雙方權益，每筆交易都會自動生成專屬合約，並採用數位簽章技術確認。
-            以下為合約的標準範本。
+            我們針對「賣斷收藏」與「短期租用」提供不同的標準合約範本。
           </p>
         </div>
 
-        <div className="bg-white/80 backdrop-blur-md border border-border/60 rounded-sm shadow-xl overflow-hidden p-8 lg:p-12">
+        {/* 標籤切換 */}
+        <div className="flex justify-center mb-8">
+          <div className="bg-stone-100/80 p-1.5 rounded-md inline-flex">
+            <button
+              onClick={() => setActiveTab('buy')}
+              className={`px-6 py-2 rounded-sm text-sm font-semibold transition-colors ${
+                activeTab === 'buy' ? 'bg-white text-stone-800 shadow-sm' : 'text-stone-500 hover:text-stone-700'
+              }`}
+            >
+              買賣合約
+            </button>
+            <button
+              onClick={() => setActiveTab('rent')}
+              className={`px-6 py-2 rounded-sm text-sm font-semibold transition-colors ${
+                activeTab === 'rent' ? 'bg-white text-stone-800 shadow-sm' : 'text-stone-500 hover:text-stone-700'
+              }`}
+            >
+              租賃合約
+            </button>
+          </div>
+        </div>
+
+        <div className="bg-white/80 backdrop-blur-md border border-border/60 rounded-sm shadow-xl overflow-hidden p-8 lg:p-12 transition-all">
           {/* 合約標頭 */}
           <div className="text-center mb-10 pb-10 border-b border-border/50">
-            <h2 className="text-2xl font-serif font-bold text-foreground mb-2">藝術品電子交易與授權合約書</h2>
+            <h2 className="text-2xl font-serif font-bold text-foreground mb-2">
+              {activeTab === 'buy' ? '藝術品賣斷收藏合約書' : '藝術品短期租賃合約書'}
+            </h2>
             <p className="text-sm text-muted-foreground">合約編號：<span className="font-mono bg-stone-100 px-2 py-0.5 rounded text-stone-600">(系統自動生成)</span></p>
           </div>
 
@@ -42,12 +66,12 @@ export default function ContractTemplatePage() {
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <p className="font-semibold text-foreground mb-1">甲方（藝術家/賣方）：</p>
-                  <p className="text-muted-foreground font-mono bg-stone-100/80 p-2 rounded-sm border border-stone-200/50">(自動帶入藝術家姓名與聯絡信箱)</p>
+                  <p className="font-semibold text-foreground mb-1">甲方（藝術家/{activeTab === 'buy' ? '賣方' : '出租方'}）：</p>
+                  <p className="text-muted-foreground font-mono bg-stone-100/80 p-2 rounded-sm border border-stone-200/50">(自動帶入藝術家姓名)</p>
                 </div>
                 <div>
-                  <p className="font-semibold text-foreground mb-1">乙方（看展人/買方/承租方）：</p>
-                  <p className="text-muted-foreground font-mono bg-stone-100/80 p-2 rounded-sm border border-stone-200/50">(自動帶入看展人姓名與聯絡信箱)</p>
+                  <p className="font-semibold text-foreground mb-1">乙方（看展人/{activeTab === 'buy' ? '買方' : '承租方'}）：</p>
+                  <p className="text-muted-foreground font-mono bg-stone-100/80 p-2 rounded-sm border border-stone-200/50">(自動帶入看展人姓名)</p>
                 </div>
               </div>
             </section>
@@ -58,11 +82,17 @@ export default function ContractTemplatePage() {
                 <span className="bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center text-xs">2</span> 
                 交易標的物
               </h3>
-              <p className="mb-2">雙方同意就以下藝術品進行 <span className="font-semibold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-sm">(買賣 / 租賃)</span> 交易：</p>
+              <p className="mb-2">雙方同意就以下藝術品進行 <span className="font-semibold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-sm">{activeTab === 'buy' ? '買賣' : '租賃'}</span> 交易：</p>
               <ul className="list-disc list-inside space-y-2 ml-2 text-muted-foreground">
                 <li>作品名稱：<span className="font-mono bg-stone-100 px-2 py-0.5 rounded">(作品名稱)</span></li>
-                <li>作品類型：<span className="font-mono bg-stone-100 px-2 py-0.5 rounded">(實體 / 數位)</span></li>
-                <li>交易金額：<span className="font-mono bg-stone-100 px-2 py-0.5 rounded">(自動帶入結帳金額 TWD/USDC)</span></li>
+                {activeTab === 'buy' ? (
+                  <li>交易金額：<span className="font-mono bg-stone-100 px-2 py-0.5 rounded">(買斷金額 TWD/USDC)</span></li>
+                ) : (
+                  <>
+                    <li>每月租金：<span className="font-mono bg-stone-100 px-2 py-0.5 rounded">(月租金額 TWD/USDC)</span></li>
+                    <li>押金：<span className="font-mono bg-stone-100 px-2 py-0.5 rounded">(押金金額 TWD/USDC)</span></li>
+                  </>
+                )}
               </ul>
             </section>
 
@@ -73,18 +103,33 @@ export default function ContractTemplatePage() {
                 雙方權利與義務
               </h3>
               <div className="space-y-4 text-justify">
-                <div>
-                  <h4 className="font-semibold text-foreground mb-1">3.1 關於數位作品 (Digital Artwork)</h4>
-                  <p>若標的物為數位形式，甲方保證為該作品之原創作者或合法授權人。交易完成後，乙方獲得該數位檔案之「個人非商業使用權」，不得進行重製、改作、公開播送或用於商業營利目的，除非另有書面協議。著作人格權與著作財產權仍歸甲方所有。</p>
-                </div>
-                <div>
-                  <h4 className="font-semibold text-foreground mb-1">3.2 關於實體作品 (Physical Artwork)</h4>
-                  <p>若標的物為實體形式，甲方應於合約簽署且乙方付款完成後，依約定之配送方式（如郵寄或面交）將作品交付予乙方。運送過程中之毀損滅失風險，依相關物流條款辦理。</p>
-                </div>
-                <div>
-                  <h4 className="font-semibold text-foreground mb-1">3.3 關於租賃 (Rental)</h4>
-                  <p>若交易性質為租賃，乙方應善盡善良管理人之保管責任。租賃期間自 <span className="font-mono bg-stone-100 px-1 py-0.5 rounded">(起日)</span> 至 <span className="font-mono bg-stone-100 px-1 py-0.5 rounded">(迄日)</span>。若作品於租賃期間有毀損、遺失或破壞，乙方須負擔賠償責任，甲方有權自押金中扣除相應之修復或賠償費用。租期屆滿時，乙方應主動歸還作品，否則將按日加收滯納金。</p>
-                </div>
+                {activeTab === 'buy' ? (
+                  <>
+                    <div>
+                      <h4 className="font-semibold text-foreground mb-1">3.1 交付與驗收</h4>
+                      <p>甲方應於合約簽署且乙方付款完成後，依約定之配送方式將作品交付予乙方。乙方應於收到作品後立即檢查，若有毀損應於 24 小時內通知平台客服處理。</p>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-foreground mb-1">3.2 版權聲明</h4>
+                      <p>乙方取得本作品之實體或數位載體所有權（或個人授權），但甲方保有作品之完整著作財產權與著作人格權。乙方不得將作品進行商業重製、公開播送、發行或用於營利目的，違者依著作權法相關規定處理。</p>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div>
+                      <h4 className="font-semibold text-foreground mb-1">3.1 租賃期間與費用</h4>
+                      <p>租賃期間自 <span className="font-mono bg-stone-100 px-1 py-0.5 rounded">(起日)</span> 至 <span className="font-mono bg-stone-100 px-1 py-0.5 rounded">(迄日)</span>。乙方同意以信用卡預先授權或凍結押金，並支付首期租金。後續租金按月收取。</p>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-foreground mb-1">3.2 保管責任與損害賠償</h4>
+                      <p>乙方應善盡善良管理人之保管責任，將作品置於安全且適當之環境。若作品於租賃期間有毀損、污損、遺失或破壞，乙方須負擔賠償責任，甲方有權自押金中直接扣除相應之修復費用。如毀損達無法修復程度，乙方需依作品原始售價賠償。</p>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-foreground mb-1">3.3 歸還與押金退還</h4>
+                      <p>租期屆滿時，乙方應主動以原包裝完好歸還作品予甲方。經甲方確認作品無損後，平台將於 3 個工作日內解除押金凍結。逾期未歸還者，將按日加收 5% 滯納金。</p>
+                    </div>
+                  </>
+                )}
               </div>
             </section>
 
@@ -92,11 +137,10 @@ export default function ContractTemplatePage() {
             <section>
               <h3 className="text-base font-semibold text-foreground mb-3 flex items-center gap-2">
                 <span className="bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center text-xs">4</span> 
-                違約與爭議處理
+                爭議處理
               </h3>
               <p>
-                任一方若違反本合約約定，他方得訂相當期限催告改善，逾期仍未改善者，得解除或終止合約，並請求損害賠償。
-                本合約未盡事宜，依中華民國法律及 Atelier Blanc 平台服務條款辦理。如有爭議，雙方同意以台灣台北地方法院為第一審管轄法院。
+                本合約未盡事宜，依中華民國法律及 Atelier Blanc 平台服務條款辦理。如有爭議，雙方同意優先透過平台客服進行調解；調解不成時，同意以台灣台北地方法院為第一審管轄法院。
               </p>
             </section>
 
