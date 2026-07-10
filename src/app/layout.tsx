@@ -64,6 +64,8 @@ export const metadata: Metadata = {
   },
 };
 
+import { GlobalProgressBar } from '@/components/ProgressBar';
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -90,6 +92,7 @@ export default function RootLayout({
           }}
         />
         <ScreenshotGuard />
+        <GlobalProgressBar />
       </body>
     </html>
   );
