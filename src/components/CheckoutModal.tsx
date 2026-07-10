@@ -38,6 +38,9 @@ const formatNTD = (n: number | null | undefined) =>
 // USDC 換算：1 TWD ≈ 0.031 USDC（以固定匯率示意，正式環境請接即時匯率）
 const twdToUsdc = (twd: number) => (twd * 0.031).toFixed(2);
 
+// 平台抽成比例（10%）
+const COMMISSION_RATE = 0.10;
+
 const CHAIN_NAMES: Record<number, string> = {
   1: 'Ethereum', 8453: 'Base', 137: 'Polygon',
 };
@@ -75,15 +78,17 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
 
   const isRental = actionType === 'rent';
   const isPhysical = artwork.art_type === 'physical';
-  const amount = isRental ? artwork.monthly_rent_price : artwork.price;
-  const depositAmount = artwork.deposit_amount;
-  const usdcAmount = isRental
-    ? `${twdToUsdc((artwork.monthly_rent_price || 0) + (artwork.deposit_amount || 0))} USDC`
-    : `${twdToUsdc(artwork.price || 0)} USDC`;
+  const basePrice = isRental ? (artwork.monthly_rent_price || 0) : (artwork.price || 0);
+  const depositAmount = artwork.deposit_amount || 0;
+  const commissionAmount = Math.round(basePrice * COMMISSION_RATE);
+  const artistReceives = basePrice - commissionAmount;
+  // 買家支付總額（租賃=首月+押金）
+  const buyerTotal = isRental ? basePrice + depositAmount : basePrice;
+  const usdcAmount = `${twdToUsdc(buyerTotal)} USDC`;
 
   const totalDisplay = isRental
-    ? `首月 ${formatNTD(artwork.monthly_rent_price)} + 押金 ${formatNTD(depositAmount)}`
-    : formatNTD(amount);
+    ? `首月 ${formatNTD(basePrice)} + 押金 ${formatNTD(depositAmount)}`
+    : formatNTD(basePrice);
 
   // Reset on open
   useEffect(() => {
@@ -264,9 +269,9 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
         {/* Amount bar */}
         {step !== 'success' && step !== 'error' && (
           <div className="px-6 py-3.5 bg-gradient-to-r from-stone-50 to-amber-50/40 border-b border-border/30 flex-shrink-0">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mb-2">
               <div>
-                <p className="text-[10px] font-semibold tracking-widest uppercase text-muted-foreground">應付金額</p>
+                <p className="text-[10px] font-semibold tracking-widest uppercase text-muted-foreground">買家支付</p>
                 <p className="font-serif text-xl font-semibold text-foreground mt-0.5">{totalDisplay}</p>
               </div>
               <span className={`text-[10px] font-semibold tracking-wider px-2.5 py-1 rounded-sm border ${
@@ -274,6 +279,15 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
               }`}>
                 {isRental ? '押金預授權' : '全額扣款'}
               </span>
+            </div>
+            {/* 抽成明細 */}
+            <div className="flex justify-between text-[10px] text-muted-foreground border-t border-border/30 pt-2 mt-1">
+              <span>平台服務費 ({Math.round(COMMISSION_RATE * 100)}%)</span>
+              <span className="text-rose-500">- {formatNTD(commissionAmount)}</span>
+            </div>
+            <div className="flex justify-between text-[10px] font-semibold mt-0.5">
+              <span className="text-stone-600">藝術家實收</span>
+              <span className="text-emerald-600">{formatNTD(artistReceives)}</span>
             </div>
           </div>
         )}
@@ -465,17 +479,20 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
                   { label: '作品', value: artwork.title },
                   { label: '類型', value: isRental ? '短期租賃' : '買斷收藏' },
                   ...(isRental ? [
-                    { label: '首月租金', value: formatNTD(artwork.monthly_rent_price) },
-                    { label: '押金（預授權）', value: formatNTD(artwork.deposit_amount) },
+                    { label: '首月租金', value: formatNTD(basePrice) },
+                    { label: '押金（預授權）', value: formatNTD(depositAmount) },
                   ] : [
-                    { label: '售價', value: formatNTD(artwork.price) },
+                    { label: '作品售價', value: formatNTD(basePrice) },
                   ]),
-                  { label: 'USDC 等值', value: usdcAmount },
+                  { label: `平台服務費 (${Math.round(COMMISSION_RATE * 100)}%)`, value: `- ${formatNTD(commissionAmount)}` },
+                  { label: '藝術家實收', value: formatNTD(artistReceives) },
+                  { label: '─────────', value: '─────' },
+                  { label: '您的支付總額 (USDC)', value: usdcAmount },
                   { label: '收款網路', value: CHAIN_NAMES[chainId] || `Chain ${chainId}` },
                 ].map(({ label, value }) => (
-                  <div key={label} className="flex justify-between text-xs">
-                    <span className="text-muted-foreground">{label}</span>
-                    <span className="font-semibold text-foreground text-right max-w-[180px] truncate">{value}</span>
+                  <div key={label} className={`flex justify-between text-xs ${ label === '─────────' ? 'opacity-20' : '' }`}>
+                    <span className={`${ label === '藝術家實收' ? 'font-semibold text-emerald-700' : label === `平台服務費 (${Math.round(COMMISSION_RATE * 100)}%)` ? 'text-rose-500' : 'text-muted-foreground' }`}>{label}</span>
+                    <span className={`font-semibold text-right max-w-[180px] truncate ${ label === '藝術家實收' ? 'text-emerald-700' : label === `平台服務費 (${Math.round(COMMISSION_RATE * 100)}%)` ? 'text-rose-500' : 'text-foreground' }`}>{value}</span>
                   </div>
                 ))}
               </div>
