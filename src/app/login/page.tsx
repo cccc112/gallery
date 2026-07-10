@@ -6,6 +6,8 @@ import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { OAuthButtons } from '@/components/OAuthButtons';
 
+import { signIn } from '@/app/auth/actions';
+
 function LoginForm() {
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get('redirectTo') || '/';
@@ -22,15 +24,16 @@ function LoginForm() {
     setError('');
 
     startTransition(async () => {
-      const supabase = createClient();
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      const formData = new FormData();
+      formData.append('email', email);
+      formData.append('password', password);
+      // remember could be passed as well, but Supabase default is long-lived.
+      
+      const { error: signInError, success } = await signIn(formData);
 
       if (signInError) {
-        setError(signInError.message);
-      } else {
+        setError(signInError);
+      } else if (success) {
         // 使用 hard navigation 確保 Cookie 被正確帶到 Server 並清除 Next.js Router Cache
         window.location.href = redirectTo;
       }

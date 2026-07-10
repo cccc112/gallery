@@ -53,7 +53,11 @@ export async function middleware(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     url.searchParams.set('redirectTo', request.nextUrl.pathname);
-    return NextResponse.redirect(url);
+    const redirectResponse = NextResponse.redirect(url);
+    supabaseResponse.cookies.getAll().forEach(c => {
+      redirectResponse.cookies.set(c.name, c.value);
+    });
+    return redirectResponse;
   }
 
   // 額外保護 /admin：只允許白名單 email 進入
@@ -63,7 +67,11 @@ export async function middleware(request: NextRequest) {
     if (!adminEmails.includes((user.email || '').toLowerCase())) {
       const url = request.nextUrl.clone();
       url.pathname = '/';
-      return NextResponse.redirect(url);
+      const redirectResponse = NextResponse.redirect(url);
+      supabaseResponse.cookies.getAll().forEach(c => {
+        redirectResponse.cookies.set(c.name, c.value);
+      });
+      return redirectResponse;
     }
   }
 
