@@ -24,7 +24,7 @@ export function createClient() {
         setAll(cookiesToSet) {
           try {
             cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set({ name, value, ...options })
+              cookieStore.set(name, value, options)
             );
           } catch (error) {
             console.error('[Supabase Server Client] setAll error:', error);
