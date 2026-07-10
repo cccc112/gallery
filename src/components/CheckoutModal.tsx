@@ -93,17 +93,17 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
   // Reset on open
   useEffect(() => {
     if (isOpen) {
-      setStep('delivery');
+      setStep(isPhysical ? 'delivery' : 'select');
       setPayMethod(null);
       setErrorMsg('');
       setPendingTxHash(undefined);
-      setDeliveryMethod('shipping');
+      setDeliveryMethod(isPhysical ? 'shipping' : 'pickup');
       setShippingAddress('');
       setContactPhone('');
       setOrderId('');
       setForm({ name: '', phone: '', address: '', city: '', zip: '', cardNumber: '', cardExpiry: '', cardCvc: '' });
     }
-  }, [isOpen]);
+  }, [isOpen, isPhysical]);
 
   // Escape to close
   useEffect(() => {
@@ -399,6 +399,12 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
           {/* ── 選擇付款方式 ── */}
           {step === 'select' && (
             <div className="p-6 space-y-3">
+              {!isPhysical && (
+                <div className="mb-4 p-3 bg-blue-50/50 border border-blue-100 rounded-sm">
+                  <p className="text-xs font-semibold text-blue-800">數位作品發送說明</p>
+                  <p className="text-[10px] text-blue-700 mt-1">付款完成後，系統將自動寄送高解析度檔案下載連結至您的 Email，您也可以在會員中心隨時下載。</p>
+                </div>
+              )}
               <p className="text-xs text-muted-foreground mb-3 font-light">請選擇您的付款方式：</p>
 
               {/* Stripe */}
@@ -582,14 +588,19 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
                 <p className="text-xs text-muted-foreground font-light mt-1.5 leading-relaxed max-w-[280px]">
                   {successMsg}
                 </p>
-                {deliveryMethod === 'shipping' && (
+                {isPhysical && deliveryMethod === 'shipping' && (
                   <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mt-1">
                     🚚 我們將在 1-2 個工作天內聯絡您安排配送事宜。
                   </p>
                 )}
-                {deliveryMethod === 'pickup' && (
+                {isPhysical && deliveryMethod === 'pickup' && (
                   <p className="text-xs text-blue-700 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 mt-1">
                     🤝 請透過站內聊天室與藝術家協調面交時間地點。
+                  </p>
+                )}
+                {!isPhysical && (
+                  <p className="text-xs text-purple-700 bg-purple-50 border border-purple-200 rounded-lg px-3 py-2 mt-1">
+                    📥 高解析度數位檔案連結已寄至您的信箱，您也可以在會員中心下載。
                   </p>
                 )}
               </div>
