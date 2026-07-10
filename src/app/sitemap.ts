@@ -6,7 +6,7 @@ const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://gallery-cccc112s-projects.vercel.app';
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://gallery-cyan-tau.vercel.app';
   
   // 建立 Supabase client
   const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);

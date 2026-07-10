@@ -20,7 +20,7 @@ const geistMono = localFont({
   weight: '100 900',
 });
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://atelier-blanc.vercel.app';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://gallery-cyan-tau.vercel.app';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
