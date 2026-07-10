@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { Mail } from 'lucide-react';
-import { createClient } from '@/lib/supabase/client';
+import { verifyOtpAction } from '@/app/auth/actions';
 
 interface CheckEmailPageProps {
   searchParams: { email?: string };
@@ -13,39 +13,30 @@ export default function CheckEmailPage({ searchParams }: CheckEmailPageProps) {
   const email = searchParams.email || '';
   const [token, setToken] = useState('');
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
-  const handleVerify = async (e: React.FormEvent) => {
+  const handleVerify = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!token || token.trim().length !== 6) {
       setError('請輸入正確的 6 位數驗證碼');
       return;
     }
     setError('');
-    setLoading(true);
 
-    try {
-      const supabase = createClient();
-      const { error: verifyError } = await supabase.auth.verifyOtp({
-        email,
-        token: token.trim(),
-        type: 'signup',
-      });
+    const formData = new FormData();
+    formData.set('email', email);
+    formData.set('token', token.trim());
 
-      if (verifyError) {
-        setError(verifyError.message);
-        setLoading(false);
-        return;
+    startTransition(async () => {
+      const result = await verifyOtpAction(formData);
+      if (result?.error) {
+        setError(result.error);
+      } else if (result?.success) {
+        setSuccess(true);
+        window.location.href = '/dashboard';
       }
-
-      setSuccess(true);
-      // 驗證成功，使用 hard navigation 確保 Session Cookie 被帶到 Server，避免被 Middleware 彈回
-      window.location.href = '/dashboard';
-    } catch (err: any) {
-      setError('驗證時發生非預期錯誤，請稍後再試。');
-      setLoading(false);
-    }
+    });
   };
 
   return (
@@ -89,15 +80,15 @@ export default function CheckEmailPage({ searchParams }: CheckEmailPageProps) {
               onChange={e => setToken(e.target.value)}
               placeholder="123456"
               maxLength={6}
-              disabled={loading || success}
+              disabled={isPending || success}
               className="w-full text-center tracking-[1em] font-mono text-lg rounded-sm border border-border bg-white/80 px-4 py-3 text-foreground placeholder:text-muted-foreground/30 focus:outline-none focus:border-primary transition-colors"
             />
             <button
               type="submit"
-              disabled={loading || success}
+              disabled={isPending || success}
               className="w-full rounded-sm bg-primary text-primary-foreground py-3 text-sm font-semibold tracking-wide hover:bg-primary/90 transition-all disabled:opacity-60"
             >
-              {loading ? '驗證中…' : '驗證代碼'}
+              {isPending ? '驗證中…' : '驗證代碼'}
             </button>
           </form>
         </div>

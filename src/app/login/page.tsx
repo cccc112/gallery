@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, Suspense, useTransition } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import { signIn } from '@/app/auth/actions';
 import { OAuthButtons } from '@/components/OAuthButtons';
 
 function LoginForm() {
@@ -14,33 +15,25 @@ function LoginForm() {
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(true);
   const [error, setError] = useState(searchParams.get('error') || '');
-  const [loading, setLoading] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
-  async function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError('');
-    setLoading(true);
 
-    try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-      const data = await res.json();
+    const formData = new FormData(e.currentTarget);
+    formData.set('email', email);
+    formData.set('password', password);
 
-      if (!res.ok || data.error) {
-        setError(data.error || '登入失敗，請檢查您的帳號密碼');
-        setLoading(false);
-        return;
+    startTransition(async () => {
+      const result = await signIn(formData);
+      if (result?.error) {
+        setError(result.error);
+      } else if (result?.success) {
+        // 使用 hard navigation 確保 Cookie 被正確帶到 Server 並清除 Next.js Router Cache
+        window.location.href = redirectTo;
       }
-
-      // 使用 hard navigation 確保 Cookie 被正確帶到 Server 並清除 Next.js Router Cache
-      window.location.href = redirectTo;
-    } catch (err: any) {
-      setError('登入時發生非預期錯誤，請稍後再試。');
-      setLoading(false);
-    }
+    });
   }
 
   return (
@@ -115,10 +108,10 @@ function LoginForm() {
 
         <button
           type="submit"
-          disabled={loading}
+          disabled={isPending}
           className="w-full rounded-sm bg-primary text-primary-foreground py-3.5 text-sm font-semibold tracking-wide hover:bg-primary/90 transition-all duration-300 shadow-md mt-2 disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          {loading ? '登入中…' : '登入帳號'}
+          {isPending ? '登入中…' : '登入帳號'}
         </button>
       </form>
 

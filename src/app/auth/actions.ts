@@ -89,6 +89,25 @@ export async function signIn(formData: FormData): Promise<{ error?: string; succ
   return { success: true };
 }
 
+export async function verifyOtpAction(formData: FormData): Promise<{ error?: string; success?: boolean }> {
+  const supabase = createClient();
+  const email = formData.get('email') as string;
+  const token = formData.get('token') as string;
+
+  const { error } = await supabase.auth.verifyOtp({
+    email,
+    token,
+    type: 'signup',
+  });
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath('/', 'layout');
+  return { success: true };
+}
+
 export async function signOut() {
   const supabase = createClient();
   await supabase.auth.signOut();
