@@ -4,12 +4,13 @@ import { createClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
-const { PAYPAL_CLIENT_ID, PAYPAL_SECRET } = process.env;
+
 const PAYPAL_API_BASE = process.env.NODE_ENV === 'production' 
   ? 'https://api-m.paypal.com' 
   : 'https://api-m.sandbox.paypal.com';
 
 async function generateAccessToken() {
+  const { PAYPAL_CLIENT_ID, PAYPAL_SECRET } = process.env;
   if (!PAYPAL_CLIENT_ID || !PAYPAL_SECRET) {
     return 'MOCK_TOKEN'; // Support mock mode
   }
