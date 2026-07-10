@@ -37,24 +37,18 @@ function LoginForm() {
 
     // 驗證 client 端 session 是否存在
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      setError('登入成功但 client 端無法取得 session，請清除瀏覽器快取後重試');
-      setLoading(false);
-      return;
-    }
+    
+    // 獲取當前所有的 document.cookie 名稱
+    const cookiesList = document.cookie.split(';').map(c => c.trim().split('=')[0]);
 
-    // 檢查 document.cookie 是否有 supabase token
-    const hasSbCookie = document.cookie.includes('sb-');
-    if (!hasSbCookie) {
-      // Cookie 沒寫成功，顯示診斷訊息
-      setError(`登入成功但 Cookie 未設定。Cookie 長度: ${document.cookie.length}。請檢查瀏覽器是否封鎖了 Cookie。`);
-      setLoading(false);
-      return;
-    }
-
-    // 登入成功，跳轉至目標頁面
-    router.push(redirectTo);
-    router.refresh();
+    setError(
+      `【診斷資訊】\n` +
+      `1. Client Session 存在: ${!!session}\n` +
+      `2. Client User ID: ${session?.user?.id || 'none'}\n` +
+      `3. 瀏覽器現有 Cookies: ${JSON.stringify(cookiesList)}\n` +
+      `請將此段文字複製並貼給開發人員，確認無誤後我們會手動重啟跳轉。`
+    );
+    setLoading(false);
   }
 
   return (
@@ -68,7 +62,7 @@ function LoginForm() {
         </div>
       )}
       {error && (
-        <div className="mb-6 px-4 py-3 rounded-sm bg-rose-50 border border-rose-200 text-xs text-rose-700 font-medium">
+        <div className="mb-6 px-4 py-3 rounded-sm bg-rose-50 border border-rose-200 text-xs text-rose-700 font-medium whitespace-pre-wrap">
           {decodeURIComponent(error)}
         </div>
       )}
