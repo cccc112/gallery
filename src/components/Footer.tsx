@@ -160,11 +160,7 @@ export default function Footer() {
                   運送與退還政策
                 </Link>
               </li>
-              <li>
-                <Link href="/consulting" className="text-primary-foreground/70 hover:text-primary-foreground transition-colors">
-                  藝術諮詢服務
-                </Link>
-              </li>
+
               <li>
                 <Link href="/faq" className="text-primary-foreground/70 hover:text-primary-foreground transition-colors">
                   常見問題 FAQ

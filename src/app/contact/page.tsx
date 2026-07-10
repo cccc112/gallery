@@ -66,7 +66,6 @@ export default function ContactPage() {
                 {[
                   { href: '/faq', label: '常見問題 FAQ' },
                   { href: '/shipping', label: '運送與退還政策' },
-                  { href: '/consulting', label: '藝術諮詢服務' },
                 ].map(({ href, label }) => (
                   <Link key={href} href={href}
                     className="flex items-center justify-between px-3 py-2.5 rounded-sm hover:bg-secondary/50 transition-colors text-sm text-foreground group">
