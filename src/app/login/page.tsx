@@ -35,8 +35,8 @@ function LoginForm() {
       return;
     }
 
-    router.push(redirectTo);
-    router.refresh();
+    // 使用 hard navigation 確保 Cookie 被正確帶到 Server 並清除 Next.js Router Cache
+    window.location.href = redirectTo;
   }
 
   return (
