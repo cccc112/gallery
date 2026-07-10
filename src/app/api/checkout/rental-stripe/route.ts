@@ -6,7 +6,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 export const dynamic = 'force-dynamic';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-06-20',
+  apiVersion: '2026-04-22.dahlia',
 });
 
 const COMMISSION_RATE = 0.10; // 平台抽成 10%
