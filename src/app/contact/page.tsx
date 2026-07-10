@@ -30,8 +30,8 @@ export default function ContactPage() {
                 </div>
                 <div>
                   <p className="text-xs font-semibold tracking-wide uppercase text-muted-foreground mb-1">電子信箱</p>
-                  <a href="mailto:hello@atelierblanc.art" className="text-sm text-foreground hover:underline">
-                    hello@atelierblanc.art
+                  <a href="mailto:richhong0122@gmail.com" className="text-sm text-foreground hover:underline">
+                    richhong0122@gmail.com
                   </a>
                 </div>
               </div>

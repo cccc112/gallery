@@ -29,27 +29,19 @@ export default function ShippingPage() {
           <p className="text-xs tracking-widest uppercase text-muted-foreground mb-3">Support</p>
           <h1 className="font-serif text-4xl font-semibold text-foreground mb-4">運送與退還政策</h1>
           <p className="text-muted-foreground font-light max-w-lg mx-auto">
-            我們致力於讓每件藝術品安全抵達您手中，並提供透明的退還保障。
+            Atelier Blanc 是一個藝術品交易平台。實體作品的運送與退換由買賣雙方自行協議辦理。
           </p>
         </div>
 
         <div className="space-y-5">
           <Section icon={Truck} title="實體作品運送">
-            <p>所有實體藝術品均採用專業藝術品級包裝，包含防震泡棉、木箱或硬質紙板，並附帶運輸保險。</p>
-            <div className="grid grid-cols-2 gap-3 mt-4">
-              {[
-                { label: '台灣本島', value: '3–5 個工作天' },
-                { label: '台灣離島', value: '5–7 個工作天' },
-                { label: '香港 / 澳門', value: '7–10 個工作天' },
-                { label: '日本 / 新加坡', value: '10–14 個工作天' },
-              ].map(({ label, value }) => (
-                <div key={label} className="bg-stone-50 rounded-sm p-3 border border-border/40">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{label}</p>
-                  <p className="text-sm font-medium text-foreground mt-1">{value}</p>
-                </div>
-              ))}
-            </div>
-            <p className="text-xs text-muted-foreground mt-3">* 大型或特殊作品（超過 100×100 cm 或 20 kg）需另行報價運費</p>
+            <p>目前平台尚未提供官方運送服務或運輸保險。實體藝術品的包裝、運費計算與寄送方式，由買家與藝術家（賣家）透過平台訊息功能自行討論與安排。</p>
+            <p>建議買賣雙方在交易前明確約定：</p>
+            <ul className="list-disc list-inside space-y-1 mt-2 text-foreground/80">
+              <li>寄送時程與到貨預估</li>
+              <li>運費由哪一方負擔</li>
+              <li>是否需要額外購買第三方運輸保險</li>
+            </ul>
           </Section>
 
           <Section icon={Package} title="數位作品交付">
@@ -59,20 +51,18 @@ export default function ShippingPage() {
           </Section>
 
           <Section icon={Clock} title="租賃作品配送">
-            <p>租賃實體作品配送時程與買斷相同，於押金預授權成功後的 2 個工作天內寄出。</p>
-            <p>租賃期滿前 7 天，我們將聯絡您安排歸還事宜，並提供免費收件服務（台灣本島）。</p>
+            <p>租賃實體作品的寄送與歸還方式同樣由雙方自行協議。租賃期滿前，請提前與對方確認歸還的物流安排。</p>
+            <p>平台建議雙方在寄出與收到作品時皆拍照錄影存證，以保障雙方權益。</p>
           </Section>
 
           <Section icon={RotateCcw} title="退換貨政策">
-            <p><strong>實體作品</strong>：若作品抵達時有明顯損壞（須於收件 48 小時內回報並附照片），我們將安排免費退換或全額退款。</p>
-            <p><strong>非損壞退貨</strong>：因個人喜好退貨，請於收件 7 天內聯絡我們，運費由買家自行負擔，作品須完整未損。</p>
-            <p><strong>數位作品</strong>：因數位商品特性，下載後恕不退款。</p>
-            <p><strong>租賃押金</strong>：作品無損歸還後 5–7 個工作天退回押金。</p>
+            <p><strong>實體作品</strong>：退換貨規則（包含非損壞退貨、商品損壞處理）由賣家自行訂定。請買家在下單前務必與藝術家確認其退貨政策。若作品抵達時有損壞，請立即拍照並與藝術家聯絡。</p>
+            <p><strong>數位作品</strong>：因數位商品特性，下載後恕不接受退款與退換。</p>
+            <p><strong>租賃押金</strong>：作品完整無損歸還給藝術家，且藝術家確認無誤後，押金將退回至原付款方式。</p>
           </Section>
 
-          <Section icon={ShieldCheck} title="運輸保險">
-            <p>所有實體作品均含「門到門」運輸保險，保額為作品售價 100%。</p>
-            <p>如運輸途中發生損壞，請保留原包裝並於 48 小時內聯絡我們，我們將協助處理保險理賠。</p>
+          <Section icon={ShieldCheck} title="交易與保險建議">
+            <p>由於平台為居間媒合角色，我們建議買賣雙方在運送高價藝術品時，務必透過第三方物流公司購買全額運輸保險，以避免運送途中的損壞爭議。</p>
           </Section>
 
           <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-sm">
