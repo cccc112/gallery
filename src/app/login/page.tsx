@@ -3,7 +3,7 @@
 import { useState, Suspense, useTransition } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { signIn } from '@/app/auth/actions';
+import { createClient } from '@/lib/supabase/client';
 import { OAuthButtons } from '@/components/OAuthButtons';
 
 function LoginForm() {
@@ -21,15 +21,16 @@ function LoginForm() {
     e.preventDefault();
     setError('');
 
-    const formData = new FormData(e.currentTarget);
-    formData.set('email', email);
-    formData.set('password', password);
-
     startTransition(async () => {
-      const result = await signIn(formData);
-      if (result?.error) {
-        setError(result.error);
-      } else if (result?.success) {
+      const supabase = createClient();
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (signInError) {
+        setError(signInError.message);
+      } else {
         // 使用 hard navigation 確保 Cookie 被正確帶到 Server 並清除 Next.js Router Cache
         window.location.href = redirectTo;
       }

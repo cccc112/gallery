@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { Mail } from 'lucide-react';
-import { verifyOtpAction } from '@/app/auth/actions';
+import { createClient } from '@/lib/supabase/client';
 
 interface CheckEmailPageProps {
   searchParams: { email?: string };
@@ -24,15 +24,17 @@ export default function CheckEmailPage({ searchParams }: CheckEmailPageProps) {
     }
     setError('');
 
-    const formData = new FormData();
-    formData.set('email', email);
-    formData.set('token', token.trim());
-
     startTransition(async () => {
-      const result = await verifyOtpAction(formData);
-      if (result?.error) {
-        setError(result.error);
-      } else if (result?.success) {
+      const supabase = createClient();
+      const { error: verifyError } = await supabase.auth.verifyOtp({
+        email,
+        token: token.trim(),
+        type: 'signup',
+      });
+
+      if (verifyError) {
+        setError(verifyError.message);
+      } else {
         setSuccess(true);
         window.location.href = '/dashboard';
       }
