@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { supabaseCookieOptions } from '@/lib/supabase/cookies';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -29,11 +30,7 @@ export async function middleware(request: NextRequest) {
           return fetch(url, { ...options, cache: 'no-store' });
         },
       },
-      cookieOptions: {
-        path: '/',
-        sameSite: 'lax',
-        maxAge: 60 * 60 * 24 * 30, // 30 days
-      },
+      cookieOptions: supabaseCookieOptions,
       cookies: {
         getAll() {
           return request.cookies.getAll();
@@ -45,11 +42,6 @@ export async function middleware(request: NextRequest) {
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           );
-
-          // 2. 手動更新 request headers，確保 Server Components 讀得到最新 cookie
-          // （Next.js 14 中 request.cookies.set 不一定會更新 header）
-          const cookieHeader = request.cookies.getAll().map(c => `${c.name}=${c.value}`).join('; ');
-          request.headers.set('cookie', cookieHeader);
 
           supabaseResponse = NextResponse.next({
             request: {

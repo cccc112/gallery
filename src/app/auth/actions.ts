@@ -2,7 +2,6 @@
 
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { cookies } from 'next/headers';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient as createPlainClient } from '@supabase/supabase-js';
@@ -68,7 +67,7 @@ export async function signUp(formData: FormData) {
   }
 }
 
-export async function signIn(formData: FormData, redirectTo: string = '/'): Promise<{ error?: string }> {
+export async function signIn(formData: FormData): Promise<{ error?: string; success?: boolean }> {
   const supabase = createClient();
 
   const email = formData.get('email') as string;
@@ -80,12 +79,8 @@ export async function signIn(formData: FormData, redirectTo: string = '/'): Prom
     return { error: error.message };
   }
 
-  // 測試寫入一個簡單的 Cookie，驗證 Next.js 14 Server Action 的 Cookie 寫入功能
-  const cookieStore = cookies();
-  cookieStore.set('test-cookie', 'action-works', { path: '/' });
-
   revalidatePath('/', 'layout');
-  redirect(redirectTo);
+  return { success: true };
 }
 
 export async function verifyOtpAction(formData: FormData): Promise<{ error?: string; success?: boolean }> {

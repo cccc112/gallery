@@ -2,15 +2,16 @@
 
 import { useState, Suspense, useTransition } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { OAuthButtons } from '@/components/OAuthButtons';
 
 import { signIn } from '@/app/auth/actions';
 
 function LoginForm() {
+  const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get('redirectTo') || '/';
+  const rawRedirectTo = searchParams.get('redirectTo') || '/';
+  const redirectTo = rawRedirectTo.startsWith('/') && !rawRedirectTo.startsWith('//') ? rawRedirectTo : '/';
   const message = searchParams.get('message');
 
   const [email, setEmail] = useState('');
@@ -29,10 +30,16 @@ function LoginForm() {
       formData.append('password', password);
       // remember could be passed as well, but Supabase default is long-lived.
       
-      const { error: signInError } = await signIn(formData, redirectTo);
+      const { error: signInError, success } = await signIn(formData);
 
       if (signInError) {
         setError(signInError);
+        return;
+      }
+
+      if (success) {
+        router.replace(redirectTo);
+        router.refresh();
       }
     });
   }

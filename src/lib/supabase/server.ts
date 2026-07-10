@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { supabaseCookieOptions } from './cookies';
 
 export function createClient() {
   const cookieStore = cookies();
@@ -12,11 +13,7 @@ export function createClient() {
           return fetch(url, { ...options, cache: 'no-store' });
         },
       },
-      cookieOptions: {
-        path: '/',
-        sameSite: 'lax',
-        maxAge: 60 * 60 * 24 * 30, // 30 days
-      },
+      cookieOptions: supabaseCookieOptions,
       cookies: {
         getAll() {
           return cookieStore.getAll();
