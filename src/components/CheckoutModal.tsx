@@ -61,6 +61,10 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
   const [deliveryMethod, setDeliveryMethod] = useState<'shipping' | 'pickup'>('shipping');
   const [shippingAddress, setShippingAddress] = useState('');
   const [contactPhone, setContactPhone] = useState('');
+  
+  // Agreement state
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+
   const [form, setForm] = useState({
     name: '', phone: '', address: '', city: '', zip: '',
     cardNumber: '', cardExpiry: '', cardCvc: '',
@@ -100,6 +104,7 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
       setDeliveryMethod(isPhysical ? 'shipping' : 'pickup');
       setShippingAddress('');
       setContactPhone('');
+      setAgreedToTerms(false);
       setOrderId('');
       setForm({ name: '', phone: '', address: '', city: '', zip: '', cardNumber: '', cardExpiry: '', cardCvc: '' });
     }
@@ -410,9 +415,22 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
                   <p className="text-[10px] text-blue-700 mt-1">付款完成後，系統將自動解鎖檔案，您可以隨時前往「會員中心 ＞ 看展人中心」下載高解析度原始檔。</p>
                 </div>
               )}
-              <p className="text-xs text-muted-foreground mb-3 font-light">請選擇您的付款方式：</p>
+              {/* Terms Agreement Checkbox */}
+              <div className="mb-4 flex items-start gap-2">
+                <input
+                  type="checkbox"
+                  id="terms-agreement"
+                  checked={agreedToTerms}
+                  onChange={(e) => setAgreedToTerms(e.target.checked)}
+                  className="mt-1 h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                />
+                <label htmlFor="terms-agreement" className="text-xs text-muted-foreground leading-relaxed cursor-pointer select-none">
+                  我已閱讀並同意平台的<a href="/faq" target="_blank" className="text-primary hover:underline">服務條款與退換貨政策</a>。我理解本平台僅為第三方媒合平台，實際交易合約存在於買賣雙方之間。
+                </label>
+              </div>
 
-              {/* Credit Card (Stripe for rental only, ECPay is hidden) */}
+              <div className={`space-y-3 transition-opacity duration-300 ${agreedToTerms ? 'opacity-100' : 'opacity-50 pointer-events-none'}`}>
+                {/* Credit Card (Stripe for rental only, ECPay is hidden) */}
               {isRental && (
                 <button
                   onClick={handleCreditCardCheckout}
