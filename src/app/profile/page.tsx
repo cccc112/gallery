@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { signOut } from '@/app/auth/actions';
 import { Upload, Package, ShoppingBag, Edit3, LogOut, ImageIcon, Eye, ExternalLink } from 'lucide-react';
+import ProfileHeader from '@/components/ProfileHeader';
 
 export const revalidate = 0;
 
@@ -52,79 +53,14 @@ export default async function ProfilePage() {
 
       <div className="relative mx-auto max-w-4xl space-y-8">
 
-        {/* ── Profile Card ── */}
-        <div className="bg-white/70 backdrop-blur-sm border border-border/60 rounded-sm shadow-sm overflow-hidden">
-          {/* Cover bar */}
-          <div className="h-24 bg-gradient-to-r from-stone-100 via-amber-50/60 to-stone-100" />
-
-          <div className="px-8 pb-8">
-            {/* Avatar + name row */}
-            <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 -mt-12 mb-6">
-              <div className="flex items-end gap-4">
-                <img
-                  src={avatarUrl}
-                  alt={displayName}
-                  className="h-20 w-20 rounded-full border-4 border-white shadow-md bg-stone-100 flex-shrink-0"
-                />
-                <div className="pb-1">
-                  <h1 className="font-serif text-2xl font-semibold text-foreground">{displayName}</h1>
-                  <p className="text-xs text-muted-foreground mt-0.5">{user.email}</p>
-                </div>
-              </div>
-
-              {/* Action buttons */}
-              <div className="flex items-center gap-2 pb-1 flex-wrap">
-                <Link
-                  href="/profile/upload"
-                  className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold tracking-wide rounded-sm bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-sm"
-                >
-                  <Upload className="h-3.5 w-3.5" />
-                  上傳作品
-                </Link>
-                <Link
-                  href="/profile/edit"
-                  className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold tracking-wide rounded-sm border border-border text-foreground hover:bg-secondary/60 transition-all"
-                >
-                  <Edit3 className="h-3.5 w-3.5" />
-                  編輯個人資料
-                </Link>
-                <Link
-                  href={`/artist/${user.id}`}
-                  className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold tracking-wide rounded-sm border border-border text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-all"
-                >
-                  <Eye className="h-3.5 w-3.5" />
-                  查看公開頁面
-                </Link>
-                <form action={signOut}>
-                  <button
-                    type="submit"
-                    className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold tracking-wide rounded-sm border border-border text-muted-foreground hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50 transition-all"
-                  >
-                    <LogOut className="h-3.5 w-3.5" />
-                    登出
-                  </button>
-                </form>
-              </div>
-            </div>
-
-            {/* Stats row */}
-            <div className="grid grid-cols-3 gap-4 pt-4 border-t border-border/40">
-              {[
-                { label: '我的作品', value: myArtworks.length, icon: Package },
-                { label: '購買紀錄', value: orderCount, icon: ShoppingBag },
-                { label: '會員等級', value: 'Standard', icon: Edit3 },
-              ].map(({ label, value, icon: Icon }) => (
-                <div key={label} className="text-center">
-                  <div className="flex justify-center mb-1.5">
-                    <Icon className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                  <p className="text-lg font-serif font-semibold text-foreground">{value}</p>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-medium">{label}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+        <ProfileHeader 
+          user={user} 
+          profile={profile} 
+          displayName={displayName} 
+          avatarUrl={avatarUrl} 
+          myArtworks={myArtworks} 
+          orderCount={orderCount} 
+        />
 
         {/* ── My Artworks ── */}
         <div>
