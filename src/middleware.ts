@@ -14,12 +14,21 @@ export async function middleware(request: NextRequest) {
   const allReqCookies = request.cookies.getAll().map(c => c.name);
   console.log(`[Middleware] Request cookies present: ${JSON.stringify(allReqCookies)}`);
 
-  let supabaseResponse = NextResponse.next({ request });
+  let supabaseResponse = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  });
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      global: {
+        fetch: (url, options) => {
+          return fetch(url, { ...options, cache: 'no-store' });
+        },
+      },
       cookieOptions: {
         path: '/',
         sameSite: 'lax',
@@ -31,10 +40,24 @@ export async function middleware(request: NextRequest) {
         },
         setAll(cookiesToSet) {
           console.log(`[Middleware] setAll called with cookies: ${JSON.stringify(cookiesToSet.map(c => ({ name: c.name, valueLength: c.value.length })))}`);
+          
+          // 1. 更新 request 的 parsed cookies
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           );
-          supabaseResponse = NextResponse.next({ request });
+
+          // 2. 手動更新 request headers，確保 Server Components 讀得到最新 cookie
+          // （Next.js 14 中 request.cookies.set 不一定會更新 header）
+          const cookieHeader = request.cookies.getAll().map(c => `${c.name}=${c.value}`).join('; ');
+          request.headers.set('cookie', cookieHeader);
+
+          supabaseResponse = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          });
+          
+          // 3. 設定 response cookies 讓瀏覽器也儲存
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
           );
