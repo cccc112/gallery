@@ -3,7 +3,6 @@
 import { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
 import { OAuthButtons } from '@/components/OAuthButtons';
 
 function LoginForm() {
@@ -23,20 +22,26 @@ function LoginForm() {
     setError('');
     setLoading(true);
 
-    const supabase = createClient();
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
 
-    if (signInError) {
-      setError(signInError.message);
+      if (!res.ok || data.error) {
+        setError(data.error || '登入失敗，請檢查您的帳號密碼');
+        setLoading(false);
+        return;
+      }
+
+      // 使用 hard navigation 確保 Cookie 被正確帶到 Server 並清除 Next.js Router Cache
+      window.location.href = redirectTo;
+    } catch (err) {
+      setError('連線失敗，請稍後再試');
       setLoading(false);
-      return;
     }
-
-    // 使用 hard navigation 確保 Cookie 被正確帶到 Server 並清除 Next.js Router Cache
-    window.location.href = redirectTo;
   }
 
   return (
