@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { cookies } from 'next/headers';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient as createPlainClient } from '@supabase/supabase-js';
@@ -79,8 +80,11 @@ export async function signIn(formData: FormData): Promise<{ error?: string; succ
     return { error: error.message };
   }
 
+  // 測試寫入一個簡單的 Cookie，驗證 Next.js 14 Server Action 的 Cookie 寫入功能
+  const cookieStore = cookies();
+  cookieStore.set('test-cookie', 'action-works', { path: '/' });
+
   // 成功後不在此處呼叫 redirect()，因為 Next.js 的 redirect() 會透過丟出 error 來中斷執行，
-  // 進而導致 Supabase 的非同步 Cookie 寫入被中斷。改為回傳成功狀態，由 Client 端處理轉址。
   revalidatePath('/', 'layout');
   return { success: true };
 }
