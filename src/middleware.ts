@@ -43,6 +43,10 @@ export async function middleware(request: NextRequest) {
             request.cookies.set(name, value)
           );
 
+          // 2. 手動更新 request headers，確保 Server Components 讀得到最新 cookie
+          const cookieHeader = request.cookies.getAll().map(c => `${c.name}=${c.value}`).join('; ');
+          request.headers.set('cookie', cookieHeader);
+
           supabaseResponse = NextResponse.next({
             request: {
               headers: request.headers,

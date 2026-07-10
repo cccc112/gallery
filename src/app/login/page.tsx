@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { OAuthButtons } from '@/components/OAuthButtons';
 
-import { signIn } from '@/app/auth/actions';
+
 
 function LoginForm() {
   const router = useRouter();
@@ -25,21 +25,25 @@ function LoginForm() {
     setError('');
 
     startTransition(async () => {
-      const formData = new FormData();
-      formData.append('email', email);
-      formData.append('password', password);
-      // remember could be passed as well, but Supabase default is long-lived.
-      
-      const { error: signInError, success } = await signIn(formData);
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+        });
+        
+        const data = await res.json();
 
-      if (signInError) {
-        setError(signInError);
-        return;
-      }
+        if (!res.ok || data.error) {
+          setError(data.error || '登入失敗');
+          return;
+        }
 
-      if (success) {
-        router.replace(redirectTo);
-        router.refresh();
+        if (data.success) {
+          window.location.href = redirectTo;
+        }
+      } catch (err) {
+        setError('系統錯誤，請稍後再試');
       }
     });
   }

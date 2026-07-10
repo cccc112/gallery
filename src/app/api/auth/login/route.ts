@@ -11,7 +11,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: '請輸入電子郵件與密碼' }, { status: 400 });
     }
 
+    const response = NextResponse.json({ success: true });
     const cookieStore = cookies();
+
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -22,13 +24,9 @@ export async function POST(request: Request) {
             return cookieStore.getAll();
           },
           setAll(cookiesToSet) {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) => {
-                cookieStore.set(name, value, options);
-              });
-            } catch (error) {
-              console.error('Login route cookie set error:', error);
-            }
+            cookiesToSet.forEach(({ name, value, options }) => {
+              response.cookies.set(name, value, options);
+            });
           },
         },
       }
@@ -43,7 +41,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
-    return NextResponse.json({ success: true });
+    return response;
   } catch (e: any) {
     return NextResponse.json({ error: '系統錯誤，請稍後再試' }, { status: 500 });
   }
