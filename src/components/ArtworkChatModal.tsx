@@ -70,7 +70,7 @@ export function ArtworkChatModal({
           table: 'chat_messages',
           filter: `chat_id=eq.${chatId}`,
         },
-        (payload) => {
+        (payload: any) => {
           const newMsg = payload.new as Message;
           setMessages((prev) => {
             // 避免重複（如果自己發送的訊息已先透過 API 加入）

@@ -17,7 +17,7 @@ export default function ChatDashboardPage() {
   const router = useRouter();
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    supabase.auth.getUser().then(({ data: { user } }: any) => {
       if (!user) router.push('/login?redirectTo=/dashboard/chat');
       else {
         setCurrentUser(user);

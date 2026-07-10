@@ -1,6 +1,6 @@
 import { createBrowserClient } from '@supabase/ssr';
 
-let client: ReturnType<typeof createBrowserClient> | undefined;
+let client: ReturnType<typeof createBrowserClient>;
 
 export function createClient() {
   if (client) return client;
