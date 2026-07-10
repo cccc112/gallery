@@ -401,9 +401,26 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
             <div className="p-6 space-y-3">
               <p className="text-xs text-muted-foreground mb-3 font-light">請選擇您的付款方式：</p>
 
+              {/* Stripe */}
+              <button
+                onClick={handleStripeCheckout}
+                className="w-full flex items-center gap-4 p-4 border border-border rounded-sm bg-white/60 hover:bg-white hover:border-blue-300 hover:shadow-sm transition-all group text-left"
+              >
+                <div className="h-10 w-10 rounded-full bg-blue-50 flex items-center justify-center border border-blue-100 flex-shrink-0">
+                  <CreditCard className="h-5 w-5 text-blue-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-foreground">信用卡安全結帳 (Stripe)</p>
+                  <p className="text-xs text-muted-foreground font-light">
+                    支援 Visa, Mastercard, Apple Pay 等
+                  </p>
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+              </button>
+
               {/* PayPal */}
               <div className="w-full relative z-10 border border-border rounded-sm bg-white p-4 hover:border-primary/40 transition-all">
-                <p className="text-sm font-semibold text-foreground mb-2">信用卡 / PayPal</p>
+                <p className="text-sm font-semibold text-foreground mb-2">PayPal (支援免帳號刷卡)</p>
                 <PayPalScriptProvider options={{ clientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || "test", currency: "USD" }}>
                     <PayPalButtons 
                         createOrder={handlePayPalCreateOrder}
