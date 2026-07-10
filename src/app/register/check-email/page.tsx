@@ -96,9 +96,9 @@ export default function CheckEmailPage({ searchParams }: CheckEmailPageProps) {
         <div className="bg-white/60 backdrop-blur-sm border border-border/60 rounded-sm p-5 text-left text-xs text-muted-foreground space-y-2">
           <p className="font-semibold text-foreground">沒收到信？</p>
           <ul className="space-y-1 list-disc list-inside font-light">
-            <li>請檢查垃圾郵件或促銷信件匣</li>
-            <li>確認您在 Supabase 設定了 {"{{ .Token }}"} 作為郵件範本</li>
-            <li>連結有效期間為 24 小時</li>
+            <li>請檢查您的垃圾郵件或促銷信件匣</li>
+            <li>驗證碼的有效期間為 24 小時</li>
+            <li>若仍未收到，請稍後重新嘗試註冊</li>
           </ul>
         </div>
 
