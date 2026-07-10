@@ -24,7 +24,7 @@ function LoginForm() {
     setLoading(true);
 
     const supabase = createClient();
-    const { error: signInError } = await supabase.auth.signInWithPassword({
+    const { data, error: signInError } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
@@ -35,9 +35,26 @@ function LoginForm() {
       return;
     }
 
+    // 驗證 client 端 session 是否存在
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      setError('登入成功但 client 端無法取得 session，請清除瀏覽器快取後重試');
+      setLoading(false);
+      return;
+    }
+
+    // 檢查 document.cookie 是否有 supabase token
+    const hasSbCookie = document.cookie.includes('sb-');
+    if (!hasSbCookie) {
+      // Cookie 沒寫成功，顯示診斷訊息
+      setError(`登入成功但 Cookie 未設定。Cookie 長度: ${document.cookie.length}。請檢查瀏覽器是否封鎖了 Cookie。`);
+      setLoading(false);
+      return;
+    }
+
     // 登入成功，跳轉至目標頁面
     router.push(redirectTo);
-    router.refresh(); // 刷新 Server Components（更新 Navbar 等）
+    router.refresh();
   }
 
   return (
