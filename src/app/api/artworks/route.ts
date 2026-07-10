@@ -20,8 +20,9 @@ export async function POST(request: Request) {
     const title = formData.get('title') as string;
     const description = formData.get('description') as string || '';
     const artType = formData.get('art_type') as 'physical' | 'digital' | 'photography';
+    // 只有實體作品才能開啟租賃功能
+    const isRentable = artType === 'physical' && formData.get('is_rentable') === 'true';
     const price = formData.get('price') ? Number(formData.get('price')) : null;
-    const isRentable = formData.get('is_rentable') === 'true';
     const monthlyRentPrice = formData.get('monthly_rent_price') ? Number(formData.get('monthly_rent_price')) : null;
     const depositAmount = formData.get('deposit_amount') ? Number(formData.get('deposit_amount')) : null;
     const stock = formData.get('stock') ? Number(formData.get('stock')) : (artType === 'physical' ? 1 : null);

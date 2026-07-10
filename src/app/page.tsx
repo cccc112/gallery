@@ -167,7 +167,7 @@ export default async function HomePage() {
                         >
                           {artwork.art_type === 'physical' ? '實體' : '數位'}
                         </Badge>
-                        {artwork.is_rentable && (
+                        {artwork.is_rentable && artwork.art_type === 'physical' && (
                           <Badge className="bg-emerald-600/90 text-white text-[9px] font-semibold tracking-wider px-2 py-0.5 border-transparent">
                             可租用
                           </Badge>
@@ -201,9 +201,9 @@ export default async function HomePage() {
                               </span>
                             </p>
                           )}
-                          {artwork.is_rentable && artwork.monthly_rent_price && (
-                            <p className="text-xs text-indigo-700 font-medium mt-0.5 font-mono">
-                              月租 {formatPrice(Number(artwork.monthly_rent_price))}
+                          {artwork.is_rentable && artwork.art_type === 'physical' && artwork.monthly_rent_price && (
+                            <p className="text-xs text-indigo-900 font-medium mt-0.5 font-mono">
+                              月租: {new Intl.NumberFormat('zh-TW', { style: 'currency', currency: 'TWD', minimumFractionDigits: 0 }).format(Number(artwork.monthly_rent_price))}
                             </p>
                           )}
                         </div>

@@ -152,7 +152,7 @@ export function ArtworkDetails({
             </p>
           </div>
         )}
-        {artwork.is_rentable && artwork.monthly_rent_price !== null && (
+        {artwork.is_rentable && artwork.art_type === 'physical' && artwork.monthly_rent_price !== null && (
           <div className="space-y-1">
             <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
               短期月租金
@@ -294,7 +294,7 @@ export function ArtworkDetails({
             </Button>
           )}
 
-          {artwork.is_rentable && (
+          {artwork.is_rentable && artwork.art_type === 'physical' && (
             <Button
               onClick={() => openCheckout('rent')}
               variant="outline"

@@ -260,7 +260,7 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
                     >
                       {badgeLabel(artwork.art_type)}
                     </Badge>
-                    {artwork.is_rentable && (
+                    {artwork.is_rentable && artwork.art_type === 'physical' && (
                       <Badge className="bg-emerald-600/90 text-white text-[9px] font-semibold tracking-wider px-2 py-0.5 border-transparent">
                         可租用
                       </Badge>
@@ -301,7 +301,7 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
                       ) : (
                         <p className="text-xs text-muted-foreground italic">非賣品</p>
                       )}
-                      {artwork.is_rentable && (
+                      {artwork.is_rentable && artwork.art_type === 'physical' && (
                         <p className="text-xs text-indigo-900 font-medium mt-0.5 font-mono">
                           月租: {formatPrice(Number(artwork.monthly_rent_price))}
                         </p>

@@ -378,15 +378,15 @@ function ArtistTab({
                 <div className="flex items-center gap-2 flex-wrap">
                   <p className="text-sm font-semibold text-foreground truncate">{a.title}</p>
                   <TypeBadge type={a.art_type} />
-                  {a.is_rentable && (
-                    <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-sm border bg-indigo-50 text-indigo-700 border-indigo-200">
-                      可租賃
+                  {a.is_rentable && a.art_type === 'physical' && (
+                    <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-medium ml-2">
+                      可租用
                     </span>
                   )}
                 </div>
                 <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground flex-wrap">
                   {a.price && <span>售價 <span className="font-semibold text-foreground">{fmt(Number(a.price))}</span></span>}
-                  {a.is_rentable && a.monthly_rent_price && (
+                  {a.is_rentable && a.art_type === 'physical' && a.monthly_rent_price && (
                     <span>月租 <span className="font-semibold text-foreground">{fmt(Number(a.monthly_rent_price))}</span></span>
                   )}
                   {a.art_type === 'physical' && (

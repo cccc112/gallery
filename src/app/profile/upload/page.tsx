@@ -253,6 +253,7 @@ export default function UploadPage() {
                     </button>
                   ))}
                 </div>
+                <p className="text-[10px] text-muted-foreground mt-2">* 註：目前僅開放實體作品提供短期租賃服務。</p>
               </div>
             </div>
 
@@ -293,28 +294,30 @@ export default function UploadPage() {
                 )}
               </div>
 
-              {/* Rentable toggle */}
-              <div>
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <button
-                    type="button"
-                    role="switch"
-                    aria-checked={isRentable}
-                    onClick={() => setIsRentable(!isRentable)}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      isRentable ? 'bg-primary' : 'bg-border'
-                    }`}
-                  >
-                    <span className={`inline-block h-4 w-4 rounded-full bg-white shadow-sm transform transition-transform ${
-                      isRentable ? 'translate-x-6' : 'translate-x-1'
-                    }`} />
-                  </button>
-                  <div>
-                    <p className="text-sm font-semibold text-foreground">開放短期租賃</p>
-                    <p className="text-xs text-muted-foreground">讓買家按月租用，提高作品曝光率</p>
-                  </div>
-                </label>
-              </div>
+              {/* Rentable toggle - ONLY for physical artworks */}
+              {artType === 'physical' && (
+                <div>
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={isRentable}
+                      onClick={() => setIsRentable(!isRentable)}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                        isRentable ? 'bg-primary' : 'bg-border'
+                      }`}
+                    >
+                      <span className={`inline-block h-4 w-4 rounded-full bg-white shadow-sm transform transition-transform ${
+                        isRentable ? 'translate-x-6' : 'translate-x-1'
+                      }`} />
+                    </button>
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">開放短期租賃</p>
+                      <p className="text-xs text-muted-foreground">讓買家按月租用，提高作品曝光率</p>
+                    </div>
+                  </label>
+                </div>
+              )}
 
               {isRentable && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-2 border-t border-border/40">
