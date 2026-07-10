@@ -48,7 +48,16 @@ export default function Navbar() {
           const res = await fetch('/api/users/me');
           if (res.ok) {
             const data = await res.json();
-            setProfile(data.profile);
+            if (data.profile) {
+              setProfile(data.profile);
+            } else {
+              setUser(null);
+              setProfile(null);
+              supabase.auth.signOut();
+            }
+          } else {
+            setUser(null);
+            setProfile(null);
           }
         } else {
           setUser(null);
@@ -70,7 +79,17 @@ export default function Navbar() {
           const res = await fetch('/api/users/me');
           if (res.ok) {
             const data = await res.json();
-            setProfile(data.profile);
+            if (data.profile) {
+              setProfile(data.profile);
+            } else {
+              // 伺服器認為 token 無效（例如已被撤銷或過期），強制清理前端狀態
+              setUser(null);
+              setProfile(null);
+              supabase.auth.signOut();
+            }
+          } else {
+            setUser(null);
+            setProfile(null);
           }
         } else {
           setUser(null);

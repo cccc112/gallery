@@ -31,7 +31,6 @@ async function urlToBase64(url: string): Promise<string> {
   }
 }
 
-// ── Pollinations.ai (免費、無需 API Key、使用 FLUX.1) ─────────────
 async function generateViaPollinations(params: {
   prompt: string;
   width: number;
@@ -42,25 +41,48 @@ async function generateViaPollinations(params: {
   const encodedPrompt = encodeURIComponent(prompt);
   const url = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=${width}&height=${height}&seed=${seed}&model=flux&nologo=true&enhance=false`;
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 55000);
-  try {
-    const res = await fetch(url, {
-      signal: controller.signal,
-      headers: { 'User-Agent': 'AtelierBlanc/1.0' },
-    });
-    if (!res.ok) throw new Error(`Pollinations API 錯誤 ${res.status}`);
-    const arrayBuf = await res.arrayBuffer();
-    if (arrayBuf.byteLength < 1000) throw new Error('回傳圖片過小，可能生成失敗');
-    const bytes = new Uint8Array(arrayBuf);
-    let binary = '';
-    for (let i = 0; i < bytes.byteLength; i++) {
-      binary += String.fromCharCode(bytes[i]);
+  let attempts = 0;
+  const maxAttempts = 3;
+
+  while (attempts < maxAttempts) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 55000);
+    try {
+      const res = await fetch(url, {
+        signal: controller.signal,
+        headers: { 'User-Agent': 'AtelierBlanc/1.0' },
+      });
+
+      if (!res.ok) {
+        if ([429, 500, 502, 503, 504].includes(res.status)) {
+          throw new Error(`RETRY_${res.status}`);
+        }
+        throw new Error(`Pollinations API 錯誤 ${res.status}`);
+      }
+
+      const arrayBuf = await res.arrayBuffer();
+      if (arrayBuf.byteLength < 1000) throw new Error('RETRY_TOO_SMALL');
+
+      const bytes = new Uint8Array(arrayBuf);
+      let binary = '';
+      for (let i = 0; i < bytes.byteLength; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      return btoa(binary);
+    } catch (err: any) {
+      if ((err.message?.startsWith('RETRY') || err.name === 'AbortError') && attempts < maxAttempts - 1) {
+        attempts++;
+        // 隨機延遲 1~2.5 秒再重試，避免短時間內再度觸發 429
+        await new Promise(r => setTimeout(r, 1000 + Math.random() * 1500));
+        continue;
+      }
+      throw err;
+    } finally {
+      clearTimeout(timeout);
     }
-    return btoa(binary);
-  } finally {
-    clearTimeout(timeout);
   }
+  
+  throw new Error('伺服器忙碌中 (免費生圖 API 過載)，請稍後再試。');
 }
 
 // ── Replicate (NVIDIA FLUX.1 schnell，需 API Token) ───────────────
