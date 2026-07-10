@@ -40,22 +40,7 @@ function randomSeed() {
   return Math.floor(Math.random() * 2147483647);
 }
 
-function cropWatermark(base64: string): Promise<string> {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = img.width;
-      canvas.height = img.height - 40; // Pollinations watermark is ~30-40px at the bottom
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return resolve(base64);
-      ctx.drawImage(img, 0, 0);
-      resolve(canvas.toDataURL('image/png').split(',')[1]);
-    };
-    img.onerror = () => resolve(base64);
-    img.src = `data:image/png;base64,${base64}`;
-  });
-}
+
 
 function Slider({
   label, value, min, max, step = 1, onChange, unit = '',
@@ -165,9 +150,6 @@ export default function GeneratePage() {
       if (!res.ok) throw new Error(data.error || '生成失敗');
 
       let finalB64 = data.image;
-      if (data.engine === 'pollinations') {
-        finalB64 = await cropWatermark(finalB64);
-      }
 
       setImageB64(finalB64);
       setHistory(prev => [{ b64: finalB64, prompt: finalPrompt, seed: useSeed }, ...prev].slice(0, 8));
@@ -531,10 +513,6 @@ export default function GeneratePage() {
                       draggable={false}
                       onContextMenu={e => e.preventDefault()}
                     />
-                    <div className="absolute inset-0 pointer-events-none select-none flex items-end justify-between p-3">
-                      <span className="text-[9px] text-white/30 tracking-widest">Seed: {lastSeed}</span>
-                      <span className="text-[9px] text-white/30 font-light tracking-widest">Atelier Blanc AI</span>
-                    </div>
                   </>
                 ) : (
                   <div className="flex flex-col items-center gap-3 text-muted-foreground/40">
