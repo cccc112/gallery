@@ -1,15 +1,44 @@
+'use client';
+
+import { useState } from 'react';
 import Link from 'next/link';
-import { signIn } from '@/app/auth/actions';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
 import { OAuthButtons } from '@/components/OAuthButtons';
 
-interface LoginPageProps {
-  searchParams: { error?: string; redirectTo?: string; message?: string };
-}
+export default function LoginPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get('redirectTo') || '/';
+  const message = searchParams.get('message');
 
-export default function LoginPage({ searchParams }: LoginPageProps) {
-  const error = searchParams.error;
-  const redirectTo = searchParams.redirectTo || '/';
-  const message = searchParams.message;
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [remember, setRemember] = useState(true);
+  const [error, setError] = useState(searchParams.get('error') || '');
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    const supabase = createClient();
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (signInError) {
+      setError(signInError.message);
+      setLoading(false);
+      return;
+    }
+
+    // 登入成功，跳轉至目標頁面
+    router.push(redirectTo);
+    router.refresh(); // 刷新 Server Components（更新 Navbar 等）
+  }
 
   return (
     <div className="marble-bg min-h-screen flex items-center justify-center px-6 py-16">
@@ -37,22 +66,19 @@ export default function LoginPage({ searchParams }: LoginPageProps) {
           <h2 className="font-serif text-xl font-semibold text-foreground mb-1">歡迎回來</h2>
           <p className="text-xs text-muted-foreground font-light mb-8">請輸入您的帳號資訊以繼續</p>
 
-          {/* Error */}
+          {/* Messages */}
           {message === 'password_updated' && (
             <div className="mb-6 px-4 py-3 rounded-sm bg-emerald-50 border border-emerald-200 text-xs text-emerald-700 font-medium">
               密碼已成功更新，請使用新密碼登入。
             </div>
           )}
-
           {error && (
             <div className="mb-6 px-4 py-3 rounded-sm bg-rose-50 border border-rose-200 text-xs text-rose-700 font-medium">
               {decodeURIComponent(error)}
             </div>
           )}
 
-          <form action={signIn} className="space-y-5">
-            <input type="hidden" name="redirectTo" value={redirectTo} />
-
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div>
               <label htmlFor="email" className="block text-xs font-semibold tracking-wider uppercase text-muted-foreground mb-2">
                 電子郵件
@@ -64,6 +90,8 @@ export default function LoginPage({ searchParams }: LoginPageProps) {
                 required
                 autoComplete="email"
                 placeholder="you@example.com"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
                 className="w-full rounded-sm border border-border bg-white/80 px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary transition-colors"
               />
             </div>
@@ -87,17 +115,20 @@ export default function LoginPage({ searchParams }: LoginPageProps) {
                 required
                 autoComplete="current-password"
                 placeholder="••••••••"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
                 className="w-full rounded-sm border border-border bg-white/80 px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary transition-colors"
               />
             </div>
 
-            {/* 記住登入資訊 */}
+            {/* 記住我 */}
             <div className="flex items-center gap-2.5">
               <input
                 id="remember"
                 name="remember"
                 type="checkbox"
-                defaultChecked
+                checked={remember}
+                onChange={e => setRemember(e.target.checked)}
                 className="h-4 w-4 rounded border-border accent-primary cursor-pointer"
               />
               <label htmlFor="remember" className="text-xs text-muted-foreground cursor-pointer select-none">
@@ -107,16 +138,20 @@ export default function LoginPage({ searchParams }: LoginPageProps) {
 
             <button
               type="submit"
-              className="w-full rounded-sm bg-primary text-primary-foreground py-3.5 text-sm font-semibold tracking-wide hover:bg-primary/90 transition-all duration-300 shadow-md mt-2"
+              disabled={loading}
+              className="w-full rounded-sm bg-primary text-primary-foreground py-3.5 text-sm font-semibold tracking-wide hover:bg-primary/90 transition-all duration-300 shadow-md mt-2 disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              登入帳號
+              {loading ? '登入中…' : '登入帳號'}
             </button>
           </form>
 
           <div className="mt-6 pt-6 border-t border-border/60 text-center">
             <p className="text-xs text-muted-foreground">
               還沒有帳號？{' '}
-              <Link href={`/register${redirectTo !== '/' ? `?redirectTo=${encodeURIComponent(redirectTo)}` : ''}`} className="text-foreground font-semibold hover:underline underline-offset-4">
+              <Link
+                href={`/register${redirectTo !== '/' ? `?redirectTo=${encodeURIComponent(redirectTo)}` : ''}`}
+                className="text-foreground font-semibold hover:underline underline-offset-4"
+              >
                 立即免費註冊
               </Link>
             </p>
