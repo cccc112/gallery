@@ -62,6 +62,18 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
     console.error('Failed to query tags:', error);
   }
 
+  // If no tags in DB yet, show some default recommendations
+  if (popularTags.length === 0) {
+    popularTags = [
+      { tag: '油畫', count: 0 },
+      { tag: '抽象', count: 0 },
+      { tag: '風景', count: 0 },
+      { tag: '當代藝術', count: 0 },
+      { tag: '賽博龐克', count: 0 },
+      { tag: '極簡', count: 0 },
+    ];
+  }
+
   const formatPrice = (price: number | null) => {
     if (price === null) return '僅供租賃';
     return new Intl.NumberFormat('zh-TW', {
