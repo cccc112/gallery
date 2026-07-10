@@ -10,6 +10,10 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next({ request });
   }
 
+  console.log(`[Middleware] Request URL: ${request.nextUrl.pathname}`);
+  const allReqCookies = request.cookies.getAll().map(c => c.name);
+  console.log(`[Middleware] Request cookies present: ${JSON.stringify(allReqCookies)}`);
+
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -21,6 +25,7 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
+          console.log(`[Middleware] setAll called with cookies: ${JSON.stringify(cookiesToSet.map(c => ({ name: c.name, valueLength: c.value.length })))}`);
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           );
@@ -34,7 +39,8 @@ export async function middleware(request: NextRequest) {
   );
 
   // 刷新 session，防止過期
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  console.log(`[Middleware] getUser result: user=${user?.id || 'null'}, error=${userError?.message || 'none'}`);
 
   // 保護需要登入的路由
   const protectedPaths = ['/admin', '/profile', '/dashboard'];
@@ -43,6 +49,7 @@ export async function middleware(request: NextRequest) {
   );
 
   if (isProtected && !user) {
+    console.log(`[Middleware] Redirecting unprotected access to /login`);
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     url.searchParams.set('redirectTo', request.nextUrl.pathname);
