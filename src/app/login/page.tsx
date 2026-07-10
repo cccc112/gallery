@@ -1,32 +1,43 @@
 'use client';
 
-import { useState, useTransition, Suspense } from 'react';
+import { useState, Suspense } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
-import { signIn } from '@/app/auth/actions';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
 import { OAuthButtons } from '@/components/OAuthButtons';
 
 function LoginForm() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get('redirectTo') || '/';
   const message = searchParams.get('message');
 
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [remember, setRemember] = useState(true);
   const [error, setError] = useState(searchParams.get('error') || '');
-  const [isPending, startTransition] = useTransition();
+  const [loading, setLoading] = useState(false);
 
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
-    const formData = new FormData(e.currentTarget);
-    formData.set('redirectTo', redirectTo);
+    setLoading(true);
 
-    startTransition(async () => {
-      const result = await signIn(formData);
-      if (result?.error) {
-        setError(result.error);
-      }
-      // 成功時 Server Action 會 redirect()，這裡不需要額外處理
+    const supabase = createClient();
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
     });
+
+    if (signInError) {
+      setError(signInError.message);
+      setLoading(false);
+      return;
+    }
+
+    // 登入成功，跳轉至目標頁面
+    router.push(redirectTo);
+    router.refresh(); // 刷新 Server Components（更新 Navbar 等）
   }
 
   return (
@@ -57,6 +68,8 @@ function LoginForm() {
             required
             autoComplete="email"
             placeholder="you@example.com"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
             className="w-full rounded-sm border border-border bg-white/80 px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary transition-colors"
           />
         </div>
@@ -77,16 +90,32 @@ function LoginForm() {
             required
             autoComplete="current-password"
             placeholder="••••••••"
+            value={password}
+            onChange={e => setPassword(e.target.value)}
             className="w-full rounded-sm border border-border bg-white/80 px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary transition-colors"
           />
         </div>
 
+        <div className="flex items-center gap-2.5">
+          <input
+            id="remember"
+            name="remember"
+            type="checkbox"
+            checked={remember}
+            onChange={e => setRemember(e.target.checked)}
+            className="h-4 w-4 rounded border-border accent-primary cursor-pointer"
+          />
+          <label htmlFor="remember" className="text-xs text-muted-foreground cursor-pointer select-none">
+            記住我的登入狀態（30 天）
+          </label>
+        </div>
+
         <button
           type="submit"
-          disabled={isPending}
+          disabled={loading}
           className="w-full rounded-sm bg-primary text-primary-foreground py-3.5 text-sm font-semibold tracking-wide hover:bg-primary/90 transition-all duration-300 shadow-md mt-2 disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          {isPending ? '登入中…' : '登入帳號'}
+          {loading ? '登入中…' : '登入帳號'}
         </button>
       </form>
 
@@ -129,6 +158,7 @@ export default function LoginPage() {
           </Link>
         </div>
 
+        {/* useSearchParams 必須包在 Suspense 內 */}
         <Suspense fallback={
           <div className="bg-white/70 backdrop-blur-md border border-border/60 rounded-sm shadow-lg px-8 py-10 min-h-[400px] flex items-center justify-center">
             <div className="w-6 h-6 rounded-full border-2 border-primary border-t-transparent animate-spin" />
