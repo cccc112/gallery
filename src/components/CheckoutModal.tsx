@@ -506,7 +506,8 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
                 )}
               </button>
             </div>
-          )}
+          </div>
+        )}
 
           {/* ── Stripe 跳轉 loading ── */}
           {step === 'stripe-loading' && (
