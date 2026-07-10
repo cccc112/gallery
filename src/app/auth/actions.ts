@@ -67,31 +67,21 @@ export async function signUp(formData: FormData) {
   }
 }
 
-export async function signIn(formData: FormData) {
+export async function signIn(formData: FormData): Promise<{ error: string } | void> {
   const supabase = createClient();
 
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
   const redirectTo = (formData.get('redirectTo') as string) || '/';
-  const remember = formData.get('remember') === 'on';
 
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
-    const params = new URLSearchParams({ error: error.message });
-    if (redirectTo) params.set('redirectTo', redirectTo);
-    return redirect(`/login?${params.toString()}`);
+    // 回傳錯誤讓 Client 顯示，不要在這裡 redirect（避免 redirect 吃掉 cookie 寫入）
+    return { error: error.message };
   }
 
-  // 若勾選「記住我」，延長 session 有效期至 30 天（2592000 秒）
-  // Supabase 預設 session 為 1 小時，這裡強制更新 expiry
-  if (remember && data.session) {
-    await supabase.auth.setSession({
-      access_token: data.session.access_token,
-      refresh_token: data.session.refresh_token,
-    });
-  }
-
+  // 成功後：cookies 已由 next/headers 寫入，執行 redirect
   revalidatePath('/', 'layout');
   redirect(redirectTo);
 }

@@ -1,47 +1,32 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, useTransition, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
+import { signIn } from '@/app/auth/actions';
 import { OAuthButtons } from '@/components/OAuthButtons';
 
 function LoginForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get('redirectTo') || '/';
   const message = searchParams.get('message');
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [remember, setRemember] = useState(true);
   const [error, setError] = useState(searchParams.get('error') || '');
-  const [loading, setLoading] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
-  async function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError('');
-    setLoading(true);
+    const formData = new FormData(e.currentTarget);
+    formData.set('redirectTo', redirectTo);
 
-    try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-      const data = await res.json();
-
-      if (!res.ok || data.error) {
-        setError(data.error || '登入失敗，請檢查您的帳號密碼');
-        setLoading(false);
-        return;
+    startTransition(async () => {
+      const result = await signIn(formData);
+      if (result?.error) {
+        setError(result.error);
       }
-
-      // 使用 hard navigation 確保 Cookie 被正確帶到 Server 並清除 Next.js Router Cache
-      window.location.href = redirectTo;
-    } catch (err) {
-      setError('連線失敗，請稍後再試');
-      setLoading(false);
-    }
+      // 成功時 Server Action 會 redirect()，這裡不需要額外處理
+    });
   }
 
   return (
@@ -67,12 +52,11 @@ function LoginForm() {
           </label>
           <input
             id="email"
+            name="email"
             type="email"
             required
             autoComplete="email"
             placeholder="you@example.com"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
             className="w-full rounded-sm border border-border bg-white/80 px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary transition-colors"
           />
         </div>
@@ -88,35 +72,21 @@ function LoginForm() {
           </div>
           <input
             id="password"
+            name="password"
             type="password"
             required
             autoComplete="current-password"
             placeholder="••••••••"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
             className="w-full rounded-sm border border-border bg-white/80 px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary transition-colors"
           />
         </div>
 
-        <div className="flex items-center gap-2.5">
-          <input
-            id="remember"
-            type="checkbox"
-            checked={remember}
-            onChange={e => setRemember(e.target.checked)}
-            className="h-4 w-4 rounded border-border accent-primary cursor-pointer"
-          />
-          <label htmlFor="remember" className="text-xs text-muted-foreground cursor-pointer select-none">
-            記住我的登入狀態（30 天）
-          </label>
-        </div>
-
         <button
           type="submit"
-          disabled={loading}
+          disabled={isPending}
           className="w-full rounded-sm bg-primary text-primary-foreground py-3.5 text-sm font-semibold tracking-wide hover:bg-primary/90 transition-all duration-300 shadow-md mt-2 disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          {loading ? '登入中…' : '登入帳號'}
+          {isPending ? '登入中…' : '登入帳號'}
         </button>
       </form>
 
@@ -159,7 +129,6 @@ export default function LoginPage() {
           </Link>
         </div>
 
-        {/* useSearchParams 必須包在 Suspense 內 */}
         <Suspense fallback={
           <div className="bg-white/70 backdrop-blur-md border border-border/60 rounded-sm shadow-lg px-8 py-10 min-h-[400px] flex items-center justify-center">
             <div className="w-6 h-6 rounded-full border-2 border-primary border-t-transparent animate-spin" />
