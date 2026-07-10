@@ -64,7 +64,7 @@ export default function Navbar() {
     fetchUserAndProfile();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event: any, session) => {
+      async (_event: any, session: any) => {
         if (session?.user) {
           setUser({ id: session.user.id, email: session.user.email! });
           const res = await fetch('/api/users/me');
