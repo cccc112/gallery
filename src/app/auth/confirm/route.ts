@@ -32,6 +32,9 @@ export async function GET(request: NextRequest) {
 
   const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
+  // 關鍵：等待 200ms 讓 Supabase 的非同步 onAuthStateChange 回呼執行完畢，確保 Cookies 寫入 Response
+  await new Promise(resolve => setTimeout(resolve, 200));
+
   if (error) {
     console.error('Auth confirm error:', error.message);
     return NextResponse.redirect(
