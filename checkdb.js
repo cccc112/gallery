@@ -1,7 +1,6 @@
-
 const postgres = require('postgres');
 const sql = postgres(process.env.DATABASE_URL, {ssl:'require'});
-sql`ALTER TABLE public.users ADD COLUMN IF NOT EXISTS cover_url TEXT`.then(res => {
-  console.log('Added cover_url');
+sql`ALTER TABLE public.artworks ADD COLUMN IF NOT EXISTS tags TEXT[] DEFAULT '{}'::TEXT[]`.then(() => {
+  console.log('Added tags to artworks');
   process.exit(0);
 }).catch(console.error);

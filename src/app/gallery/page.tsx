@@ -34,7 +34,9 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
       FROM public.artworks a
       JOIN public.users u ON a.artist_id = u.id
       WHERE 
-        (a.title ILIKE ${'%' + search + '%'} OR a.description ILIKE ${'%' + search + '%'})
+        (a.title ILIKE ${'%' + search + '%'} 
+         OR a.description ILIKE ${'%' + search + '%'}
+         OR array_to_string(a.tags, ' ') ILIKE ${'%' + search + '%'})
         AND (${type} = 'all' OR a.art_type = ${type})
         AND (${rentable} = false OR a.is_rentable = true)
       ORDER BY a.created_at DESC
@@ -204,7 +206,7 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
                   </div>
 
                   {/* Tags */}
-                  <div className="absolute top-5 left-5 flex gap-2 z-10">
+                  <div className="absolute top-5 left-5 flex flex-wrap gap-2 z-10 max-w-[80%]">
                     <Badge
                       variant="secondary"
                       className={`text-[9px] font-semibold tracking-wider px-2 py-0.5 border ${badgeStyle(artwork.art_type)}`}
@@ -218,6 +220,21 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
                     )}
                   </div>
                 </Link>
+
+                {/* Custom Tags Display */}
+                {artwork.tags && artwork.tags.length > 0 && (
+                  <div className="px-5 pt-4 pb-1 flex flex-wrap gap-1.5 border-t border-border/30 bg-card">
+                    {artwork.tags.map((tag: string) => (
+                      <Link 
+                        key={tag} 
+                        href={`/gallery?search=${encodeURIComponent(tag)}`}
+                        className="text-[9px] bg-secondary/50 text-muted-foreground border border-border/50 px-2 py-0.5 rounded-sm hover:bg-secondary hover:text-foreground transition-colors"
+                      >
+                        #{tag}
+                      </Link>
+                    ))}
+                  </div>
+                )}
 
                 {/* Info */}
                 <div className="flex flex-1 flex-col p-5 bg-card border-t border-border/30">

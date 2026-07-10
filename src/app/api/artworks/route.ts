@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     // 2. 解析表單欄位
     const title = formData.get('title') as string;
     const description = formData.get('description') as string || '';
-    const artType = formData.get('art_type') as 'physical' | 'digital';
+    const artType = formData.get('art_type') as 'physical' | 'digital' | 'photography';
     const price = formData.get('price') ? Number(formData.get('price')) : null;
     const isRentable = formData.get('is_rentable') === 'true';
     const monthlyRentPrice = formData.get('monthly_rent_price') ? Number(formData.get('monthly_rent_price')) : null;
@@ -29,6 +29,12 @@ export async function POST(request: Request) {
     const height = formData.get('height') ? Number(formData.get('height')) : null;
     const depth = formData.get('depth') ? Number(formData.get('depth')) : null;
     const weight = formData.get('weight') ? Number(formData.get('weight')) : null;
+    
+    const tagsStr = formData.get('tags') as string | null;
+    let tags: string[] = [];
+    if (tagsStr) {
+      try { tags = JSON.parse(tagsStr); } catch (e) {}
+    }
 
     // 3. 必填驗證
     if (!title || !artType) {
@@ -89,6 +95,7 @@ export async function POST(request: Request) {
         weight,
         preview_file_url,
         high_res_file_url,
+        tags,
         created_at
       ) VALUES (
         ${user.id},
@@ -105,7 +112,8 @@ export async function POST(request: Request) {
         ${depth},
         ${weight},
         ${previewFileUrl},
-        ${artType === 'digital' ? previewFileUrl : null},
+        ${artType === 'digital' || artType === 'photography' ? previewFileUrl : null},
+        ${tags},
         NOW()
       )
       RETURNING id, title

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Upload, ImageIcon, X, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 
-type ArtType = 'physical' | 'digital';
+type ArtType = 'physical' | 'digital' | 'photography';
 
 export default function UploadPage() {
   const router = useRouter();
@@ -17,6 +17,29 @@ export default function UploadPage() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [status, setStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState('');
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState('');
+
+  const handleAddTag = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const val = tagInput.trim();
+      if (!val) return;
+      if (tags.length >= 5) {
+        setErrorMsg('最多只能新增 5 個標籤');
+        return;
+      }
+      if (!tags.includes(val)) {
+        setTags([...tags, val]);
+      }
+      setTagInput('');
+      setErrorMsg('');
+    }
+  };
+
+  const removeTag = (tagToRemove: string) => {
+    setTags(tags.filter(t => t !== tagToRemove));
+  };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -43,6 +66,7 @@ export default function UploadPage() {
       formData.set('image', imageFile);
     }
     formData.set('is_rentable', isRentable.toString());
+    formData.set('tags', JSON.stringify(tags));
 
     try {
       const res = await fetch('/api/artworks', {
@@ -179,31 +203,52 @@ export default function UploadPage() {
                   className="w-full rounded-sm border border-border bg-white/80 px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary transition-colors resize-none"
                 />
               </div>
-
+              {/* Tags */}
+              <div>
+                <label className="block text-xs font-semibold tracking-wider uppercase text-muted-foreground mb-2">
+                  自訂標籤 <span className="font-normal text-[10px] text-muted-foreground/60">(最多 5 個，輸入後按 Enter)</span>
+                </label>
+                <div className="w-full rounded-sm border border-border bg-white/80 p-2 flex flex-wrap gap-2 items-center focus-within:border-primary transition-colors">
+                  {tags.map(tag => (
+                    <span key={tag} className="flex items-center gap-1 bg-secondary text-foreground text-xs px-2.5 py-1 rounded-sm border border-border">
+                      {tag}
+                      <button type="button" onClick={() => removeTag(tag)} className="text-muted-foreground hover:text-foreground">
+                        <X className="h-3 w-3" />
+                      </button>
+                    </span>
+                  ))}
+                  <input
+                    type="text"
+                    value={tagInput}
+                    onChange={e => setTagInput(e.target.value)}
+                    onKeyDown={handleAddTag}
+                    placeholder={tags.length < 5 ? "例如：油畫、風景..." : "已達標籤上限"}
+                    disabled={tags.length >= 5}
+                    className="flex-1 bg-transparent border-none focus:outline-none text-sm text-foreground placeholder:text-muted-foreground/50 min-w-[120px]"
+                  />
+                </div>
+              </div>
               {/* Art Type */}
               <div>
                 <label className="block text-xs font-semibold tracking-wider uppercase text-muted-foreground mb-3">
                   作品類型 <span className="text-rose-500">*</span>
                 </label>
                 <input type="hidden" name="art_type" value={artType} />
-                <div className="grid grid-cols-2 gap-3">
-                  {(['physical', 'digital'] as const).map((type) => (
+                <div className="grid grid-cols-3 gap-3">
+                  {(['physical', 'digital', 'photography'] as const).map((type) => (
                     <button
                       key={type}
                       type="button"
                       onClick={() => setArtType(type)}
-                      className={`flex flex-col items-center gap-2 p-4 border rounded-sm text-center transition-all ${
+                      className={`flex flex-col items-center justify-center gap-2 p-4 border rounded-sm text-center transition-all ${
                         artType === type
                           ? 'border-primary bg-primary/5'
                           : 'border-border bg-white/60 hover:bg-white'
                       }`}
                     >
-                      <span className="text-2xl">{type === 'physical' ? '🖼️' : '💻'}</span>
-                      <span className="text-xs font-semibold text-foreground">
-                        {type === 'physical' ? '實體作品' : '數位作品'}
-                      </span>
-                      <span className="text-[10px] text-muted-foreground">
-                        {type === 'physical' ? '油畫、水彩、雕塑等' : '數位插畫、NFT 等'}
+                      <span className="text-2xl">{type === 'physical' ? '🖼️' : type === 'digital' ? '💻' : '📷'}</span>
+                      <span className="text-xs font-semibold text-foreground mt-1">
+                        {type === 'physical' ? '實體作品' : type === 'digital' ? '數位作品' : '攝影'}
                       </span>
                     </button>
                   ))}
