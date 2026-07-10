@@ -3,7 +3,6 @@
 import { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { signIn } from '@/app/auth/actions';
 import { OAuthButtons } from '@/components/OAuthButtons';
 
 function LoginForm() {
@@ -23,22 +22,21 @@ function LoginForm() {
     setLoading(true);
 
     try {
-      const formData = new FormData();
-      formData.set('email', email);
-      formData.set('password', password);
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
 
-      const result = await signIn(formData);
-
-      if (result?.error) {
-        setError(result.error);
+      if (!res.ok || data.error) {
+        setError(data.error || '登入失敗，請檢查您的帳號密碼');
         setLoading(false);
         return;
       }
 
-      if (result?.success) {
-        // 使用 hard navigation 確保 Cookie 被正確帶到 Server 並清除 Next.js Router Cache
-        window.location.href = redirectTo;
-      }
+      // 使用 hard navigation 確保 Cookie 被正確帶到 Server 並清除 Next.js Router Cache
+      window.location.href = redirectTo;
     } catch (err: any) {
       setError('登入時發生非預期錯誤，請稍後再試。');
       setLoading(false);

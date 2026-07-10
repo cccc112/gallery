@@ -1,12 +1,52 @@
+'use client';
+
+import { useState } from 'react';
 import Link from 'next/link';
 import { Mail } from 'lucide-react';
+import { createClient } from '@/lib/supabase/client';
 
 interface CheckEmailPageProps {
   searchParams: { email?: string };
 }
 
 export default function CheckEmailPage({ searchParams }: CheckEmailPageProps) {
-  const email = searchParams.email || '您的信箱';
+  const email = searchParams.email || '';
+  const [token, setToken] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+
+  const handleVerify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!token || token.trim().length !== 6) {
+      setError('請輸入正確的 6 位數驗證碼');
+      return;
+    }
+    setError('');
+    setLoading(true);
+
+    try {
+      const supabase = createClient();
+      const { error: verifyError } = await supabase.auth.verifyOtp({
+        email,
+        token: token.trim(),
+        type: 'signup',
+      });
+
+      if (verifyError) {
+        setError(verifyError.message);
+        setLoading(false);
+        return;
+      }
+
+      setSuccess(true);
+      // 驗證成功，使用 hard navigation 確保 Session Cookie 被帶到 Server，避免被 Middleware 彈回
+      window.location.href = '/dashboard';
+    } catch (err: any) {
+      setError('驗證時發生非預期錯誤，請稍後再試。');
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="marble-bg min-h-screen flex items-center justify-center px-6 py-16">
@@ -20,18 +60,53 @@ export default function CheckEmailPage({ searchParams }: CheckEmailPageProps) {
         </div>
 
         <h1 className="font-serif text-2xl font-semibold text-foreground mb-2">請確認您的信箱</h1>
-        <p className="text-sm text-muted-foreground font-light leading-relaxed mb-8">
-          我們已將確認信件寄送至<br />
-          <span className="font-semibold text-foreground">{decodeURIComponent(email)}</span><br />
-          <br />
-          請點擊信件中的連結完成帳號驗證，即可開始使用 Atelier Blanc。
+        <p className="text-sm text-muted-foreground font-light leading-relaxed mb-6">
+          我們已寄送郵件至：<br />
+          <span className="font-semibold text-foreground">{decodeURIComponent(email)}</span>
         </p>
+
+        {/* 驗證碼輸入表單 */}
+        <div className="bg-white/70 backdrop-blur-md border border-border/60 rounded-sm shadow-md p-6 text-left mb-6">
+          <h2 className="text-xs font-semibold tracking-wider uppercase text-muted-foreground mb-4 text-center">
+            請輸入信件中的 6 位數驗證碼
+          </h2>
+
+          {error && (
+            <div className="mb-4 px-4 py-2.5 rounded-sm bg-rose-50 border border-rose-200 text-xs text-rose-700 font-medium">
+              {error}
+            </div>
+          )}
+          {success && (
+            <div className="mb-4 px-4 py-2.5 rounded-sm bg-emerald-50 border border-emerald-200 text-xs text-emerald-700 font-medium">
+              驗證成功！正在登入後台…
+            </div>
+          )}
+
+          <form onSubmit={handleVerify} className="space-y-4">
+            <input
+              type="text"
+              value={token}
+              onChange={e => setToken(e.target.value)}
+              placeholder="123456"
+              maxLength={6}
+              disabled={loading || success}
+              className="w-full text-center tracking-[1em] font-mono text-lg rounded-sm border border-border bg-white/80 px-4 py-3 text-foreground placeholder:text-muted-foreground/30 focus:outline-none focus:border-primary transition-colors"
+            />
+            <button
+              type="submit"
+              disabled={loading || success}
+              className="w-full rounded-sm bg-primary text-primary-foreground py-3 text-sm font-semibold tracking-wide hover:bg-primary/90 transition-all disabled:opacity-60"
+            >
+              {loading ? '驗證中…' : '驗證代碼'}
+            </button>
+          </form>
+        </div>
 
         <div className="bg-white/60 backdrop-blur-sm border border-border/60 rounded-sm p-5 text-left text-xs text-muted-foreground space-y-2">
           <p className="font-semibold text-foreground">沒收到信？</p>
           <ul className="space-y-1 list-disc list-inside font-light">
             <li>請檢查垃圾郵件或促銷信件匣</li>
-            <li>確認您輸入的 Email 地址正確</li>
+            <li>確認您在 Supabase 設定了 {"{{ .Token }}"} 作為郵件範本</li>
             <li>連結有效期間為 24 小時</li>
           </ul>
         </div>
@@ -39,9 +114,9 @@ export default function CheckEmailPage({ searchParams }: CheckEmailPageProps) {
         <div className="mt-8 space-y-3">
           <Link
             href="/login"
-            className="block w-full rounded-sm bg-primary text-primary-foreground py-3 text-sm font-semibold tracking-wide hover:bg-primary/90 transition-all"
+            className="block text-xs text-muted-foreground hover:text-foreground transition-colors"
           >
-            已確認，前往登入
+            直接前往登入頁面
           </Link>
           <Link
             href="/"
