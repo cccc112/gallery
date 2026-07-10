@@ -412,36 +412,56 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
               )}
               <p className="text-xs text-muted-foreground mb-3 font-light">請選擇您的付款方式：</p>
 
-              {/* Credit Card (Stripe or ECPay) */}
-              <button
-                onClick={handleCreditCardCheckout}
-                className="w-full flex items-center gap-4 p-4 border border-border rounded-sm bg-white/60 hover:bg-white hover:border-blue-300 hover:shadow-sm transition-all group text-left"
-              >
-                <div className="h-10 w-10 rounded-full bg-blue-50 flex items-center justify-center border border-blue-100 flex-shrink-0">
-                  <CreditCard className="h-5 w-5 text-blue-600" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-foreground">
-                    {isRental ? '信用卡安全結帳 (Stripe)' : '信用卡支付 (ECPay 綠界)'}
-                  </p>
-                  <p className="text-xs text-muted-foreground font-light">
-                    {isRental ? '支援押金預授權與每月自動扣款' : '支援國內外信用卡與多種在地支付'}
-                  </p>
-                </div>
-                <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
-              </button>
+              {/* Credit Card (Stripe for rental only, ECPay is hidden) */}
+              {isRental && (
+                <button
+                  onClick={handleCreditCardCheckout}
+                  className="w-full flex items-center gap-4 p-4 border border-border rounded-sm bg-white/60 hover:bg-white hover:border-blue-300 hover:shadow-sm transition-all group text-left"
+                >
+                  <div className="h-10 w-10 rounded-full bg-blue-50 flex items-center justify-center border border-blue-100 flex-shrink-0">
+                    <CreditCard className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-foreground">
+                      信用卡安全結帳 (Stripe)
+                    </p>
+                    <p className="text-xs text-muted-foreground font-light">
+                      支援押金預授權與每月自動扣款
+                    </p>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+                </button>
+              )}
 
               {/* PayPal */}
               <div className="w-full relative z-10 border border-border rounded-sm bg-white p-4 hover:border-primary/40 transition-all">
                 <p className="text-sm font-semibold text-foreground mb-2">PayPal (支援免帳號刷卡)</p>
-                <PayPalScriptProvider options={{ clientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || "test", currency: "USD" }}>
-                    <PayPalButtons 
-                        createOrder={handlePayPalCreateOrder}
-                        onApprove={handlePayPalApprove}
-                        style={{ layout: "horizontal", height: 40 }}
-                        onError={(err) => { setErrorMsg("PayPal 元件載入失敗或取消交易"); setStep('error'); }}
-                    />
-                </PayPalScriptProvider>
+                {process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID ? (
+                  <PayPalScriptProvider options={{ clientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID, currency: "USD" }}>
+                      <PayPalButtons 
+                          createOrder={handlePayPalCreateOrder}
+                          onApprove={handlePayPalApprove as any}
+                          style={{ layout: "horizontal", height: 40 }}
+                          onError={(err) => { setErrorMsg("PayPal 元件載入失敗或取消交易"); setStep('error'); }}
+                      />
+                  </PayPalScriptProvider>
+                ) : (
+                  <button 
+                    onClick={async () => {
+                      setStep('processing');
+                      try {
+                        const id = await handlePayPalCreateOrder();
+                        await handlePayPalApprove({ orderID: id });
+                      } catch (err: any) {
+                        setErrorMsg(err.message || "PayPal 模擬失敗"); 
+                        setStep('error');
+                      }
+                    }} 
+                    className="w-full h-10 bg-[#FFC439] hover:bg-[#F2BA36] transition-colors rounded text-sm font-bold text-slate-900 flex items-center justify-center"
+                  >
+                    (測試環境) 模擬 PayPal 結帳
+                  </button>
+                )}
               </div>
 
               {/* Web3 */}
