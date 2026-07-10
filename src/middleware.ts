@@ -62,17 +62,21 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  // 刷新 session，防止過期
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
-  console.log(`[Middleware] getUser result: user=${user?.id || 'null'}, error=${userError?.message || 'none'}`);
-
-  // 保護需要登入的路由
+  // 檢查是否為受保護的路由
   const protectedPaths = ['/admin', '/profile', '/dashboard'];
   const isProtected = protectedPaths.some(p =>
     request.nextUrl.pathname.startsWith(p)
   );
 
-  if (isProtected && !user) {
+  // 如果不是受保護的路由，直接放行，不浪費時間驗證 Session
+  if (!isProtected) {
+    return supabaseResponse;
+  }
+
+  // 刷新 session，防止過期 (僅限受保護路由)
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+  if (!user) {
     console.log(`[Middleware] Redirecting unprotected access to /login`);
     const url = request.nextUrl.clone();
     url.pathname = '/login';

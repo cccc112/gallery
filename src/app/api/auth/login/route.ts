@@ -24,6 +24,7 @@ export async function POST(request: Request) {
             return cookieStore.getAll();
           },
           setAll(cookiesToSet) {
+            console.log('[API Login] setAll called with:', cookiesToSet.map(c => c.name));
             cookiesToSet.forEach(({ name, value, options }) => {
               response.cookies.set(name, value, options);
             });
@@ -32,13 +33,17 @@ export async function POST(request: Request) {
       }
     );
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+
+    if (!data.session) {
+      return NextResponse.json({ error: '請先至您的信箱點擊驗證連結，再進行登入。' }, { status: 400 });
     }
 
     return response;

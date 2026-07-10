@@ -64,19 +64,6 @@ export const metadata: Metadata = {
   },
 };
 
-function NavbarFallback() {
-  return (
-    <header className="sticky top-0 z-50 w-full bg-background/80 backdrop-blur-md border-b border-border/50 h-16 lg:h-20">
-      <div className="mx-auto flex h-full max-w-7xl items-center justify-between px-6 lg:px-8">
-        <span className="text-xl lg:text-2xl font-serif font-semibold tracking-tight text-foreground">
-          Atelier Blanc
-        </span>
-        <div className="h-8 w-32 rounded-sm bg-secondary/50 animate-pulse" />
-      </div>
-    </header>
-  );
-}
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -89,9 +76,7 @@ export default function RootLayout({
       >
         <GoogleAnalytics />
         <Web3Providers>
-          <Suspense fallback={<NavbarFallback />}>
-            <Navbar />
-          </Suspense>
+          <Navbar />
           <main className="flex-1 flex flex-col">
             {children}
           </main>
