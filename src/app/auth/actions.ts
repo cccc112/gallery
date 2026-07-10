@@ -67,23 +67,22 @@ export async function signUp(formData: FormData) {
   }
 }
 
-export async function signIn(formData: FormData): Promise<{ error: string } | void> {
+export async function signIn(formData: FormData): Promise<{ error?: string; success?: boolean }> {
   const supabase = createClient();
 
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
-  const redirectTo = (formData.get('redirectTo') as string) || '/';
 
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
-    // 回傳錯誤讓 Client 顯示，不要在這裡 redirect（避免 redirect 吃掉 cookie 寫入）
     return { error: error.message };
   }
 
-  // 成功後：cookies 已由 next/headers 寫入，執行 redirect
+  // 成功後不在此處呼叫 redirect()，因為 Next.js 的 redirect() 會透過丟出 error 來中斷執行，
+  // 進而導致 Supabase 的非同步 Cookie 寫入被中斷。改為回傳成功狀態，由 Client 端處理轉址。
   revalidatePath('/', 'layout');
-  redirect(redirectTo);
+  return { success: true };
 }
 
 export async function signOut() {

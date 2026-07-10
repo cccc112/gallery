@@ -2,12 +2,11 @@
 
 import { useState, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
+import { useSearchParams } from 'next/navigation';
+import { signIn } from '@/app/auth/actions';
 import { OAuthButtons } from '@/components/OAuthButtons';
 
 function LoginForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get('redirectTo') || '/';
   const message = searchParams.get('message');
@@ -23,32 +22,27 @@ function LoginForm() {
     setError('');
     setLoading(true);
 
-    const supabase = createClient();
-    const { data, error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    try {
+      const formData = new FormData();
+      formData.set('email', email);
+      formData.set('password', password);
 
-    if (signInError) {
-      setError(signInError.message);
+      const result = await signIn(formData);
+
+      if (result?.error) {
+        setError(result.error);
+        setLoading(false);
+        return;
+      }
+
+      if (result?.success) {
+        // 使用 hard navigation 確保 Cookie 被正確帶到 Server 並清除 Next.js Router Cache
+        window.location.href = redirectTo;
+      }
+    } catch (err: any) {
+      setError('登入時發生非預期錯誤，請稍後再試。');
       setLoading(false);
-      return;
     }
-
-    // 驗證 client 端 session 是否存在
-    const { data: { session } } = await supabase.auth.getSession();
-    
-    // 獲取當前所有的 document.cookie 名稱
-    const cookiesList = document.cookie.split(';').map(c => c.trim().split('=')[0]);
-
-    setError(
-      `【診斷資訊】\n` +
-      `1. Client Session 存在: ${!!session}\n` +
-      `2. Client User ID: ${session?.user?.id || 'none'}\n` +
-      `3. 瀏覽器現有 Cookies: ${JSON.stringify(cookiesList)}\n` +
-      `請將此段文字複製並貼給開發人員，確認無誤後我們會手動重啟跳轉。`
-    );
-    setLoading(false);
   }
 
   return (
