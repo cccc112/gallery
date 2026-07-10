@@ -407,7 +407,7 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
               {!isPhysical && (
                 <div className="mb-4 p-3 bg-blue-50/50 border border-blue-100 rounded-sm">
                   <p className="text-xs font-semibold text-blue-800">數位作品發送說明</p>
-                  <p className="text-[10px] text-blue-700 mt-1">付款完成後，系統將自動寄送高解析度檔案下載連結至您的 Email，您也可以在會員中心隨時下載。</p>
+                  <p className="text-[10px] text-blue-700 mt-1">付款完成後，系統將自動解鎖檔案，您可以隨時前往「會員中心 ＞ 看展人中心」下載高解析度原始檔。</p>
                 </div>
               )}
               <p className="text-xs text-muted-foreground mb-3 font-light">請選擇您的付款方式：</p>
@@ -607,7 +607,7 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
                 )}
                 {!isPhysical && (
                   <p className="text-xs text-purple-700 bg-purple-50 border border-purple-200 rounded-lg px-3 py-2 mt-1">
-                    📥 高解析度數位檔案連結已寄至您的信箱，您也可以在會員中心下載。
+                    📥 高解析度數位檔案已解鎖，請前往「會員中心」下載。
                   </p>
                 )}
               </div>
