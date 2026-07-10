@@ -42,6 +42,18 @@ export async function POST(req: NextRequest) {
         const endDate = new Date(startDate);
         endDate.setMonth(endDate.getMonth() + Number(rental_months));
 
+        // 取得或建立 Product (Stripe Subscription 需要實體 Product ID)
+        let productId = process.env.STRIPE_RENTAL_PRODUCT_ID;
+        if (!productId) {
+          const products = await stripe.products.list({ limit: 1 });
+          if (products.data.length > 0) {
+            productId = products.data[0].id;
+          } else {
+            const product = await stripe.products.create({ name: 'Atelier Blanc 租賃月費' });
+            productId = product.id;
+          }
+        }
+
         // 建立 Stripe Subscription（次月起）
         const subscription = await stripe.subscriptions.create({
           customer: pi.customer as string,
@@ -50,10 +62,7 @@ export async function POST(req: NextRequest) {
               currency: 'twd',
               unit_amount: Number(monthly_rent),
               recurring: { interval: 'month' },
-              product_data: {
-                name: `Atelier Blanc 租賃月費`,
-                metadata: { artwork_id },
-              },
+              product: productId,
             },
           }],
           billing_cycle_anchor: Math.floor(endDate.getTime() / 1000), // 首次扣款在一個月後
