@@ -24,6 +24,7 @@ export default function ChatDashboardPage() {
         fetchSessions();
       }
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchSessions = async () => {
