@@ -39,8 +39,6 @@ export async function GET(req: NextRequest) {
   const userMap = new Map();
   usersData?.forEach(u => userMap.set(u.id, u));
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-
   // 為每個聊天室取得最新一則訊息與未讀數量
   const chatsWithDetails = await Promise.all(
     (chats || []).map(async (chat) => {
