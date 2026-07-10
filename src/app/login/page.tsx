@@ -29,13 +29,10 @@ function LoginForm() {
       formData.append('password', password);
       // remember could be passed as well, but Supabase default is long-lived.
       
-      const { error: signInError, success } = await signIn(formData);
+      const { error: signInError } = await signIn(formData, redirectTo);
 
       if (signInError) {
         setError(signInError);
-      } else if (success) {
-        // 使用 hard navigation 確保 Cookie 被正確帶到 Server 並清除 Next.js Router Cache
-        window.location.href = redirectTo;
       }
     });
   }

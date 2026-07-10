@@ -68,7 +68,7 @@ export async function signUp(formData: FormData) {
   }
 }
 
-export async function signIn(formData: FormData): Promise<{ error?: string; success?: boolean }> {
+export async function signIn(formData: FormData, redirectTo: string = '/'): Promise<{ error?: string }> {
   const supabase = createClient();
 
   const email = formData.get('email') as string;
@@ -84,9 +84,8 @@ export async function signIn(formData: FormData): Promise<{ error?: string; succ
   const cookieStore = cookies();
   cookieStore.set('test-cookie', 'action-works', { path: '/' });
 
-  // 成功後不在此處呼叫 redirect()，因為 Next.js 的 redirect() 會透過丟出 error 來中斷執行，
   revalidatePath('/', 'layout');
-  return { success: true };
+  redirect(redirectTo);
 }
 
 export async function verifyOtpAction(formData: FormData): Promise<{ error?: string; success?: boolean }> {
