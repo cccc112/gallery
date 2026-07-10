@@ -257,18 +257,18 @@ export default async function HomePage() {
             {[
               {
                 icon: ShieldCheck,
-                title: 'Stripe 預授權押金保障',
-                desc: '租賃期間只凍結押金額度不扣款，歸還藝術品後額度立即釋放，零財務風險。',
+                title: '多元支付與 Web3 整合',
+                desc: '支援 Stripe 信用卡、PayPal 全球金流，以及 MetaMask 等 Web3 錢包，提供最安全靈活的結帳體驗。',
               },
               {
                 icon: Gift,
-                title: '實體與數位雙軌典藏',
-                desc: '實體作品享專人運送與安裝保險；數位作品獲加密私有連結，可串流展示於高解析螢幕。',
+                title: '彈性買斷與短期租賃',
+                desc: '針對不同藏家需求，除了永久買斷珍藏外，亦提供按月計算的短期租賃方案，讓藝術點綴生活更無負擔。',
               },
               {
                 icon: HelpCircle,
-                title: '藝術顧問專屬諮詢',
-                desc: '資深藝術顧問團隊提供線上評估，為您的空間量身打造客製化布置方案。',
+                title: 'AI 靈感生成工作室',
+                desc: '內建強大的 AI 繪圖引擎，輸入文字即可快速生成專屬數位藝術，並能一鍵發布至藝廊販售。',
               },
             ].map(({ icon: Icon, title, desc }) => (
               <div
