@@ -45,6 +45,23 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
     console.error('Failed to query artworks:', error);
   }
 
+  let popularTags: { tag: string, count: number }[] = [];
+  try {
+    const tagsResult = await sql`
+      SELECT tag, count(*) as count
+      FROM (
+        SELECT unnest(tags) as tag
+        FROM public.artworks
+      ) t
+      GROUP BY tag
+      ORDER BY count DESC
+      LIMIT 10
+    `;
+    popularTags = tagsResult as any;
+  } catch (error) {
+    console.error('Failed to query tags:', error);
+  }
+
   const formatPrice = (price: number | null) => {
     if (price === null) return '僅供租賃';
     return new Intl.NumberFormat('zh-TW', {
@@ -145,9 +162,27 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
               className="rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 px-5 py-2.5 text-sm font-medium shadow-sm transition-all flex items-center gap-1.5 self-start sm:self-auto"
             >
               <SlidersHorizontal className="h-4 w-4" />
-              搜尋
+              篩選
             </button>
           </form>
+
+          {/* Popular Tags */}
+          {popularTags.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-border/40">
+              <span className="text-xs text-muted-foreground font-medium flex items-center gap-1">
+                <Tag className="h-3 w-3" /> 熱門標籤:
+              </span>
+              {popularTags.map(pt => (
+                <Link
+                  key={pt.tag}
+                  href={`/gallery?search=${encodeURIComponent(pt.tag)}`}
+                  className="text-xs bg-secondary hover:bg-secondary/80 text-secondary-foreground px-2.5 py-1 rounded-sm border border-border transition-colors"
+                >
+                  #{pt.tag}
+                </Link>
+              ))}
+            </div>
+          )}
 
           {/* 當前篩選標示 */}
           {(type !== 'all' || rentable || search) && (

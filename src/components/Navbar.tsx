@@ -140,6 +140,17 @@ export default function Navbar() {
 
   const displayName = profile?.display_name || user?.email?.split('@')[0] || '使用者';
 
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/session', { method: 'DELETE' }); // Call any server-side cleanup if needed
+    } catch (e) {}
+    await supabase.auth.signOut();
+    setUser(null);
+    setProfile(null);
+    router.push('/');
+    router.refresh();
+  };
+
   const navLinks = [
     { href: '/', label: '首頁', icon: 'Home' },
     { href: '/gallery', label: '探索藝廊', icon: 'Compass' },
@@ -301,15 +312,13 @@ export default function Navbar() {
 
                     {/* Logout */}
                     <div className="border-t border-border/50 py-1.5">
-                      <form action={signOut}>
-                        <button
-                          type="submit"
-                          className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-medium text-rose-600 hover:bg-rose-50 transition-colors"
-                        >
-                          <LogOut className="h-3.5 w-3.5" />
-                          登出帳號
-                        </button>
-                      </form>
+                      <button
+                        onClick={handleLogout}
+                        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-medium text-rose-600 hover:bg-rose-50 transition-colors text-left"
+                      >
+                        <LogOut className="h-3.5 w-3.5" />
+                        登出帳號
+                      </button>
                     </div>
                   </div>
                 )}
@@ -391,11 +400,9 @@ export default function Navbar() {
                   <Link href="/profile/upload" className="flex items-center gap-2.5 px-3 py-3 text-sm font-medium text-foreground hover:bg-secondary/50 rounded-md transition-colors">
                     <Upload className="h-4 w-4 text-muted-foreground" /> 上傳作品
                   </Link>
-                  <form action={signOut}>
-                    <button type="submit" className="w-full flex items-center gap-2.5 px-3 py-3 text-sm font-medium text-rose-600 hover:bg-rose-50 rounded-md transition-colors">
-                      <LogOut className="h-4 w-4" /> 登出
-                    </button>
-                  </form>
+                  <button onClick={handleLogout} className="w-full flex items-center gap-2.5 px-3 py-3 text-sm font-medium text-rose-600 hover:bg-rose-50 rounded-md transition-colors text-left">
+                    <LogOut className="h-4 w-4" /> 登出
+                  </button>
                 </>
               ) : (
                 <>
