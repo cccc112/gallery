@@ -40,6 +40,23 @@ function randomSeed() {
   return Math.floor(Math.random() * 2147483647);
 }
 
+function cropWatermark(base64: string): Promise<string> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height - 40; // Pollinations watermark is ~30-40px at the bottom
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return resolve(base64);
+      ctx.drawImage(img, 0, 0);
+      resolve(canvas.toDataURL('image/png').split(',')[1]);
+    };
+    img.onerror = () => resolve(base64);
+    img.src = `data:image/png;base64,${base64}`;
+  });
+}
+
 function Slider({
   label, value, min, max, step = 1, onChange, unit = '',
 }: {
@@ -147,8 +164,13 @@ export default function GeneratePage() {
 
       if (!res.ok) throw new Error(data.error || '生成失敗');
 
-      setImageB64(data.image);
-      setHistory(prev => [{ b64: data.image, prompt: finalPrompt, seed: useSeed }, ...prev].slice(0, 8));
+      let finalB64 = data.image;
+      if (data.engine === 'pollinations') {
+        finalB64 = await cropWatermark(finalB64);
+      }
+
+      setImageB64(finalB64);
+      setHistory(prev => [{ b64: finalB64, prompt: finalPrompt, seed: useSeed }, ...prev].slice(0, 8));
     } catch (e: any) {
       setError(e.message);
     } finally {
