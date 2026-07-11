@@ -304,27 +304,26 @@ export default function UploadPage() {
                 
                 {/* Original Guarantee Checkbox (only if not AI) */}
                 {!isAIGenerated && (
-                  <div className="pt-2 border-t border-border/50 mt-4">
-                    <label className="flex items-center gap-3 cursor-pointer group">
-                      <div className="relative flex items-center">
-                        <input 
-                          type="checkbox" 
-                          name="original_guaranteed" 
-                          value="true"
-                          required
-                          checked={originalGuaranteed}
-                          onChange={(e) => setOriginalGuaranteed(e.target.checked)}
-                          className="peer sr-only" 
-                        />
-                        <div className="h-5 w-5 rounded-sm border border-border bg-white transition-all peer-checked:bg-primary peer-checked:border-primary flex items-center justify-center">
-                          <Check className="h-3.5 w-3.5 text-white opacity-0 peer-checked:opacity-100 transition-opacity" />
-                        </div>
-                      </div>
-                      <div className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
-                        我保證此為本人原創作品，並同意原創者責任條款 <span className="text-rose-500">*</span>
-                      </div>
-                    </label>
-                    <p className="text-[10px] text-muted-foreground mt-1.5 ml-8">原創作品必須同意此條款方可發布。</p>
+                  <div className="flex items-start gap-3 p-4 border border-foreground/20 rounded-sm bg-foreground/5 mt-4">
+                    <input
+                      type="checkbox"
+                      id="original_guaranteed"
+                      name="original_guaranteed"
+                      checked={originalGuaranteed}
+                      onChange={e => setOriginalGuaranteed(e.target.checked)}
+                      required
+                      className="mt-0.5 h-4 w-4 rounded-sm border-foreground/30 text-foreground accent-foreground"
+                    />
+                    <div className="flex-1">
+                      <label htmlFor="original_guaranteed" className="text-sm font-medium text-foreground cursor-pointer flex items-center flex-wrap gap-1">
+                        我保證此為本人原創作品，並同意
+                        <Link href="/terms/original-guarantee" target="_blank" className="underline underline-offset-4 hover:text-rose-600 transition-colors">
+                          原創者責任條款
+                        </Link>
+                        <span className="text-rose-500">*</span>
+                      </label>
+                      <p className="text-[11px] text-muted-foreground mt-1">原創作品必須同意此條款方可發布。</p>
+                    </div>
                   </div>
                 )}
               </div>

@@ -607,13 +607,12 @@ function FinanceTab({ totalFiatRevenue }: { totalFiatRevenue: number }) {
 
 // ── Main DashboardTabs ───────────────────────────────────────────
 export function DashboardTabs({ orders, rentals, artworks, reviews, totalFiatRevenue, totalCryptoRevenue }: DashboardTabsProps) {
-  const [tab, setTab] = useState<'collection' | 'artist' | 'feedback' | 'finance'>('collection');
+  const [tab, setTab] = useState<'collection' | 'artist' | 'feedback'>('collection');
 
   const tabs = [
     { key: 'collection' as const, label: '看展人中心 (購買/租賃)', icon: ShoppingBag, count: orders.length + rentals.length },
     { key: 'artist' as const, label: '藝術家中心 (我的作品)', icon: Palette, count: artworks.length },
     { key: 'feedback' as const, label: '看展人評價', icon: MessageSquare, count: reviews.length },
-    { key: 'finance' as const, label: '財務與提領', icon: Coins, count: 0 },
   ];
 
   return (
@@ -644,7 +643,6 @@ export function DashboardTabs({ orders, rentals, artworks, reviews, totalFiatRev
       {tab === 'collection' && <CollectionTab orders={orders} rentals={rentals} />}
       {tab === 'artist' && <ArtistTab artworks={artworks} totalFiatRevenue={totalFiatRevenue} totalCryptoRevenue={totalCryptoRevenue} />}
       {tab === 'feedback' && <FeedbackTab reviews={reviews} />}
-      {tab === 'finance' && <FinanceTab totalFiatRevenue={totalFiatRevenue} />}
     </div>
   );
 }
