@@ -40,7 +40,7 @@ DO NOT invent data. If a list is empty, tell them it is empty.`,
           parameters: z.object({
             _dummy: z.string().optional(),
           }),
-          execute: async () => {
+          execute: async (_args) => {
             const withdrawals = await sql`
               SELECT w.id, w.amount, w.bank_account, w.created_at, u.display_name as artist_name
               FROM public.withdrawals w
@@ -70,7 +70,7 @@ DO NOT invent data. If a list is empty, tell them it is empty.`,
           parameters: z.object({
             _dummy: z.string().optional(),
           }),
-          execute: async () => {
+          execute: async (_args) => {
             const applications = await sql`
               SELECT id, real_name, portfolio_url, bank_account, created_at
               FROM public.artist_applications
@@ -110,7 +110,7 @@ DO NOT invent data. If a list is empty, tell them it is empty.`,
           parameters: z.object({
             _dummy: z.string().optional(),
           }),
-          execute: async () => {
+          execute: async (_args) => {
             const stats = await sql`
               SELECT count(*) as total_orders, sum(amount) as total_revenue
               FROM public.orders

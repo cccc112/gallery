@@ -16,6 +16,7 @@ interface ArtworkChatModalProps {
   onClose: () => void;
   artworkId: string;
   artworkTitle: string;
+  artistName: string;
   currentUserId: string;
 }
 
@@ -24,6 +25,7 @@ export function ArtworkChatModal({
   onClose,
   artworkId,
   artworkTitle,
+  artistName,
   currentUserId,
 }: ArtworkChatModalProps) {
   const [chatId, setChatId] = useState<string | null>(null);
@@ -145,7 +147,7 @@ export function ArtworkChatModal({
             <MessageSquare className="h-4 w-4 text-primary" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-foreground truncate">詢問藝術家</p>
+            <p className="text-sm font-semibold text-foreground truncate">詢問 {artistName}</p>
             <p className="text-xs text-muted-foreground truncate">{artworkTitle}</p>
           </div>
           <button

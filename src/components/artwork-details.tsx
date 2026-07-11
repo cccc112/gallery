@@ -329,6 +329,7 @@ export function ArtworkDetails({
         onClose={() => setChatOpen(false)}
         artworkId={artwork.id}
         artworkTitle={artwork.title}
+        artistName={artwork.artist_name || '藝術家'}
         currentUserId={currentUserId}
       />
 
