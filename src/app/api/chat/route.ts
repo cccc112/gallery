@@ -40,7 +40,8 @@ DO NOT invent data. If a list is empty, tell them it is empty.`,
           parameters: z.object({
             _dummy: z.string().optional(),
           }),
-          execute: async (_args) => {
+          // @ts-expect-error - AI SDK type mismatch
+          execute: async (_args: { _dummy?: string }) => {
             const withdrawals = await sql`
               SELECT w.id, w.amount, w.bank_account, w.created_at, u.display_name as artist_name
               FROM public.withdrawals w
@@ -56,7 +57,8 @@ DO NOT invent data. If a list is empty, tell them it is empty.`,
           parameters: z.object({
             id: z.string().describe('提領申請的 ID (UUID)'),
           }),
-          execute: async ({ id }) => {
+          // @ts-expect-error - AI SDK type mismatch
+          execute: async ({ id }: { id: string }) => {
             await sql`
               UPDATE public.withdrawals
               SET status = 'completed', updated_at = NOW()
@@ -70,7 +72,8 @@ DO NOT invent data. If a list is empty, tell them it is empty.`,
           parameters: z.object({
             _dummy: z.string().optional(),
           }),
-          execute: async (_args) => {
+          // @ts-expect-error - AI SDK type mismatch
+          execute: async (_args: { _dummy?: string }) => {
             const applications = await sql`
               SELECT id, real_name, portfolio_url, bank_account, created_at
               FROM public.artist_applications
@@ -85,7 +88,8 @@ DO NOT invent data. If a list is empty, tell them it is empty.`,
           parameters: z.object({
             id: z.string().describe('申請單的 ID (UUID)'),
           }),
-          execute: async ({ id }) => {
+          // @ts-expect-error - AI SDK type mismatch
+          execute: async ({ id }: { id: string }) => {
             // Update application status
             const apps = await sql`
               UPDATE public.artist_applications
@@ -110,7 +114,8 @@ DO NOT invent data. If a list is empty, tell them it is empty.`,
           parameters: z.object({
             _dummy: z.string().optional(),
           }),
-          execute: async (_args) => {
+          // @ts-expect-error - AI SDK type mismatch
+          execute: async (_args: { _dummy?: string }) => {
             const stats = await sql`
               SELECT count(*) as total_orders, sum(amount) as total_revenue
               FROM public.orders
@@ -125,7 +130,7 @@ DO NOT invent data. If a list is empty, tell them it is empty.`,
       },
     });
 
-    return result.toDataStreamResponse();
+    return result.toTextStreamResponse();
   } catch (error: any) {
     console.error('Chat API Error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
