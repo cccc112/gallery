@@ -134,7 +134,7 @@ DO NOT invent data. If a list is empty, tell them it is empty.`,
             _dummy: z.string().optional(),
           }),
           // @ts-expect-error - AI SDK type mismatch
-          execute: async () => {
+          execute: async (_args: { _dummy?: string }) => {
             const userCount = await sql`SELECT count(*) FROM public.users`;
             const artworkCount = await sql`SELECT count(*) FROM public.artworks`;
             const rentalCount = await sql`SELECT count(*) FROM public.rentals`;
