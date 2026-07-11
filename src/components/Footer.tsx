@@ -103,15 +103,18 @@ export default function Footer() {
             <p className="mt-4 text-sm text-primary-foreground/70 leading-relaxed max-w-xs font-light">
               精選實體與數位當代藝術，為全球藏家提供卓越的純買賣與短期租賃雙軌平台。成立於 2026 年。
             </p>
-            <div className="flex items-center gap-4 mt-6">
-              <a href="#" className="text-primary-foreground/60 hover:text-primary-foreground transition-colors">
-                <InstagramIcon />
-                <span className="sr-only">Instagram</span>
-              </a>
-              <a href="#" className="text-primary-foreground/60 hover:text-primary-foreground transition-colors">
-                <TwitterIcon />
-                <span className="sr-only">Twitter</span>
-              </a>
+            <div className="flex flex-col gap-2 mt-6">
+              <div className="flex items-center gap-4">
+                <div className="text-primary-foreground/40 cursor-not-allowed" title="Instagram 社群即將開通">
+                  <InstagramIcon />
+                  <span className="sr-only">Instagram</span>
+                </div>
+                <div className="text-primary-foreground/40 cursor-not-allowed" title="Twitter 社群即將開通">
+                  <TwitterIcon />
+                  <span className="sr-only">Twitter</span>
+                </div>
+              </div>
+              <span className="text-[10px] text-primary-foreground/50 tracking-widest uppercase">官方社群即將開通</span>
             </div>
           </div>
 
