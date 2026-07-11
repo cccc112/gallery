@@ -3,7 +3,7 @@ import { sql } from '@/lib/db';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { updateProfile } from './actions';
-import { ArrowLeft, Globe, AtSign, Hash, User, BookOpen, Briefcase, Heart } from 'lucide-react';
+import { ArrowLeft, Globe, AtSign, Hash, User, BookOpen, Briefcase, Heart, Wallet } from 'lucide-react';
 import { AvatarUploader } from '@/components/AvatarUploader';
 
 export const revalidate = 0;
@@ -137,6 +137,25 @@ export default async function ProfileEditPage({
                 maxLength={3000}
                 className="w-full rounded-sm border border-border bg-white/80 px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary transition-colors resize-none"
               />
+            </div>
+          </div>
+
+          {/* Payout Settings */}
+          <div className="bg-white/70 backdrop-blur-sm border border-border/60 rounded-sm shadow-sm p-6 space-y-4">
+            <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground border-b border-border/40 pb-3">收款設定</h2>
+            <div>
+              <label htmlFor="bank_account" className="flex items-center gap-1.5 text-xs font-semibold tracking-wider uppercase text-muted-foreground mb-2">
+                <Wallet className="h-3.5 w-3.5" /> 收款帳號 (PayPal Email 或 虛擬錢包地址)
+              </label>
+              <input
+                id="bank_account"
+                name="bank_account"
+                type="text"
+                defaultValue={profile?.bank_account || ''}
+                placeholder="例如: your@email.com 或 0x1234..."
+                className="w-full rounded-sm border border-border bg-white/80 px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary transition-colors"
+              />
+              <p className="text-[10px] text-muted-foreground mt-1">當您售出或租出作品時，款項將撥至此帳號。</p>
             </div>
           </div>
 

@@ -136,26 +136,7 @@ export default function UploadPage() {
         )}
 
         {status !== 'success' && (
-          isCheckingRole ? (
-            <div className="flex justify-center items-center py-20">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-          ) : userRole !== 'artist' ? (
-            <div className="bg-white p-8 rounded-lg shadow-sm border border-border text-center">
-              <AlertCircle className="h-12 w-12 text-amber-500 mx-auto mb-4" />
-              <h2 className="text-xl font-serif font-bold text-foreground mb-2">權限不足</h2>
-              <p className="text-muted-foreground mb-6">
-                只有經過認證的藝術家才能夠上傳作品。請先提交藝術家申請，審核通過後即可開始銷售。
-              </p>
-              <Link
-                href="/apply-artist"
-                className="inline-flex items-center justify-center bg-foreground text-background px-6 py-2.5 rounded hover:bg-foreground/90 transition-colors font-medium"
-              >
-                申請成為藝術家 <ArrowRight className="h-4 w-4 ml-2" />
-              </Link>
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="space-y-10">
+          <form onSubmit={handleSubmit} className="space-y-10">
 
               {/* Error banner */}
               {errorMsg && (
@@ -439,7 +420,6 @@ export default function UploadPage() {
               )}
             </button>
           </form>
-          )
         )}
       </div>
     </div>

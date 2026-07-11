@@ -18,6 +18,9 @@ export async function updateProfile(formData: FormData) {
   const website = (formData.get('website') as string)?.trim();
   const instagram = (formData.get('instagram') as string)?.trim().replace(/^@/, '');
   const twitter = (formData.get('twitter') as string)?.trim().replace(/^@/, '');
+  const bank_account = (formData.get('bank_account') as string)?.trim();
+
+  let errorMessage = '';
 
   try {
     const admin = createAdminClient();
@@ -30,15 +33,21 @@ export async function updateProfile(formData: FormData) {
       website: website || null,
       instagram: instagram || null,
       twitter: twitter || null,
+      bank_account: bank_account || null,
       updated_at: new Date().toISOString(),
     }).eq('id', user.id);
 
     if (error) {
       console.error('updateProfile error:', error.message);
-      return redirect(`/profile/edit?error=${encodeURIComponent(error.message)}`);
+      errorMessage = error.message;
     }
   } catch (e: any) {
-    return redirect(`/profile/edit?error=${encodeURIComponent(e.message)}`);
+    console.error('updateProfile exception:', e.message);
+    errorMessage = e.message;
+  }
+
+  if (errorMessage) {
+    redirect(`/profile/edit?error=${encodeURIComponent(errorMessage)}`);
   }
 
   revalidatePath('/profile');
