@@ -80,8 +80,8 @@ export default async function ProfileEditPage({
                 name="display_name"
                 type="text"
                 defaultValue={profile?.display_name || ''}
-                placeholder="你的藝名或本名"
-                maxLength={50}
+                placeholder="你的藝名或本名 (最長 15 字)"
+                maxLength={15}
                 className="w-full rounded-sm border border-border bg-white/80 px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary transition-colors"
               />
             </div>

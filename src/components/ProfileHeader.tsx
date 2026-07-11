@@ -121,9 +121,9 @@ export default function ProfileHeader({
                 )}
               </div>
             </div>
-            <div className="pb-1">
-              <h1 className="font-serif text-2xl font-semibold text-foreground">{displayName}</h1>
-              <p className="text-xs text-muted-foreground mt-0.5">{user.email}</p>
+            <div className="pb-1 max-w-[200px] sm:max-w-[300px]">
+              <h1 className="font-serif text-xl font-semibold text-foreground truncate" title={displayName}>{displayName}</h1>
+              <p className="text-xs text-muted-foreground mt-0.5 truncate" title={user.email}>{user.email}</p>
             </div>
           </div>
 

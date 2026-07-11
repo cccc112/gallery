@@ -22,6 +22,10 @@ export async function updateProfile(formData: FormData) {
 
   let errorMessage = '';
 
+  if (display_name && display_name.length > 15) {
+    return redirect(`/profile/edit?error=${encodeURIComponent('顯示名稱不能超過 15 個字')}`);
+  }
+
   try {
     const admin = createAdminClient();
     
