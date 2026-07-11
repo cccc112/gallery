@@ -166,9 +166,9 @@ export default function AdminDashboard() {
               <thead className="text-xs text-muted-foreground uppercase bg-secondary/50 border-b border-border">
                 <tr>
                   <th className="px-6 py-4 font-medium">申請時間</th>
-                  <th className="px-6 py-4 font-medium">真實姓名</th>
-                  <th className="px-6 py-4 font-medium">身分證/統編</th>
-                  <th className="px-6 py-4 font-medium">銀行帳戶</th>
+                  <th className="px-6 py-4 font-medium">藝術家名稱</th>
+                  <th className="px-6 py-4 font-medium">撥款帳號 (PayPal/錢包)</th>
+                  <th className="px-6 py-4 font-medium">作品集</th>
                   <th className="px-6 py-4 font-medium">狀態</th>
                   <th className="px-6 py-4 font-medium text-right">操作</th>
                 </tr>
@@ -180,8 +180,12 @@ export default function AdminDashboard() {
                   <tr key={app.id} className="hover:bg-stone-50/50">
                     <td className="px-6 py-4">{new Date(app.created_at).toLocaleDateString()}</td>
                     <td className="px-6 py-4 font-medium">{app.real_name}</td>
-                    <td className="px-6 py-4">{app.id_number}</td>
                     <td className="px-6 py-4 font-mono text-xs">{app.bank_account}</td>
+                    <td className="px-6 py-4">
+                      {app.portfolio_url ? (
+                        <a href={app.portfolio_url} target="_blank" rel="noreferrer" className="text-primary hover:underline">連結</a>
+                      ) : '-'}
+                    </td>
                     <td className="px-6 py-4">
                       {app.status === 'pending' && <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800"><Clock className="w-3 h-3 mr-1" /> 審核中</span>}
                       {app.status === 'approved' && <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800"><CheckCircle className="w-3 h-3 mr-1" /> 已通過</span>}

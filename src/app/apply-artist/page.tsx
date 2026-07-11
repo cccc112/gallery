@@ -18,7 +18,7 @@ export default function ApplyArtistPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.real_name || !form.id_number || !form.bank_account) {
+    if (!form.real_name || !form.bank_account) {
       setErrorMsg('請填寫所有必填欄位');
       return;
     }
@@ -26,10 +26,16 @@ export default function ApplyArtistPage() {
     setStatus('submitting');
     setErrorMsg('');
     try {
+      // 填入 N/A 以避開資料庫的 NOT NULL 限制
+      const payload = {
+        ...form,
+        id_number: 'N/A'
+      };
+      
       const res = await fetch('/api/artist-application', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || '申請送出失敗');
@@ -48,7 +54,7 @@ export default function ApplyArtistPage() {
           <CheckCircle className="h-16 w-16 text-emerald-500 mx-auto mb-4" />
           <h1 className="text-2xl font-serif font-bold text-foreground mb-2">申請已送出</h1>
           <p className="text-muted-foreground mb-8">
-            感謝您申請成為平台藝術家！我們的審核團隊將在 1-3 個工作天內完成實名審核與銀行帳戶驗證。審核通過後，您即可開始上架您的藝術作品。
+            感謝您申請成為平台藝術家！我們的審核團隊將在 1-3 個工作天內完成審核。審核通過後，您即可開始上架您的藝術作品。
           </p>
           <Link
             href="/"
@@ -68,9 +74,9 @@ export default function ApplyArtistPage() {
         返回會員中心
       </Link>
       
-      <h1 className="text-3xl font-serif font-bold text-foreground mb-2">申請成為藝術家 (KYC 實名認證)</h1>
+      <h1 className="text-3xl font-serif font-bold text-foreground mb-2">申請成為藝術家</h1>
       <p className="text-muted-foreground mb-8">
-        為了保障買賣雙方權益，並符合反洗錢法規，請提供您的真實身份與收款帳戶資訊。
+        請填寫以下資訊，讓我們認識您並設定撥款方式。
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-6 bg-white p-6 md:p-8 rounded-lg shadow-sm border border-border">
@@ -82,12 +88,12 @@ export default function ApplyArtistPage() {
 
         <div>
           <label className="block text-sm font-medium text-foreground mb-1">
-            真實姓名 <span className="text-red-500">*</span>
+            藝術家名稱 / 筆名 <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
             className="w-full p-2 border border-border rounded focus:outline-none focus:ring-1 focus:ring-primary"
-            placeholder="請輸入與身分證 / 銀行帳戶一致的姓名"
+            placeholder="例如: 陳畫家"
             value={form.real_name}
             onChange={e => setForm({ ...form, real_name: e.target.value })}
             required
@@ -96,31 +102,17 @@ export default function ApplyArtistPage() {
 
         <div>
           <label className="block text-sm font-medium text-foreground mb-1">
-            身分證字號 / 統一編號 <span className="text-red-500">*</span>
+            收款帳號 (PayPal Email 或 虛擬錢包地址) <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
             className="w-full p-2 border border-border rounded focus:outline-none focus:ring-1 focus:ring-primary"
-            placeholder="A123456789"
-            value={form.id_number}
-            onChange={e => setForm({ ...form, id_number: e.target.value })}
-            required
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-foreground mb-1">
-            收款銀行帳號 <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="text"
-            className="w-full p-2 border border-border rounded focus:outline-none focus:ring-1 focus:ring-primary"
-            placeholder="銀行代碼 - 帳號 (例如: 808-1234567890)"
+            placeholder="例如: your@email.com 或 0x1234..."
             value={form.bank_account}
             onChange={e => setForm({ ...form, bank_account: e.target.value })}
             required
           />
-          <p className="text-xs text-muted-foreground mt-1">此帳號將用於平台撥款，戶名必須與上方真實姓名相符。</p>
+          <p className="text-xs text-muted-foreground mt-1">未來售出作品的款項將撥至此帳號，支援 PayPal 及 USDC。</p>
         </div>
 
         <div>
