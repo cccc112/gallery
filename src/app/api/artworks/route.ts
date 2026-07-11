@@ -20,6 +20,7 @@ export async function POST(request: Request) {
     const title = formData.get('title') as string;
     const description = formData.get('description') as string || '';
     const artType = formData.get('art_type') as 'physical' | 'digital' | 'photography';
+    const isAiGenerated = formData.get('is_ai_generated') === 'true';
     // 只有實體作品才能開啟租賃功能
     const isRentable = artType === 'physical' && formData.get('is_rentable') === 'true';
     const price = formData.get('price') ? Number(formData.get('price')) : null;
@@ -97,6 +98,7 @@ export async function POST(request: Request) {
         preview_file_url,
         high_res_file_url,
         tags,
+        is_ai_generated,
         created_at
       ) VALUES (
         ${user.id},
@@ -115,6 +117,7 @@ export async function POST(request: Request) {
         ${previewFileUrl},
         ${artType === 'digital' || artType === 'photography' ? previewFileUrl : null},
         ${tags},
+        ${isAiGenerated},
         NOW()
       )
       RETURNING id, title

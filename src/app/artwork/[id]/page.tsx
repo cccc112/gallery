@@ -79,7 +79,9 @@ export default async function ArtworkPage({ params }: ArtworkPageProps) {
   try {
     // 取得當前藝術品
     const results = await sql`
-      SELECT a.*, u.display_name as artist_name, u.email as artist_email, u.bio as artist_bio, u.avatar_url as artist_avatar
+      SELECT a.*, u.display_name as artist_name, u.email as artist_email, u.bio as artist_bio, u.avatar_url as artist_avatar,
+        (SELECT count(*) FROM public.page_views WHERE artwork_id = a.id) as views_count,
+        (SELECT count(*) FROM public.artwork_likes WHERE artwork_id = a.id) as likes_count
       FROM public.artworks a
       JOIN public.users u ON a.artist_id = u.id
       WHERE a.id = ${id}

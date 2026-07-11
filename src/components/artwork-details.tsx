@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Check, Truck, Shield, RotateCcw, Box, Lock, RefreshCw, CreditCard, LogIn, Camera, Trash2, MessageSquare } from "lucide-react"
+import { Check, Truck, Shield, RotateCcw, Box, Lock, RefreshCw, CreditCard, LogIn, Camera, Trash2, MessageSquare, Eye, Heart } from "lucide-react"
 import { CheckoutModal } from '@/components/CheckoutModal';
 import { ArtworkChatModal } from '@/components/ArtworkChatModal';
 
@@ -31,6 +31,10 @@ interface ArtworkDetailsProps {
     edition_size?: number | null;
     print_material?: string | null;
     fingerprint?: string | null;
+    artist_avatar?: string;
+    views_count?: number;
+    likes_count?: number;
+    is_ai_generated?: boolean;
   }
 }
 
@@ -96,19 +100,35 @@ export function ArtworkDetails({
     <div className="space-y-8">
       {/* Artist & Title */}
       <div>
-        <p className="text-xs font-semibold tracking-widest uppercase text-muted-foreground mb-2">
+        <p className="text-xs font-semibold tracking-widest uppercase text-muted-foreground mb-3 flex items-center gap-2">
+          {artwork.artist_avatar && (
+            <img src={artwork.artist_avatar} alt={artwork.artist_name} className="w-6 h-6 rounded-full object-cover border border-border" />
+          )}
           {artwork.artist_name}
         </p>
         <h1 className="text-3xl lg:text-4xl xl:text-5xl font-serif font-semibold tracking-tight text-foreground text-balance leading-tight">
           {artwork.title}
         </h1>
-        <p className="mt-3 text-sm text-muted-foreground">
-          {isPhysical ? '實體創作品 · 獨一無二' : isPhotography ? '攝影藝術 · 限量沖印版' : '數位授權藝術 · 限量發行'}
-        </p>
+        <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+          <span>{isPhysical ? '實體創作品 · 獨一無二' : isPhotography ? '攝影藝術 · 限量沖印版' : '數位授權藝術 · 限量發行'}</span>
+          <div className="flex items-center gap-3">
+            <span className="flex items-center gap-1"><Eye className="w-4 h-4" /> {artwork.views_count || 0}</span>
+            <span className="flex items-center gap-1"><Heart className="w-4 h-4" /> {artwork.likes_count || 0}</span>
+          </div>
+        </div>
       </div>
 
       {/* Badges */}
       <div className="flex flex-wrap gap-2">
+        {artwork.is_ai_generated ? (
+          <Badge variant="outline" className="px-3 py-1 text-xs font-medium tracking-wide border-purple-300 text-purple-700 bg-purple-50/50">
+            🤖 AI 生成藝術
+          </Badge>
+        ) : (
+          <Badge variant="outline" className="px-3 py-1 text-xs font-medium tracking-wide border-amber-300 text-amber-700 bg-amber-50/50">
+            🖌️ 藝術家原創
+          </Badge>
+        )}
         <Badge variant="secondary" className={`px-3 py-1 text-xs font-medium tracking-wide ${
           isPhotography
             ? 'bg-violet-50 text-violet-700 border border-violet-200'

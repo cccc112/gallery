@@ -3,7 +3,7 @@
 import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Upload, ImageIcon, X, Loader2, CheckCircle, AlertCircle, ArrowRight } from 'lucide-react';
+import { Upload, ImageIcon, X, Loader2, CheckCircle, AlertCircle, ArrowRight, Check } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useEffect } from 'react';
 
@@ -272,6 +272,27 @@ export default function UploadPage() {
                     ))}
                   </div>
                   <p className="text-[10px] text-muted-foreground mt-2">* 註：目前僅開放實體作品提供短期租賃服務。</p>
+                </div>
+                
+                {/* AI Generated Checkbox */}
+                <div className="pt-2">
+                  <label className="flex items-center gap-3 cursor-pointer group">
+                    <div className="relative flex items-center">
+                      <input 
+                        type="checkbox" 
+                        name="is_ai_generated" 
+                        value="true"
+                        className="peer sr-only" 
+                      />
+                      <div className="h-5 w-5 rounded-sm border border-border bg-white transition-all peer-checked:bg-purple-600 peer-checked:border-purple-600 flex items-center justify-center">
+                        <Check className="h-3.5 w-3.5 text-white opacity-0 peer-checked:opacity-100 transition-opacity" />
+                      </div>
+                    </div>
+                    <div className="text-sm font-medium text-foreground group-hover:text-purple-700 transition-colors">
+                      這是 AI 生成作品
+                    </div>
+                  </label>
+                  <p className="text-[10px] text-muted-foreground mt-1.5 ml-8">勾選後，作品頁面將會顯示「🤖 AI 生成藝術」標籤。</p>
                 </div>
               </div>
 

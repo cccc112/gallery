@@ -24,6 +24,21 @@ export async function updateProfile(formData: FormData) {
 
   try {
     const admin = createAdminClient();
+    
+    // Check for duplicate display_name
+    if (display_name) {
+      const { data: existing } = await admin
+        .from('users')
+        .select('id')
+        .eq('display_name', display_name)
+        .neq('id', user.id)
+        .single();
+        
+      if (existing) {
+        return redirect(`/profile/edit?error=${encodeURIComponent('此帳號名稱已被使用')}`);
+      }
+    }
+
     const { error } = await admin.from('users').update({
       display_name: display_name || undefined,
       avatar_url: avatar_url || undefined,
