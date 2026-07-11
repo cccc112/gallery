@@ -12,9 +12,10 @@ const InstagramIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
-const TwitterIcon = (props: React.SVGProps<SVGSVGElement>) => (
+const XIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-    <path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"/>
+    <path d="M4 4l16 16" />
+    <path d="M4 20L20 4" />
   </svg>
 );
 
@@ -109,9 +110,9 @@ export default function Footer() {
                   <InstagramIcon />
                   <span className="sr-only">Instagram</span>
                 </div>
-                <div className="text-primary-foreground/40 cursor-not-allowed" title="Twitter 社群即將開通">
-                  <TwitterIcon />
-                  <span className="sr-only">Twitter</span>
+                <div className="text-primary-foreground/40 cursor-not-allowed" title="X (Twitter) 社群即將開通">
+                  <XIcon />
+                  <span className="sr-only">X (Twitter)</span>
                 </div>
               </div>
               <span className="text-[10px] text-primary-foreground/50 tracking-widest uppercase">官方社群即將開通</span>
