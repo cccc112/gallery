@@ -459,7 +459,7 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
       <PayPalButtons 
           createOrder={handlePayPalCreateOrder}
           onApprove={handlePayPalApprove as any}
-          onCancel={() => { setStep('payment'); }}
+          onCancel={() => { setStep('select'); }}
           style={{ layout: "horizontal", height: 40 }}
           onError={(err) => { 
             console.error("PayPal Error:", err);
