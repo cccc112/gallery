@@ -41,8 +41,7 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
         FROM public.artworks a
         JOIN public.users u ON a.artist_id = u.id
         WHERE 
-          a.status = 'published'
-          AND (${search} = '' OR a.title ILIKE ${'%' + search + '%'} OR a.description ILIKE ${'%' + search + '%'})
+          (${search} = '' OR a.title ILIKE ${'%' + search + '%'} OR a.description ILIKE ${'%' + search + '%'})
           AND a.tags @> ${tags}::text[]
           AND (${type} = 'all' OR a.art_type = ${type})
           AND (${rentable} = false OR a.is_rentable = true)
@@ -56,8 +55,7 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
         FROM public.artworks a
         JOIN public.users u ON a.artist_id = u.id
         WHERE 
-          a.status = 'published'
-          AND (${search} = '' OR a.title ILIKE ${'%' + search + '%'} OR a.description ILIKE ${'%' + search + '%'})
+          (${search} = '' OR a.title ILIKE ${'%' + search + '%'} OR a.description ILIKE ${'%' + search + '%'})
           AND (${type} = 'all' OR a.art_type = ${type})
           AND (${rentable} = false OR a.is_rentable = true)
         ORDER BY a.created_at DESC
