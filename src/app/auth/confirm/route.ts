@@ -58,16 +58,19 @@ export async function GET(request: NextRequest) {
         meta.picture ||
         `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(u.email ?? u.id)}`;
 
+      const adminEmails = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim());
+      const role = u.email && adminEmails.includes(u.email) ? 'admin' : 'buyer';
+
       await admin.from('users').upsert(
         {
           id: u.id,
           email: u.email,
           display_name: displayName,
-          role: 'buyer',
+          role: role,
           avatar_url: avatarUrl,
           created_at: new Date().toISOString(),
         },
-        { onConflict: 'id', ignoreDuplicates: true }
+        { onConflict: 'id', ignoreDuplicates: false } // Update existing records so admin role is applied retroactively
       );
     } catch (e) {
       // 非致命錯誤，不阻斷登入流程，只記 log
