@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { Loader2, CheckCircle, XCircle, Clock, ShieldCheck, CreditCard } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, Clock, ShieldCheck, CreditCard, Sparkles } from 'lucide-react';
 import Link from 'next/link';
+import { AiAdminAgent } from '@/components/AiAdminAgent';
 
 type Application = {
   id: string;
@@ -30,7 +31,7 @@ export default function AdminDashboard() {
   const router = useRouter();
   const [isAdmin, setIsAdmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'applications' | 'withdrawals'>('applications');
+  const [activeTab, setActiveTab] = useState<'applications' | 'withdrawals' | 'ai-agent'>('applications');
   
   const [applications, setApplications] = useState<Application[]>([]);
   const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([]);
@@ -157,6 +158,15 @@ export default function AdminDashboard() {
           <CreditCard className="w-4 h-4 mr-2" />
           提領管理 ({withdrawals.filter(w => w.status === 'pending').length})
         </button>
+        <button
+          onClick={() => setActiveTab('ai-agent')}
+          className={`flex items-center px-4 py-2 rounded text-sm font-medium transition-all ${
+            activeTab === 'ai-agent' ? 'bg-white shadow text-foreground' : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <Sparkles className="w-4 h-4 mr-2 text-amber-500" />
+          ✨ AI 營運助理
+        </button>
       </div>
 
       {activeTab === 'applications' && (
@@ -248,6 +258,12 @@ export default function AdminDashboard() {
               </tbody>
             </table>
           </div>
+        </div>
+      )}
+
+      {activeTab === 'ai-agent' && (
+        <div className="max-w-3xl mx-auto">
+          <AiAdminAgent />
         </div>
       )}
     </div>

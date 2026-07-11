@@ -246,23 +246,7 @@ export function ArtworkDetails({
         </p>
       </div>
 
-      {/* CoA Badge */}
-      {artwork.fingerprint && (
-        <a href={`/certificate/${artwork.fingerprint}`} target="_blank" rel="noreferrer" className="flex items-center justify-between p-4 rounded-xl border border-yellow-700/30 bg-gradient-to-r from-yellow-900/10 to-yellow-600/5 hover:from-yellow-900/20 hover:to-yellow-600/10 transition-colors group">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-full bg-yellow-900/20 flex items-center justify-center border border-yellow-700/30 text-yellow-600 shadow-[0_0_15px_rgba(180,83,9,0.15)] group-hover:scale-110 transition-transform">
-              <Shield className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-yellow-800 dark:text-yellow-500">數位真品保證書 (CoA)</p>
-              <p className="text-xs text-yellow-700/70 dark:text-yellow-600/70 font-mono mt-0.5">{artwork.fingerprint.slice(0, 16)}...</p>
-            </div>
-          </div>
-          <span className="text-xs font-semibold uppercase tracking-widest text-yellow-700 dark:text-yellow-600 group-hover:text-yellow-800 dark:group-hover:text-yellow-500 transition-colors">
-            驗證真偽 &rarr;
-          </span>
-        </a>
-      )}
+
 
       {/* Action Buttons */}
       {(isSold || isRented) ? (
@@ -355,8 +339,8 @@ export function ArtworkDetails({
             <Truck className="h-5 w-5 text-muted-foreground" />
           </div>
           <div>
-            <p className="text-xs font-semibold text-foreground">藝術品安全運輸</p>
-            <p className="text-[10px] text-muted-foreground">專業保險、全球精細包裝</p>
+            <p className="text-xs font-semibold text-foreground">買賣雙方協議運輸</p>
+            <p className="text-[10px] text-muted-foreground">請透過平台私訊確認運費與細節</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -365,7 +349,7 @@ export function ArtworkDetails({
           </div>
           <div>
             <p className="text-xs font-semibold text-foreground">原創保證</p>
-            <p className="text-[10px] text-muted-foreground">附藝術家親筆簽名證書</p>
+            <p className="text-[10px] text-muted-foreground">由平台認證藝術家親自發布</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -373,8 +357,8 @@ export function ArtworkDetails({
             <RotateCcw className="h-5 w-5 text-muted-foreground" />
           </div>
           <div>
-            <p className="text-xs font-semibold text-foreground">14 天退換保證</p>
-            <p className="text-[10px] text-muted-foreground">非數位商品享有猶豫期</p>
+            <p className="text-xs font-semibold text-foreground">7 天鑑賞期</p>
+            <p className="text-[10px] text-muted-foreground">非數位作品享 7 天猶豫期</p>
           </div>
         </div>
       </div>

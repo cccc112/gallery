@@ -133,7 +133,7 @@ export function ArtworkChatModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
 
       <div className="relative w-full sm:max-w-md bg-white rounded-t-2xl sm:rounded-xl shadow-2xl flex flex-col overflow-hidden"
@@ -208,11 +208,23 @@ export function ArtworkChatModal({
           <div ref={bottomRef} />
         </div>
 
-        {/* Input */}
-        <div className="flex items-end gap-2 p-3 border-t border-border/50 bg-white flex-shrink-0">
-          <textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
+        {/* Quick Replies & Input */}
+        <div className="flex flex-col border-t border-border/50 bg-white flex-shrink-0">
+          <div className="flex gap-2 p-2 overflow-x-auto no-scrollbar bg-stone-50 border-b border-border/30">
+            {["請問這件作品還有嗎？", "可以約時間看實體作品嗎？", "運費大約多少？", "請問能提供更多細節照片嗎？"].map(reply => (
+              <button
+                key={reply}
+                onClick={() => setInput(reply)}
+                className="whitespace-nowrap px-3 py-1.5 text-[11px] bg-white border border-border/60 rounded-full text-muted-foreground hover:text-foreground hover:border-primary/50 transition-colors"
+              >
+                {reply}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-end gap-2 p-3">
+            <textarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="輸入訊息... (Enter 送出)"
             rows={1}
@@ -238,5 +250,6 @@ export function ArtworkChatModal({
         </div>
       </div>
     </div>
+  </div>
   );
 }

@@ -79,7 +79,7 @@ export default async function ArtworkPage({ params }: ArtworkPageProps) {
   try {
     // 取得當前藝術品
     const results = await sql`
-      SELECT a.*, u.display_name as artist_name, u.email as artist_email
+      SELECT a.*, u.display_name as artist_name, u.email as artist_email, u.bio as artist_bio, u.avatar_url as artist_avatar
       FROM public.artworks a
       JOIN public.users u ON a.artist_id = u.id
       WHERE a.id = ${id}
@@ -131,12 +131,12 @@ export default async function ArtworkPage({ params }: ArtworkPageProps) {
     return notFound();
   }
 
-  // 模擬藝術家檔案資訊
+  // 藝術家檔案資訊
   const artistInfo = {
     name: artwork.artist_name || "未知藝術家",
-    bio: "陳畫家是一位備受矚目的當代藝術創作者，擅長將傳統媒材與現代主義線條相結合。其作品廣受多國私人藏家與美術館青睞。本季他為 Atelier Blanc 精選了這批雙軌制展出畫作。",
-    image: `https://api.dicebear.com/7.x/adventurer/svg?seed=${artwork.artist_name || 'artist'}`,
-    location: "台灣 台北",
+    bio: artwork.artist_bio || "這位藝術家尚未填寫個人簡介，但他/她透過精彩的作品展現獨特的藝術視角。我們期待未來有更多關於這位創作者的故事與您分享。",
+    image: artwork.artist_avatar || `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(artwork.artist_name || 'artist')}`,
+    location: "台灣",
     artworksCount: otherArtworks.length + 1,
   };
 
