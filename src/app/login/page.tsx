@@ -1,150 +1,28 @@
 'use client';
 
-import { useState, Suspense, useTransition } from 'react';
+import { Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { OAuthButtons } from '@/components/OAuthButtons';
 
-
-
 function LoginForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const rawRedirectTo = searchParams.get('redirectTo') || '/';
   const redirectTo = rawRedirectTo.startsWith('/') && !rawRedirectTo.startsWith('//') ? rawRedirectTo : '/';
-  const message = searchParams.get('message');
-
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [remember, setRemember] = useState(true);
-  const [error, setError] = useState(searchParams.get('error') || '');
-  const [isPending, startTransition] = useTransition();
-
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setError('');
-
-    startTransition(async () => {
-      try {
-        const res = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password }),
-        });
-        
-        const data = await res.json();
-
-        if (!res.ok || data.error) {
-          setError(data.error || '登入失敗');
-          return;
-        }
-
-        if (data.success) {
-          window.location.href = redirectTo;
-        }
-      } catch (err) {
-        setError('系統錯誤，請稍後再試');
-      }
-    });
-  }
+  const error = searchParams.get('error') || '';
 
   return (
     <div className="bg-white/70 backdrop-blur-md border border-border/60 rounded-sm shadow-lg px-8 py-10">
-      <h2 className="font-serif text-xl font-semibold text-foreground mb-1">歡迎回來</h2>
-      <p className="text-xs text-muted-foreground font-light mb-8">請輸入您的帳號資訊以繼續</p>
+      <h2 className="font-serif text-xl font-semibold text-foreground mb-1 text-center">歡迎來到 Atelier Blanc</h2>
+      <p className="text-xs text-muted-foreground font-light mb-8 text-center">請使用 Google 帳號登入</p>
 
-      {message === 'password_updated' && (
-        <div className="mb-6 px-4 py-3 rounded-sm bg-emerald-50 border border-emerald-200 text-xs text-emerald-700 font-medium">
-          密碼已成功更新，請使用新密碼登入。
-        </div>
-      )}
-      {message === 'registered' && (
-        <div className="mb-6 px-4 py-3 rounded-sm bg-emerald-50 border border-emerald-200 text-xs text-emerald-700 font-medium">
-          註冊成功！我們已自動為您驗證帳號，請直接登入。
-        </div>
-      )}
       {error && (
         <div className="mb-6 px-4 py-3 rounded-sm bg-rose-50 border border-rose-200 text-xs text-rose-700 font-medium whitespace-pre-wrap">
           {decodeURIComponent(error)}
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-5">
-        <div>
-          <label htmlFor="email" className="block text-xs font-semibold tracking-wider uppercase text-muted-foreground mb-2">
-            電子郵件
-          </label>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            required
-            autoComplete="email"
-            placeholder="you@example.com"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            className="w-full rounded-sm border border-border bg-white/80 px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary transition-colors"
-          />
-        </div>
-
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <label htmlFor="password" className="block text-xs font-semibold tracking-wider uppercase text-muted-foreground">
-              密碼
-            </label>
-            <Link href="/forgot-password" className="text-[11px] text-muted-foreground hover:text-foreground underline underline-offset-4 transition-colors">
-              忘記密碼？
-            </Link>
-          </div>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            required
-            autoComplete="current-password"
-            placeholder="••••••••"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            className="w-full rounded-sm border border-border bg-white/80 px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary transition-colors"
-          />
-        </div>
-
-        <div className="flex items-center gap-2.5">
-          <input
-            id="remember"
-            name="remember"
-            type="checkbox"
-            checked={remember}
-            onChange={e => setRemember(e.target.checked)}
-            className="h-4 w-4 rounded border-border accent-primary cursor-pointer"
-          />
-          <label htmlFor="remember" className="text-xs text-muted-foreground cursor-pointer select-none">
-            記住我的登入狀態（30 天）
-          </label>
-        </div>
-
-        <button
-          type="submit"
-          disabled={isPending}
-          className="w-full rounded-sm bg-primary text-primary-foreground py-3.5 text-sm font-semibold tracking-wide hover:bg-primary/90 transition-all duration-300 shadow-md mt-2 disabled:opacity-60 disabled:cursor-not-allowed"
-        >
-          {isPending ? '登入中…' : '登入帳號'}
-        </button>
-      </form>
-
-      <div className="mt-6 pt-6 border-t border-border/60 text-center">
-        <p className="text-xs text-muted-foreground">
-          還沒有帳號？{' '}
-          <Link
-            href={`/register${redirectTo !== '/' ? `?redirectTo=${encodeURIComponent(redirectTo)}` : ''}`}
-            className="text-foreground font-semibold hover:underline underline-offset-4"
-          >
-            立即免費註冊
-          </Link>
-        </p>
-      </div>
-
-      <div className="mt-5">
+      <div className="mt-2">
         <OAuthButtons redirectTo={redirectTo} />
       </div>
     </div>

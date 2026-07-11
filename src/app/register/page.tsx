@@ -1,7 +1,5 @@
 import Link from 'next/link';
-import { signUp } from '@/app/auth/actions';
 import { OAuthButtons } from '@/components/OAuthButtons';
-
 interface RegisterPageProps {
   searchParams: { error?: string };
 }
@@ -28,84 +26,20 @@ export default function RegisterPage({ searchParams }: RegisterPageProps) {
           </Link>
         </div>
 
-        <div className="bg-white/70 backdrop-blur-md border border-border/60 rounded-sm shadow-lg px-8 py-10">
-          <h2 className="font-serif text-xl font-semibold text-foreground mb-1">加入典藏社群</h2>
-          <p className="text-xs text-muted-foreground font-light mb-8">
+          <div className="bg-white/70 backdrop-blur-md border border-border/60 rounded-sm shadow-lg px-8 py-10">
+          <h2 className="font-serif text-xl font-semibold text-foreground mb-1 text-center">加入典藏社群</h2>
+          <p className="text-xs text-muted-foreground font-light mb-8 text-center">
             建立帳號後即可收藏、購買、租賃，並自由上傳您的創作作品
           </p>
 
           {error && (
-            <div className="mb-6 px-4 py-3 rounded-sm bg-rose-50 border border-rose-200 text-xs text-rose-700 font-medium">
+            <div className="mb-6 px-4 py-3 rounded-sm bg-rose-50 border border-rose-200 text-xs text-rose-700 font-medium whitespace-pre-wrap">
               {decodeURIComponent(error)}
             </div>
           )}
 
-          <form action={signUp} className="space-y-5">
-            <div>
-              <label htmlFor="display_name" className="block text-xs font-semibold tracking-wider uppercase text-muted-foreground mb-2">
-                顯示名稱
-              </label>
-              <input
-                id="display_name"
-                name="display_name"
-                type="text"
-                required
-                placeholder="例：陳大文 / 林小藝"
-                className="w-full rounded-sm border border-border bg-white/80 px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary transition-colors"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="email" className="block text-xs font-semibold tracking-wider uppercase text-muted-foreground mb-2">
-                電子郵件
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                required
-                autoComplete="email"
-                placeholder="you@example.com"
-                className="w-full rounded-sm border border-border bg-white/80 px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary transition-colors"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="password" className="block text-xs font-semibold tracking-wider uppercase text-muted-foreground mb-2">
-                密碼{' '}
-                <span className="font-light normal-case tracking-normal text-muted-foreground/60">(至少 6 個字元)</span>
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                required
-                minLength={6}
-                autoComplete="new-password"
-                placeholder="••••••••"
-                className="w-full rounded-sm border border-border bg-white/80 px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary transition-colors"
-              />
-            </div>
-
-            <button
-              type="submit"
-              className="w-full rounded-sm bg-primary text-primary-foreground py-3.5 text-sm font-semibold tracking-wide hover:bg-primary/90 transition-all duration-300 shadow-md mt-2"
-            >
-              建立帳號
-            </button>
-          </form>
-
-          <div className="mt-6 pt-6 border-t border-border/60 text-center">
-            <p className="text-xs text-muted-foreground">
-              已有帳號？{' '}
-              <Link href="/login" className="text-foreground font-semibold hover:underline underline-offset-4">
-                直接登入
-              </Link>
-            </p>
-          </div>
-
           {/* OAuth 社群登入 */}
-          <div className="mt-5">
+          <div className="mt-2">
             <OAuthButtons redirectTo="/" />
           </div>
         </div>
