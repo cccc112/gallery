@@ -22,15 +22,6 @@ export function OAuthButtons({ redirectTo = '/' }: OAuthButtonsProps) {
 
   return (
     <div className="space-y-3">
-      {/* 分隔線 */}
-      <div className="relative flex items-center gap-3 py-1">
-        <div className="flex-1 h-px bg-border/60" />
-        <span className="text-[10px] font-medium tracking-widest uppercase text-muted-foreground">
-          或使用社群帳號
-        </span>
-        <div className="flex-1 h-px bg-border/60" />
-      </div>
-
       {/* Google */}
       <button
         type="button"
