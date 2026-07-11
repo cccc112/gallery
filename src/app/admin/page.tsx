@@ -135,7 +135,7 @@ export default function AdminDashboard() {
   return (
     <div className="max-w-5xl mx-auto p-6 md:p-10 min-h-screen">
       <h1 className="text-3xl font-serif font-bold text-foreground mb-2">後台管理中心</h1>
-      <p className="text-muted-foreground mb-8">管理藝術家實名審核與提領申請</p>
+      <p className="text-muted-foreground mb-8">管理藝術家審核與提領申請</p>
 
       {/* Tabs */}
       <div className="flex space-x-1 bg-secondary p-1 rounded-md mb-6 w-fit">

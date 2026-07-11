@@ -36,8 +36,8 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
     if (tags.length > 0) {
       artworks = await sql`
         SELECT a.*, u.display_name as artist_name,
-               (SELECT COUNT(*) FROM public.page_views pv WHERE pv.artwork_id = a.id) as views_count,
-               (SELECT COUNT(*) FROM public.favorites f WHERE f.artwork_id = a.id) as likes_count
+               0 as views_count,
+               0 as likes_count
         FROM public.artworks a
         JOIN public.users u ON a.artist_id = u.id
         WHERE 
@@ -50,8 +50,8 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
     } else {
       artworks = await sql`
         SELECT a.*, u.display_name as artist_name,
-               (SELECT COUNT(*) FROM public.page_views pv WHERE pv.artwork_id = a.id) as views_count,
-               (SELECT COUNT(*) FROM public.favorites f WHERE f.artwork_id = a.id) as likes_count
+               0 as views_count,
+               0 as likes_count
         FROM public.artworks a
         JOIN public.users u ON a.artist_id = u.id
         WHERE 

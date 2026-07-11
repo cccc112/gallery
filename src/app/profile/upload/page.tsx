@@ -145,7 +145,7 @@ export default function UploadPage() {
               <AlertCircle className="h-12 w-12 text-amber-500 mx-auto mb-4" />
               <h2 className="text-xl font-serif font-bold text-foreground mb-2">權限不足</h2>
               <p className="text-muted-foreground mb-6">
-                只有經過實名認證的藝術家才能夠上傳作品。請先提交藝術家申請，審核通過後即可開始銷售。
+                只有經過認證的藝術家才能夠上傳作品。請先提交藝術家申請，審核通過後即可開始銷售。
               </p>
               <Link
                 href="/apply-artist"
