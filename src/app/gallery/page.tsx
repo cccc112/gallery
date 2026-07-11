@@ -1,9 +1,10 @@
 import Link from 'next/link';
 import { sql } from '@/lib/db';
-import { Search, Eye, Tag, SlidersHorizontal } from 'lucide-react';
+import { Search, Eye, Tag, SlidersHorizontal, X, Heart } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import Image from 'next/image';
 import { AnimatedGrid, AnimatedCard } from '@/components/AnimatedGrid';
+import GalleryForm from './GalleryForm';
 
 export const revalidate = 0;
 
@@ -12,6 +13,7 @@ interface GalleryPageProps {
     search?: string;
     type?: string;
     rentable?: string;
+    tag?: string | string[];
   };
 }
 
@@ -26,17 +28,21 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
   const search = searchParams.search || '';
   const type = searchParams.type || 'all';
   const rentable = searchParams.rentable === 'true';
+  const tagParam = searchParams.tag;
+  const tags: string[] = tagParam ? (Array.isArray(tagParam) ? tagParam : [tagParam]) : [];
 
   let artworks: any[] = [];
   try {
     artworks = await sql`
-      SELECT a.*, u.display_name as artist_name 
+      SELECT a.*, u.display_name as artist_name,
+             (SELECT COUNT(*) FROM public.page_views pv WHERE pv.artwork_id = a.id) as views_count,
+             (SELECT COUNT(*) FROM public.favorites f WHERE f.artwork_id = a.id) as likes_count
       FROM public.artworks a
       JOIN public.users u ON a.artist_id = u.id
       WHERE 
-        (a.title ILIKE ${'%' + search + '%'} 
-         OR a.description ILIKE ${'%' + search + '%'}
-         OR array_to_string(a.tags, ' ') ILIKE ${'%' + search + '%'})
+        a.status = 'published'
+        AND (${search} = '' OR a.title ILIKE ${'%' + search + '%'} OR a.description ILIKE ${'%' + search + '%'})
+        AND (${tags.length === 0} OR a.tags @> ${tags}::text[])
         AND (${type} = 'all' OR a.art_type = ${type})
         AND (${rentable} = false OR a.is_rentable = true)
       ORDER BY a.created_at DESC
@@ -89,6 +95,35 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
     if (search) p.set('search', search);
     if (t !== 'all') p.set('type', t);
     if (rentable) p.set('rentable', 'true');
+    tags.forEach(tg => p.append('tag', tg));
+    const qs = p.toString();
+    return `/gallery${qs ? `?${qs}` : ''}`;
+  }
+
+  function addTagUrl(newTag: string) {
+    const p = new URLSearchParams();
+    if (search) p.set('search', search);
+    if (type !== 'all') p.set('type', type);
+    if (rentable) p.set('rentable', 'true');
+    tags.forEach(tg => p.append('tag', tg));
+    if (!tags.includes(newTag)) p.append('tag', newTag);
+    const qs = p.toString();
+    return `/gallery${qs ? `?${qs}` : ''}`;
+  }
+
+  // 移除特定篩選條件的 URL
+  function removeFilterUrl(filterToRemove: 'type' | 'rentable' | 'search' | 'tag', tagValue?: string) {
+    const p = new URLSearchParams();
+    if (filterToRemove !== 'search' && search) p.set('search', search);
+    if (filterToRemove !== 'type' && type !== 'all') p.set('type', type);
+    if (filterToRemove !== 'rentable' && rentable) p.set('rentable', 'true');
+    
+    if (filterToRemove === 'tag' && tagValue) {
+      tags.filter(t => t !== tagValue).forEach(t => p.append('tag', t));
+    } else {
+      tags.forEach(t => p.append('tag', t));
+    }
+    
     const qs = p.toString();
     return `/gallery${qs ? `?${qs}` : ''}`;
   }
@@ -145,38 +180,7 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
           </div>
 
           {/* Search + 租賃 + 送出 */}
-          <form method="GET" action="/gallery" className="flex flex-col sm:flex-row gap-3">
-            <input type="hidden" name="type" value={type} />
-            <div className="relative flex-1">
-              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                <Search className="h-4 w-4 text-muted-foreground" />
-              </div>
-              <input
-                type="text"
-                name="search"
-                defaultValue={search}
-                placeholder="搜尋作品名稱、藝術家..."
-                className="block w-full rounded-lg border border-border bg-background py-2.5 pl-10 pr-3 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary transition-colors"
-              />
-            </div>
-            <label className="flex items-center gap-2 text-sm text-muted-foreground select-none cursor-pointer self-center">
-              <input
-                type="checkbox"
-                name="rentable"
-                value="true"
-                defaultChecked={rentable}
-                className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
-              />
-              僅顯示可租賃
-            </label>
-            <button
-              type="submit"
-              className="rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 px-5 py-2.5 text-sm font-medium shadow-sm transition-all flex items-center gap-1.5 self-start sm:self-auto"
-            >
-              <SlidersHorizontal className="h-4 w-4" />
-              篩選
-            </button>
-          </form>
+          <GalleryForm search={search} type={type} rentable={rentable} tags={tags} />
 
           {/* Popular Tags */}
           {popularTags.length > 0 && (
@@ -187,7 +191,7 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
               {popularTags.map(pt => (
                 <Link
                   key={pt.tag}
-                  href={`/gallery?search=${encodeURIComponent(pt.tag)}`}
+                  href={addTagUrl(pt.tag)}
                   className="text-xs bg-secondary hover:bg-secondary/80 text-secondary-foreground px-2.5 py-1 rounded-sm border border-border transition-colors"
                 >
                   #{pt.tag}
@@ -197,24 +201,33 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
           )}
 
           {/* 當前篩選標示 */}
-          {(type !== 'all' || rentable || search) && (
-            <div className="flex items-center gap-2 pt-1 border-t border-border/40">
+          {(type !== 'all' || rentable || search || tags.length > 0) && (
+            <div className="flex items-center gap-2 pt-1 border-t border-border/40 flex-wrap">
               <span className="text-[10px] text-muted-foreground">目前篩選：</span>
               {type !== 'all' && (
-                <span className="text-[10px] bg-foreground/10 text-foreground px-2 py-0.5 rounded-full font-medium">
+                <Link href={removeFilterUrl('type')} className="group flex items-center gap-1 text-[10px] bg-foreground/10 text-foreground px-2 py-0.5 rounded-full font-medium hover:bg-foreground/20 transition-colors" title="移除類型篩選">
                   {TYPE_TABS.find(t => t.value === type)?.label}
-                </span>
+                  <X className="h-3 w-3 opacity-50 group-hover:opacity-100" />
+                </Link>
               )}
               {rentable && (
-                <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium">
+                <Link href={removeFilterUrl('rentable')} className="group flex items-center gap-1 text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium hover:bg-emerald-200 transition-colors" title="移除可租賃篩選">
                   可租賃
-                </span>
+                  <X className="h-3 w-3 opacity-50 group-hover:opacity-100" />
+                </Link>
               )}
               {search && (
-                <span className="text-[10px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-medium">
+                <Link href={removeFilterUrl('search')} className="group flex items-center gap-1 text-[10px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-medium hover:bg-indigo-200 transition-colors" title="移除關鍵字篩選">
                   「{search}」
-                </span>
+                  <X className="h-3 w-3 opacity-50 group-hover:opacity-100" />
+                </Link>
               )}
+              {tags.map(tag => (
+                <Link key={tag} href={removeFilterUrl('tag', tag)} className="group flex items-center gap-1 text-[10px] bg-rose-100 text-rose-700 px-2 py-0.5 rounded-full font-medium hover:bg-rose-200 transition-colors" title={`移除標籤: ${tag}`}>
+                  #{tag}
+                  <X className="h-3 w-3 opacity-50 group-hover:opacity-100" />
+                </Link>
+              ))}
               <Link href="/gallery" className="text-[10px] text-muted-foreground hover:text-rose-500 underline ml-auto transition-colors">
                 清除全部
               </Link>
@@ -274,7 +287,7 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
                     {artwork.tags.map((tag: string) => (
                       <Link 
                         key={tag} 
-                        href={`/gallery?search=${encodeURIComponent(tag)}`}
+                        href={addTagUrl(tag)}
                         className="text-[9px] bg-secondary/50 text-muted-foreground border border-border/50 px-2 py-0.5 rounded-sm hover:bg-secondary hover:text-foreground transition-colors"
                       >
                         #{tag}
@@ -307,12 +320,24 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
                         </p>
                       )}
                     </div>
-                    <Link
-                      href={`/artwork/${artwork.id}`}
-                      className="rounded-full bg-secondary hover:bg-primary hover:text-primary-foreground border border-border p-2.5 text-foreground transition-all shadow-xs"
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Link>
+                    <div className="flex items-center gap-3">
+                      <div className="flex gap-2.5 items-center mr-1">
+                        <div className="flex items-center gap-1 text-muted-foreground" title="瀏覽人次">
+                          <Eye className="h-3.5 w-3.5" />
+                          <span className="text-[10px] font-medium">{artwork.views_count}</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-rose-500" title="收藏人數">
+                          <Heart className="h-3.5 w-3.5" />
+                          <span className="text-[10px] font-medium">{artwork.likes_count}</span>
+                        </div>
+                      </div>
+                      <Link
+                        href={`/artwork/${artwork.id}`}
+                        className="rounded-full bg-secondary hover:bg-primary hover:text-primary-foreground border border-border p-2.5 text-foreground transition-all shadow-xs"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Link>
+                    </div>
                   </div>
                 </div>
               </AnimatedCard>

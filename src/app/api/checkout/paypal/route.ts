@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 export const dynamic = 'force-dynamic';
 
 
-const PAYPAL_API_BASE = process.env.NODE_ENV === 'production' 
+const PAYPAL_API_BASE = process.env.PAYPAL_ENV === 'live'
   ? 'https://api-m.paypal.com' 
   : 'https://api-m.sandbox.paypal.com';
 

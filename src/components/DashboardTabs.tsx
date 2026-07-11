@@ -1,13 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import {
   Package, Palette, ShoppingBag, Clock, Download,
   TrendingUp, ImageIcon, Upload, ExternalLink,
   Coins, CreditCard, RotateCcw, CheckCircle2, AlertCircle,
-  Eye, MessageSquare, Star
+  Eye, MessageSquare, Star, Loader2
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -465,14 +465,150 @@ function FeedbackTab({ reviews }: { reviews: ReviewRow[] }) {
   );
 }
 
+// ── Finance Tab ───────────────────────────────────────────────────
+function FinanceTab({ totalFiatRevenue }: { totalFiatRevenue: number }) {
+  const [withdrawals, setWithdrawals] = useState<any[]>([]);
+  const [totalWithdrawn, setTotalWithdrawn] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [amount, setAmount] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
+
+  const availableBalance = totalFiatRevenue - totalWithdrawn;
+
+  useEffect(() => {
+    fetchFinance();
+  }, []);
+
+  async function fetchFinance() {
+    try {
+      const res = await fetch('/api/artist/finance');
+      if (res.ok) {
+        const data = await res.json();
+        setWithdrawals(data.withdrawals || []);
+        setTotalWithdrawn(data.totalWithdrawn || 0);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function handleWithdraw(e: React.FormEvent) {
+    e.preventDefault();
+    const val = parseInt(amount);
+    if (isNaN(val) || val < 100) {
+      setErrorMsg('最低提領金額為 NT$ 100');
+      return;
+    }
+    if (val > availableBalance) {
+      setErrorMsg('可提領餘額不足');
+      return;
+    }
+    setSubmitting(true);
+    setErrorMsg('');
+    setSuccessMsg('');
+    
+    try {
+      const res = await fetch('/api/artist/finance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: val })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      
+      setSuccessMsg('提領申請已送出，請等候處理');
+      setAmount('');
+      fetchFinance();
+    } catch (e: any) {
+      setErrorMsg(e.message || '提領失敗');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  if (isLoading) {
+    return <div className="py-12 flex justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="p-5 bg-white/60 border border-border/50 rounded-sm">
+          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">總銷售額 (TWD)</p>
+          <p className="text-2xl font-serif font-bold text-foreground">{fmt(totalFiatRevenue)}</p>
+        </div>
+        <div className="p-5 bg-white/60 border border-border/50 rounded-sm">
+          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">已提領/處理中</p>
+          <p className="text-2xl font-serif font-bold text-rose-600">{fmt(totalWithdrawn)}</p>
+        </div>
+        <div className="p-5 bg-primary/5 border border-primary/20 rounded-sm">
+          <p className="text-xs font-semibold uppercase tracking-widest text-primary mb-2">可提領餘額</p>
+          <p className="text-2xl font-serif font-bold text-emerald-600">{fmt(availableBalance)}</p>
+        </div>
+      </div>
+
+      <div className="bg-white/60 border border-border/50 rounded-sm p-6">
+        <h3 className="text-sm font-semibold mb-4">申請提領</h3>
+        <form onSubmit={handleWithdraw} className="flex flex-col sm:flex-row gap-3">
+          <input
+            type="number"
+            min="100"
+            max={Math.max(100, availableBalance)}
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            placeholder="輸入提領金額 (最低 NT$ 100)"
+            className="flex-1 px-4 py-2 text-sm border border-border rounded-sm focus:outline-none focus:border-primary"
+            required
+          />
+          <button
+            type="submit"
+            disabled={submitting || availableBalance < 100}
+            className="px-6 py-2 bg-foreground text-background text-sm font-semibold rounded-sm hover:bg-foreground/90 disabled:opacity-50 flex items-center justify-center min-w-[120px]"
+          >
+            {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : '確認提款'}
+          </button>
+        </form>
+        {errorMsg && <p className="text-rose-500 text-xs mt-2">{errorMsg}</p>}
+        {successMsg && <p className="text-emerald-600 text-xs mt-2">{successMsg}</p>}
+      </div>
+
+      <div className="bg-white/60 border border-border/50 rounded-sm overflow-hidden">
+        <h3 className="text-sm font-semibold p-4 border-b border-border/50">提領紀錄</h3>
+        {withdrawals.length === 0 ? (
+          <p className="p-6 text-center text-sm text-muted-foreground">尚無提領紀錄</p>
+        ) : (
+          <div className="divide-y divide-border/50">
+            {withdrawals.map((w) => (
+              <div key={w.id} className="p-4 flex items-center justify-between text-sm">
+                <div>
+                  <p className="font-semibold text-foreground">NT$ {w.amount.toLocaleString()}</p>
+                  <p className="text-[10px] text-muted-foreground">{fmtDate(w.created_at)} · 匯入 {w.bank_account}</p>
+                </div>
+                <div>
+                  {w.status === 'pending' && <span className="px-2 py-1 bg-amber-50 text-amber-600 text-xs rounded-sm font-semibold border border-amber-200">處理中</span>}
+                  {w.status === 'completed' && <span className="px-2 py-1 bg-emerald-50 text-emerald-600 text-xs rounded-sm font-semibold border border-emerald-200">已匯款</span>}
+                  {w.status === 'rejected' && <span className="px-2 py-1 bg-rose-50 text-rose-600 text-xs rounded-sm font-semibold border border-rose-200">已拒絕</span>}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Main DashboardTabs ───────────────────────────────────────────
 export function DashboardTabs({ orders, rentals, artworks, reviews, totalFiatRevenue, totalCryptoRevenue }: DashboardTabsProps) {
-  const [tab, setTab] = useState<'collection' | 'artist' | 'feedback'>('collection');
+  const [tab, setTab] = useState<'collection' | 'artist' | 'feedback' | 'finance'>('collection');
 
   const tabs = [
     { key: 'collection' as const, label: '看展人中心 (購買/租賃)', icon: ShoppingBag, count: orders.length + rentals.length },
     { key: 'artist' as const, label: '藝術家中心 (我的作品)', icon: Palette, count: artworks.length },
     { key: 'feedback' as const, label: '看展人評價', icon: MessageSquare, count: reviews.length },
+    { key: 'finance' as const, label: '財務與提領', icon: Coins, count: 0 },
   ];
 
   return (
@@ -503,6 +639,7 @@ export function DashboardTabs({ orders, rentals, artworks, reviews, totalFiatRev
       {tab === 'collection' && <CollectionTab orders={orders} rentals={rentals} />}
       {tab === 'artist' && <ArtistTab artworks={artworks} totalFiatRevenue={totalFiatRevenue} totalCryptoRevenue={totalCryptoRevenue} />}
       {tab === 'feedback' && <FeedbackTab reviews={reviews} />}
+      {tab === 'finance' && <FinanceTab totalFiatRevenue={totalFiatRevenue} />}
     </div>
   );
 }

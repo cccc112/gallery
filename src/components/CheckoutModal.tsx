@@ -456,12 +456,17 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
                 <p className="text-sm font-semibold text-foreground mb-2">PayPal (支援免帳號刷卡)</p>
                 {process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID ? (
                   <PayPalScriptProvider options={{ clientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID, currency: "USD" }}>
-                      <PayPalButtons 
-                          createOrder={handlePayPalCreateOrder}
-                          onApprove={handlePayPalApprove as any}
-                          style={{ layout: "horizontal", height: 40 }}
-                          onError={(err) => { setErrorMsg("PayPal 元件載入失敗或取消交易"); setStep('error'); }}
-                      />
+      <PayPalButtons 
+          createOrder={handlePayPalCreateOrder}
+          onApprove={handlePayPalApprove as any}
+          onCancel={() => { setStep('payment'); }}
+          style={{ layout: "horizontal", height: 40 }}
+          onError={(err) => { 
+            console.error("PayPal Error:", err);
+            setErrorMsg("PayPal 交易發生錯誤，請稍後再試或聯繫客服。"); 
+            setStep('error'); 
+          }}
+      />
                   </PayPalScriptProvider>
                 ) : (
                   <button 

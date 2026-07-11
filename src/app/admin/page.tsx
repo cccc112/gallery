@@ -1,160 +1,251 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { Loader2, Bot, Send, BarChart3, Users, MessageSquare, TrendingUp } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
+import { Loader2, CheckCircle, XCircle, Clock, ShieldCheck, CreditCard } from 'lucide-react';
+import Link from 'next/link';
 
-type Message = { id: string; role: 'user' | 'assistant'; content: string };
+type Application = {
+  id: string;
+  user_id: string;
+  real_name: string;
+  id_number: string;
+  bank_account: string;
+  portfolio_url: string;
+  status: 'pending' | 'approved' | 'rejected';
+  created_at: string;
+};
+
+type Withdrawal = {
+  id: string;
+  artist_id: string;
+  amount: number;
+  bank_account: string;
+  status: 'pending' | 'processing' | 'completed' | 'rejected';
+  created_at: string;
+};
 
 export default function AdminDashboard() {
-  const [messages, setMessages] = useState<Message[]>([
-    { id: '1', role: 'assistant', content: '您好！我是 Atelier Blanc 的 AI 營運助理。我可以幫您分析全站流量、銷售數據，或是草擬客服回覆。請問今天需要什麼協助？' }
-  ]);
-  const [input, setInput] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim() || isLoading) return;
-    const userMsg: Message = { id: Date.now().toString(), role: 'user', content: input };
-    setMessages(prev => [...prev, userMsg]);
-    setInput('');
-    setIsLoading(true);
-    try {
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: [...messages, userMsg].map(m => ({ role: m.role, content: m.content })) }),
-      });
-      // Read plain text response (non-streaming fallback)
-      const text = await res.text();
-      // Strip SSE data prefixes if present
-      const content = text.split('\n')
-        .filter(l => l.startsWith('0:'))
-        .map(l => l.slice(3).replace(/^"/, '').replace(/"$/, '').replace(/\\n/g, '\n'))
-        .join('') || text;
-      setMessages(prev => [...prev, { id: Date.now().toString(), role: 'assistant', content: content || '抱歉，目前無法連接 AI 服務，請確認 GOOGLE_GENERATIVE_AI_API_KEY 已設定。' }]);
-    } catch {
-      setMessages(prev => [...prev, { id: Date.now().toString(), role: 'assistant', content: '連線失敗，請稍後再試。' }]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const scrollRef = useRef<HTMLDivElement>(null);
-
-  // 假資料用作圖表展示
-  const mockStats = [
-    { title: '今日訪客', value: '1,284', icon: <Users className="h-4 w-4" />, change: '+12%' },
-    { title: '本週銷售額', value: '$84,500', icon: <TrendingUp className="h-4 w-4" />, change: '+5.4%' },
-    { title: '待處理客訴', value: '3', icon: <MessageSquare className="h-4 w-4" />, change: '-2' },
-    { title: '轉換率', value: '2.8%', icon: <BarChart3 className="h-4 w-4" />, change: '+0.4%' },
-  ];
+  const router = useRouter();
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'applications' | 'withdrawals'>('applications');
+  
+  const [applications, setApplications] = useState<Application[]>([]);
+  const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([]);
 
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    checkAdminAndFetchData();
+  }, []);
+
+  async function checkAdminAndFetchData() {
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        router.push('/login');
+        return;
+      }
+      
+      const { data: userData } = await supabase.from('users').select('role').eq('id', user.id).single();
+      if (userData?.role !== 'admin') {
+        setIsAdmin(false);
+        setIsLoading(false);
+        return;
+      }
+      setIsAdmin(true);
+
+      // Fetch data
+      fetchApplications();
+      fetchWithdrawals();
+      setIsLoading(false);
+    } catch (e) {
+      console.error(e);
+      setIsLoading(false);
     }
-  }, [messages]);
+  }
+
+  async function fetchApplications() {
+    const res = await fetch('/api/admin/applications');
+    if (res.ok) {
+      const data = await res.json();
+      setApplications(data.applications || []);
+    }
+  }
+
+  async function fetchWithdrawals() {
+    const res = await fetch('/api/admin/withdrawals');
+    if (res.ok) {
+      const data = await res.json();
+      setWithdrawals(data.withdrawals || []);
+    }
+  }
+
+  async function updateApplication(id: string, status: 'approved' | 'rejected') {
+    const res = await fetch(`/api/admin/applications/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status })
+    });
+    if (res.ok) {
+      fetchApplications();
+    }
+  }
+
+  async function updateWithdrawal(id: string, status: 'completed' | 'rejected') {
+    const res = await fetch(`/api/admin/withdrawals/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status })
+    });
+    if (res.ok) {
+      fetchWithdrawals();
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="min-h-[80vh] flex items-center justify-center p-6">
+        <div className="max-w-md w-full bg-white p-8 rounded-lg shadow-sm border border-border text-center">
+          <ShieldCheck className="h-16 w-16 text-rose-500 mx-auto mb-4" />
+          <h1 className="text-2xl font-serif font-bold text-foreground mb-2">權限不足</h1>
+          <p className="text-muted-foreground mb-8">
+            此頁面僅限平台管理員存取。
+          </p>
+          <Link
+            href="/"
+            className="inline-block bg-primary text-primary-foreground px-6 py-2.5 rounded hover:bg-primary/90 transition-colors"
+          >
+            返回首頁
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen flex flex-col bg-stone-50">
-      <main className="flex-1 container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-2xl font-serif font-bold text-foreground">管理員戰情室 (Super Admin)</h1>
-          <p className="text-sm text-muted-foreground mt-1">流量監控、自動化數據分析與客服助理</p>
-        </div>
+    <div className="max-w-5xl mx-auto p-6 md:p-10 min-h-screen">
+      <h1 className="text-3xl font-serif font-bold text-foreground mb-2">後台管理中心</h1>
+      <p className="text-muted-foreground mb-8">管理藝術家實名審核與提領申請</p>
 
-        {/* 流量與數據監控區塊 */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          {mockStats.map((stat, i) => (
-            <div key={i} className="bg-white p-5 border border-border rounded-sm shadow-sm flex flex-col">
-              <div className="flex items-center justify-between text-muted-foreground mb-4">
-                <span className="text-sm font-medium">{stat.title}</span>
-                {stat.icon}
-              </div>
-              <div className="flex items-baseline gap-2 mt-auto">
-                <span className="text-2xl font-bold text-foreground">{stat.value}</span>
-                <span className={`text-xs font-semibold ${stat.change.startsWith('+') ? 'text-emerald-600' : 'text-rose-600'}`}>
-                  {stat.change}
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
+      {/* Tabs */}
+      <div className="flex space-x-1 bg-secondary p-1 rounded-md mb-6 w-fit">
+        <button
+          onClick={() => setActiveTab('applications')}
+          className={`flex items-center px-4 py-2 rounded text-sm font-medium transition-all ${
+            activeTab === 'applications' ? 'bg-white shadow text-foreground' : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <ShieldCheck className="w-4 h-4 mr-2" />
+          藝術家申請 ({applications.filter(a => a.status === 'pending').length})
+        </button>
+        <button
+          onClick={() => setActiveTab('withdrawals')}
+          className={`flex items-center px-4 py-2 rounded text-sm font-medium transition-all ${
+            activeTab === 'withdrawals' ? 'bg-white shadow text-foreground' : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <CreditCard className="w-4 h-4 mr-2" />
+          提領管理 ({withdrawals.filter(w => w.status === 'pending').length})
+        </button>
+      </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[600px]">
-          {/* 左側：數據圖表 (Mock) */}
-          <div className="lg:col-span-2 bg-white border border-border rounded-sm shadow-sm p-6 flex flex-col">
-            <h2 className="text-base font-semibold mb-6 flex items-center gap-2">
-              <BarChart3 className="h-5 w-5" /> 網站流量與轉換趨勢
-            </h2>
-            <div className="flex-1 relative border border-dashed border-border/50 rounded-sm bg-stone-50/50 flex items-end justify-between p-4 gap-2">
-              {/* 簡單 CSS 柱狀圖示意 */}
-              {[40, 65, 45, 80, 55, 90, 70].map((h, i) => (
-                <div key={i} className="w-full bg-primary/20 hover:bg-primary/40 transition-colors rounded-t-sm relative group" style={{ height: `${h}%` }}>
-                  <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-foreground text-background text-xs px-2 py-1 rounded-sm opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap">
-                    數值: {h * 12}
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="flex justify-between text-xs text-muted-foreground mt-2 px-2">
-              <span>週一</span><span>週二</span><span>週三</span><span>週四</span><span>週五</span><span>週六</span><span>週日</span>
-            </div>
-          </div>
-
-          {/* 右側：AI Agent 聊天室 */}
-          <div className="bg-white border border-border rounded-sm shadow-sm flex flex-col overflow-hidden">
-            <div className="p-4 border-b border-border bg-stone-50 flex items-center gap-3">
-              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                <Bot className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <h2 className="text-sm font-semibold text-foreground">AI 營運助理</h2>
-                <p className="text-[10px] text-emerald-600 flex items-center gap-1">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 inline-block" /> 在線中 (Gemini 1.5 Pro)
-                </p>
-              </div>
-            </div>
-            
-            <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 bg-stone-50/30">
-              {messages.map(m => (
-                <div key={m.id} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[85%] rounded-md px-4 py-2.5 text-sm ${
-                    m.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-white border border-border text-foreground shadow-sm'
-                  }`}>
-                    <p className="whitespace-pre-wrap leading-relaxed">{m.content}</p>
-                  </div>
-                </div>
-              ))}
-              {isLoading && (
-                <div className="flex justify-start">
-                  <div className="bg-white border border-border rounded-md px-4 py-3 flex items-center gap-2 shadow-sm">
-                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                    <span className="text-xs text-muted-foreground">正在分析資料...</span>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <form onSubmit={handleSubmit} className="p-3 border-t border-border bg-white flex gap-2">
-              <input
-                value={input}
-                onChange={e => setInput(e.target.value)}
-                placeholder="輸入指令，例如：幫我分析這週的銷售狀況..."
-                className="flex-1 text-sm bg-stone-50 border border-border rounded-sm px-3 py-2 outline-none focus:border-primary transition-colors"
-              />
-              <button
-                type="submit"
-                disabled={isLoading || !input.trim()}
-                className="bg-primary text-primary-foreground px-4 py-2 rounded-sm text-sm font-medium hover:bg-primary/90 disabled:opacity-50 transition-colors flex items-center justify-center"
-              >
-                <Send className="h-4 w-4" />
-              </button>
-            </form>
+      {activeTab === 'applications' && (
+        <div className="bg-white rounded-lg shadow-sm border border-border overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left">
+              <thead className="text-xs text-muted-foreground uppercase bg-secondary/50 border-b border-border">
+                <tr>
+                  <th className="px-6 py-4 font-medium">申請時間</th>
+                  <th className="px-6 py-4 font-medium">真實姓名</th>
+                  <th className="px-6 py-4 font-medium">身分證/統編</th>
+                  <th className="px-6 py-4 font-medium">銀行帳戶</th>
+                  <th className="px-6 py-4 font-medium">狀態</th>
+                  <th className="px-6 py-4 font-medium text-right">操作</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {applications.length === 0 ? (
+                  <tr><td colSpan={6} className="px-6 py-8 text-center text-muted-foreground">目前沒有申請紀錄</td></tr>
+                ) : applications.map((app) => (
+                  <tr key={app.id} className="hover:bg-stone-50/50">
+                    <td className="px-6 py-4">{new Date(app.created_at).toLocaleDateString()}</td>
+                    <td className="px-6 py-4 font-medium">{app.real_name}</td>
+                    <td className="px-6 py-4">{app.id_number}</td>
+                    <td className="px-6 py-4 font-mono text-xs">{app.bank_account}</td>
+                    <td className="px-6 py-4">
+                      {app.status === 'pending' && <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800"><Clock className="w-3 h-3 mr-1" /> 審核中</span>}
+                      {app.status === 'approved' && <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800"><CheckCircle className="w-3 h-3 mr-1" /> 已通過</span>}
+                      {app.status === 'rejected' && <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-rose-100 text-rose-800"><XCircle className="w-3 h-3 mr-1" /> 已退件</span>}
+                    </td>
+                    <td className="px-6 py-4 text-right space-x-2">
+                      {app.status === 'pending' && (
+                        <>
+                          <button onClick={() => updateApplication(app.id, 'approved')} className="text-emerald-600 hover:text-emerald-700 font-medium px-2">核准</button>
+                          <button onClick={() => updateApplication(app.id, 'rejected')} className="text-rose-600 hover:text-rose-700 font-medium px-2">退件</button>
+                        </>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
-      </main>
+      )}
+
+      {activeTab === 'withdrawals' && (
+        <div className="bg-white rounded-lg shadow-sm border border-border overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left">
+              <thead className="text-xs text-muted-foreground uppercase bg-secondary/50 border-b border-border">
+                <tr>
+                  <th className="px-6 py-4 font-medium">申請時間</th>
+                  <th className="px-6 py-4 font-medium">藝術家ID</th>
+                  <th className="px-6 py-4 font-medium">提領金額</th>
+                  <th className="px-6 py-4 font-medium">銀行帳戶</th>
+                  <th className="px-6 py-4 font-medium">狀態</th>
+                  <th className="px-6 py-4 font-medium text-right">操作</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {withdrawals.length === 0 ? (
+                  <tr><td colSpan={6} className="px-6 py-8 text-center text-muted-foreground">目前沒有提領紀錄</td></tr>
+                ) : withdrawals.map((w) => (
+                  <tr key={w.id} className="hover:bg-stone-50/50">
+                    <td className="px-6 py-4">{new Date(w.created_at).toLocaleDateString()}</td>
+                    <td className="px-6 py-4 font-mono text-xs text-muted-foreground">{w.artist_id.slice(0, 8)}...</td>
+                    <td className="px-6 py-4 font-semibold text-foreground">NT$ {w.amount.toLocaleString()}</td>
+                    <td className="px-6 py-4 font-mono text-xs">{w.bank_account}</td>
+                    <td className="px-6 py-4">
+                      {w.status === 'pending' && <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800"><Clock className="w-3 h-3 mr-1" /> 處理中</span>}
+                      {w.status === 'completed' && <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800"><CheckCircle className="w-3 h-3 mr-1" /> 已匯款</span>}
+                      {w.status === 'rejected' && <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-rose-100 text-rose-800"><XCircle className="w-3 h-3 mr-1" /> 已拒絕</span>}
+                    </td>
+                    <td className="px-6 py-4 text-right space-x-2">
+                      {w.status === 'pending' && (
+                        <>
+                          <button onClick={() => updateWithdrawal(w.id, 'completed')} className="text-emerald-600 hover:text-emerald-700 font-medium px-2">標記為已匯款</button>
+                          <button onClick={() => updateWithdrawal(w.id, 'rejected')} className="text-rose-600 hover:text-rose-700 font-medium px-2">拒絕</button>
+                        </>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

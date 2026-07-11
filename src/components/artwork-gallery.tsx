@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import { ZoomIn, Heart, ImageIcon, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -188,17 +189,18 @@ export function ArtworkGallery({ images, title, artworkId }: ArtworkGalleryProps
       </div>
 
       {/* ── 燈箱 Lightbox ── */}
-      {lightboxOpen && (
+      {lightboxOpen && typeof document !== 'undefined' && createPortal(
         <div
-          className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center"
+          className="fixed inset-0 z-[9999] bg-black/85 backdrop-blur-md flex items-center justify-center"
           onClick={() => setLightboxOpen(false)}
         >
           {/* 關閉按鈕 */}
           <button
             onClick={() => setLightboxOpen(false)}
-            className="absolute top-4 right-4 h-10 w-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors z-10"
+            className="absolute top-6 right-6 px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 flex items-center gap-2 text-white text-sm font-medium transition-colors z-10"
           >
-            <X className="h-5 w-5" />
+            <X className="h-4 w-4" />
+            關閉
           </button>
 
           {/* 標題 */}
@@ -261,7 +263,8 @@ export function ArtworkGallery({ images, title, artworkId }: ArtworkGalleryProps
               ))}
             </div>
           )}
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
