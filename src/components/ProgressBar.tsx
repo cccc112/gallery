@@ -2,13 +2,17 @@
 
 import { AppProgressBar as ProgressBar } from 'next-nprogress-bar';
 
+import { Suspense } from 'react';
+
 export function GlobalProgressBar() {
   return (
-    <ProgressBar
-      height="4px"
-      color="#4f46e5"
-      options={{ showSpinner: true }}
-      shallowRouting
-    />
+    <Suspense fallback={null}>
+      <ProgressBar
+        height="3px"
+        color="#111111"
+        options={{ showSpinner: true }}
+        shallowRouting
+      />
+    </Suspense>
   );
 }

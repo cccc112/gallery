@@ -191,20 +191,20 @@ export function ArtworkGallery({ images, title, artworkId }: ArtworkGalleryProps
       {/* ── 燈箱 Lightbox ── */}
       {lightboxOpen && typeof document !== 'undefined' && createPortal(
         <div
-          className="fixed inset-0 z-[9999] bg-black/85 backdrop-blur-md flex items-center justify-center"
+          className="fixed inset-0 z-[100000] bg-white/95 backdrop-blur-md flex items-center justify-center"
           onClick={() => setLightboxOpen(false)}
         >
           {/* 關閉按鈕 */}
           <button
             onClick={() => setLightboxOpen(false)}
-            className="absolute top-6 right-6 px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 flex items-center gap-2 text-white text-sm font-medium transition-colors z-10"
+            className="absolute top-6 right-6 px-4 py-2 rounded-full border border-border bg-white hover:bg-secondary flex items-center gap-2 text-foreground text-sm font-medium transition-colors shadow-sm z-50"
           >
             <X className="h-4 w-4" />
             關閉
           </button>
 
           {/* 標題 */}
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 text-white/60 text-xs tracking-widest font-serif">
+          <div className="absolute top-6 left-1/2 -translate-x-1/2 text-muted-foreground text-xs tracking-widest font-serif z-50">
             {title}
           </div>
 
@@ -212,7 +212,7 @@ export function ArtworkGallery({ images, title, artworkId }: ArtworkGalleryProps
           {images.length > 1 && currentImage > 0 && (
             <button
               onClick={e => { e.stopPropagation(); setCurrentImage(p => p - 1); }}
-              className="absolute left-4 h-12 w-12 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors z-10"
+              className="absolute left-4 h-12 w-12 rounded-full border border-border bg-white hover:bg-secondary shadow-sm flex items-center justify-center text-foreground transition-colors z-50"
             >
               <ChevronLeft className="h-6 w-6" />
             </button>
@@ -220,22 +220,20 @@ export function ArtworkGallery({ images, title, artworkId }: ArtworkGalleryProps
 
           {/* 圖片 */}
           <div
-            className="relative max-w-[90vw] max-h-[88vh] w-full h-full flex items-center justify-center"
+            className="relative w-full h-full flex items-center justify-center p-12 lg:p-20"
             onClick={e => e.stopPropagation()}
           >
-            <div className="relative w-full h-full" style={{ maxWidth: '90vw', maxHeight: '88vh' }}>
-              <div className="relative" style={{ width: '80vw', height: '80vh', maxWidth: '900px' }}>
-                <ProtectedImage
-                  src={imageUrl}
-                  alt={title}
-                  fill
-                  sizes="90vw"
-                  className="object-contain rounded-sm"
-                  showWatermark={true}
-                  watermarkSize="lg"
-                  priority
-                />
-              </div>
+            <div className="relative w-full h-full flex items-center justify-center">
+              <ProtectedImage
+                src={imageUrl}
+                alt={title}
+                fill
+                sizes="100vw"
+                className="object-contain"
+                showWatermark={true}
+                watermarkSize="lg"
+                priority
+              />
             </div>
           </div>
 
@@ -243,7 +241,7 @@ export function ArtworkGallery({ images, title, artworkId }: ArtworkGalleryProps
           {images.length > 1 && currentImage < images.length - 1 && (
             <button
               onClick={e => { e.stopPropagation(); setCurrentImage(p => p + 1); }}
-              className="absolute right-4 h-12 w-12 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors z-10"
+              className="absolute right-4 h-12 w-12 rounded-full border border-border bg-white hover:bg-secondary shadow-sm flex items-center justify-center text-foreground transition-colors z-50"
             >
               <ChevronRight className="h-6 w-6" />
             </button>
@@ -251,13 +249,13 @@ export function ArtworkGallery({ images, title, artworkId }: ArtworkGalleryProps
 
           {/* 指示點 */}
           {images.length > 1 && (
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-50">
               {images.map((_, i) => (
                 <button
                   key={i}
                   onClick={e => { e.stopPropagation(); setCurrentImage(i); }}
                   className={`h-1.5 rounded-full transition-all ${
-                    i === currentImage ? 'w-6 bg-white' : 'w-1.5 bg-white/40'
+                    i === currentImage ? 'w-6 bg-primary' : 'w-1.5 bg-primary/30 hover:bg-primary/50'
                   }`}
                 />
               ))}
