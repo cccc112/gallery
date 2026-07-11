@@ -38,7 +38,7 @@ export function AiAdminAgent() {
             <Bot className="h-12 w-12 text-muted-foreground" />
             <div>
               <p className="text-sm font-medium text-foreground">我是您的 AI 營運助理</p>
-              <p className="text-xs text-muted-foreground mt-1">您可以問我：「目前有幾筆退款申請？」<br />或是「幫我核准最新的提款單」</p>
+              <p className="text-xs text-muted-foreground mt-1">您可以問我：「目前總營收多少？」<br />或是「幫我查詢油畫作品並寫一段行銷文案」</p>
             </div>
           </div>
         )}

@@ -26,12 +26,13 @@ export async function POST(req: Request) {
     const result = await streamText({
       model: google('models/gemini-1.5-flash-latest'),
       system: `You are the AI Admin Assistant for 'Atelier Blanc', an art gallery platform.
-Your job is to help the platform administrator manage the website, primarily focusing on managing artist applications and withdrawals.
-You are equipped with tools to directly read and modify the production database.
+Your job is to help the platform administrator manage the website.
+You are equipped with tools to directly read and modify the production database, and assist with content generation.
 Always speak in Traditional Chinese (繁體中文).
 Be polite, concise, and professional.
-When the user asks you to check something, use the appropriate tool.
-When the user asks you to approve or reject something, use the appropriate tool, and report the success back to them.
+When the user asks you to check stats, use getGalleryStats or getSalesStats.
+When the user asks about artworks, you can searchArtworks and even deleteArtwork if they ask to take it down.
+When the user asks you to write descriptions or stories for artworks, use your own language generation capabilities to provide creative and SEO-friendly content.
 DO NOT invent data. If a list is empty, tell them it is empty.`,
       messages,
       tools: {
@@ -126,6 +127,61 @@ DO NOT invent data. If a list is empty, tell them it is empty.`,
               totalRevenue: Number(stats[0].total_revenue || 0) 
             };
           },
+        }),
+        getGalleryStats: tool({
+          description: '取得藝廊目前的整體營運數據（總使用者數、總作品數、總租賃數）',
+          parameters: z.object({
+            _dummy: z.string().optional(),
+          }),
+          // @ts-expect-error - AI SDK type mismatch
+          execute: async () => {
+            const userCount = await sql`SELECT count(*) FROM public.users`;
+            const artworkCount = await sql`SELECT count(*) FROM public.artworks`;
+            const rentalCount = await sql`SELECT count(*) FROM public.rentals`;
+            
+            return {
+              totalUsers: Number(userCount[0].count),
+              totalArtworks: Number(artworkCount[0].count),
+              totalRentals: Number(rentalCount[0].count),
+            };
+          },
+        }),
+        searchArtworks: tool({
+          description: '搜尋藝廊中的作品以進行管理，可以帶入關鍵字',
+          parameters: z.object({
+            keyword: z.string().optional().describe('搜尋關鍵字，如"油畫"或"宇宙"，若無則留空'),
+          }),
+          // @ts-expect-error - AI SDK type mismatch
+          execute: async ({ keyword }) => {
+            if (keyword) {
+              const artworks = await sql`
+                SELECT id, title, art_type, price, stock, is_rentable 
+                FROM public.artworks 
+                WHERE title ILIKE ${'%' + keyword + '%'} OR description ILIKE ${'%' + keyword + '%'}
+                LIMIT 5
+              `;
+              return Array.from(artworks);
+            } else {
+              const artworks = await sql`
+                SELECT id, title, art_type, price, stock, is_rentable 
+                FROM public.artworks 
+                ORDER BY created_at DESC
+                LIMIT 5
+              `;
+              return Array.from(artworks);
+            }
+          },
+        }),
+        deleteArtwork: tool({
+          description: '將特定的藝術品下架或刪除',
+          parameters: z.object({
+            id: z.string().describe('作品 ID (UUID)'),
+          }),
+          // @ts-expect-error - AI SDK type mismatch
+          execute: async ({ id }) => {
+            await sql`DELETE FROM public.artworks WHERE id = ${id}`;
+            return { success: true, message: `Artwork ${id} deleted successfully.` };
+          }
         }),
       },
     });
