@@ -52,7 +52,14 @@ export default async function ArtistPage({ params }: ArtistPageProps) {
     <div className="marble-bg min-h-screen">
       {/* ── Hero ── */}
       <div className="relative overflow-hidden">
-        <div className="h-48 lg:h-64 bg-gradient-to-r from-stone-200 via-amber-50 to-stone-100" />
+        {artist.cover_url ? (
+          <div 
+            className="h-48 lg:h-64 bg-cover bg-center" 
+            style={{ backgroundImage: `url(${artist.cover_url})` }} 
+          />
+        ) : (
+          <div className="h-48 lg:h-64 bg-gradient-to-r from-stone-200 via-amber-50 to-stone-100" />
+        )}
         <div className="pointer-events-none absolute inset-0" aria-hidden="true">
           <div className="absolute -top-20 right-0 h-[400px] w-[400px] rounded-full bg-gradient-to-br from-stone-100/60 to-transparent blur-3xl" />
         </div>
