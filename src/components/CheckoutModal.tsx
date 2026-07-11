@@ -11,7 +11,6 @@ import {
   AlertTriangle, ExternalLink,
 } from 'lucide-react';
 import { PLATFORM_WALLET, USDC_CONTRACTS, USDC_ABI } from '@/lib/wagmi';
-import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 import ESCROW_ABI from '@/lib/GalleryEscrowABI.json';
 
 type ActionType = 'buy' | 'rent';
@@ -126,38 +125,6 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isTxConfirmed, pendingTxHash]);
 
-  // ── PayPal Checkout ──
-  const handlePayPalCreateOrder = async () => {
-    const res = await fetch('/api/checkout/paypal', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'create', artworkId: artwork.id, actionType }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Failed to create order');
-    return data.id;
-  };
-
-  const handlePayPalApprove = async (data: any) => {
-    setStep('processing');
-    setPayMethod('card');
-    try {
-      const res = await fetch('/api/checkout/paypal', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'capture', artworkId: artwork.id, orderID: data.orderID, actionType }),
-      });
-      const captureData = await res.json();
-      if (!res.ok) throw new Error(captureData.error || 'Failed to capture');
-      
-      setTxId(captureData.captureId);
-      setSuccessMsg('PayPal 付款成功');
-      setStep('success');
-    } catch (err: any) {
-      setErrorMsg(err.message || 'PayPal 授權失敗');
-      setStep('error');
-    }
-  };
 
   // ── Credit Card Checkout (ECPay or Stripe for rental) ──
   const handleCreditCardCheckout = async () => {
@@ -465,8 +432,7 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
               </div>
 
               <div className={`space-y-3 transition-opacity duration-300 ${agreedToTerms ? 'opacity-100' : 'opacity-50 pointer-events-none'}`}>
-                {/* Credit Card (Stripe for rental only, ECPay is hidden) */}
-              {isRental && (
+                {/* Credit Card (ECPay for buy, Stripe for rental) */}
                 <button
                   onClick={handleCreditCardCheckout}
                   className="w-full flex items-center gap-4 p-4 border border-border rounded-sm bg-white/60 hover:bg-white hover:border-blue-300 hover:shadow-sm transition-all group text-left"
@@ -476,51 +442,14 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
                   </div>
                   <div className="flex-1">
                     <p className="text-sm font-semibold text-foreground">
-                      信用卡安全結帳 (Stripe)
+                      信用卡安全結帳 {isRental ? '(Stripe)' : '(綠界 ECPay)'}
                     </p>
                     <p className="text-xs text-muted-foreground font-light">
-                      支援押金預授權與每月自動扣款
+                      支援各大銀行信用卡、Apple Pay、Google Pay
                     </p>
                   </div>
                   <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
                 </button>
-              )}
-
-              {/* PayPal */}
-              <div className="w-full relative z-10 border border-border rounded-sm bg-white p-4 hover:border-primary/40 transition-all">
-                <p className="text-sm font-semibold text-foreground mb-2">PayPal (支援免帳號刷卡)</p>
-                {process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID ? (
-                  <PayPalScriptProvider options={{ clientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID, currency: "USD" }}>
-      <PayPalButtons 
-          createOrder={handlePayPalCreateOrder}
-          onApprove={handlePayPalApprove as any}
-          onCancel={() => { setStep('select'); }}
-          style={{ layout: "horizontal", height: 40 }}
-          onError={(err) => { 
-            console.error("PayPal Error:", err);
-            setErrorMsg("PayPal 交易發生錯誤，請稍後再試或聯繫客服。"); 
-            setStep('error'); 
-          }}
-      />
-                  </PayPalScriptProvider>
-                ) : (
-                  <button 
-                    onClick={async () => {
-                      setStep('processing');
-                      try {
-                        const id = await handlePayPalCreateOrder();
-                        await handlePayPalApprove({ orderID: id });
-                      } catch (err: any) {
-                        setErrorMsg(err.message || "PayPal 模擬失敗"); 
-                        setStep('error');
-                      }
-                    }} 
-                    className="w-full h-10 bg-[#FFC439] hover:bg-[#F2BA36] transition-colors rounded text-sm font-bold text-slate-900 flex items-center justify-center"
-                  >
-                    (測試環境) 模擬 PayPal 結帳
-                  </button>
-                )}
-              </div>
 
               {/* Web3 */}
               <button
