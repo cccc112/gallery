@@ -269,7 +269,15 @@ export function ArtworkDetails({
 
 
       {/* Action Buttons */}
-      {(isSold || isRented) ? (
+      {isOwner ? (
+        <div className="flex items-center gap-3 px-5 py-4 rounded-lg bg-primary/5 border border-primary/20">
+          <div className="h-2.5 w-2.5 rounded-full bg-primary flex-shrink-0" />
+          <div>
+            <p className="text-sm font-semibold text-primary">這是您的發布作品</p>
+            <p className="text-xs text-primary/70 mt-0.5">身為創作者，您無法購買或租賃自己的作品。</p>
+          </div>
+        </div>
+      ) : (isSold || isRented) ? (
         <div className="flex items-center gap-3 px-5 py-4 rounded-lg bg-rose-50 border border-rose-200">
           <div className="h-2.5 w-2.5 rounded-full bg-rose-500 flex-shrink-0" />
           <div>

@@ -34,7 +34,7 @@ export default async function DashboardPage() {
         a.title, a.art_type, a.preview_file_url, a.high_res_file_url
       FROM public.orders o
       JOIN public.artworks a ON o.artwork_id = a.id
-      WHERE o.buyer_id = ${user.id}
+      WHERE o.buyer_id = ${user.id} AND a.artist_id != ${user.id}
       ORDER BY o.created_at DESC
     `;
   } catch (e: any) {
@@ -51,7 +51,7 @@ export default async function DashboardPage() {
         a.title, a.art_type, a.preview_file_url
       FROM public.rentals r
       JOIN public.artworks a ON r.artwork_id = a.id
-      WHERE r.tenant_id = ${user.id}
+      WHERE r.tenant_id = ${user.id} AND a.artist_id != ${user.id}
       ORDER BY r.created_at DESC
     `;
   } catch (e: any) {
