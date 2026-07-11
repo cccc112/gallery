@@ -40,6 +40,10 @@ export async function signUp(formData: FormData) {
   if (data.user) {
     try {
       const admin = createAdminClient();
+      
+      // Auto-confirm the user's email to bypass verification code issues
+      await admin.auth.admin.updateUserById(data.user.id, { email_confirm: true });
+
       const { error: dbError } = await admin.from('users').upsert(
         {
           id: data.user.id,
@@ -59,12 +63,11 @@ export async function signUp(formData: FormData) {
     }
   }
 
-  if (data.session) {
-    revalidatePath('/', 'layout');
-    redirect('/');
-  } else {
-    redirect(`/register/check-email?email=${encodeURIComponent(email)}`);
-  }
+  // Since we auto-confirmed them, we can try to sign them in directly, or just redirect to login with a success message
+  // But wait, signUp with email/password already returns a session if email confirmation is disabled. 
+  // If we just confirmed them via admin API, the current signUp call didn't return a session.
+  // We can just redirect them to login with a success message.
+  redirect('/login?message=registered');
 }
 
 

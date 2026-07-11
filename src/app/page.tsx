@@ -1,7 +1,7 @@
 import { sql } from '@/lib/db';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
-import { ArrowRight, ShieldCheck, Gift, HelpCircle, Eye, Sparkles } from 'lucide-react';
+import { ArrowRight, ShieldCheck, Gift, HelpCircle, Eye, Sparkles, Heart } from 'lucide-react';
 import { HomeAISection } from '@/components/HomeAISection';
 import { ProtectedImage } from '@/components/protected-image';
 
@@ -15,7 +15,9 @@ export default async function HomePage() {
 
   try {
     artworks = await sql`
-      SELECT a.*, u.display_name as artist_name
+      SELECT a.*, u.display_name as artist_name,
+             (SELECT count(*) FROM public.page_views WHERE artwork_id = a.id) as views_count,
+             (SELECT count(*) FROM public.favorites WHERE artwork_id = a.id) as likes_count
       FROM public.artworks a
       JOIN public.users u ON a.artist_id = u.id
       ORDER BY a.created_at DESC
@@ -207,7 +209,19 @@ export default async function HomePage() {
                             </p>
                           )}
                         </div>
-                        <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground group-hover:translate-x-0.5 transition-all" />
+                        <div className="flex items-center gap-3">
+                          <div className="flex gap-2.5 items-center mr-1">
+                            <div className="flex items-center gap-1 text-muted-foreground" title="瀏覽人次">
+                              <Eye className="h-3.5 w-3.5" />
+                              <span className="text-[10px] font-medium">{artwork.views_count}</span>
+                            </div>
+                            <div className="flex items-center gap-1 text-rose-500" title="收藏人數">
+                              <Heart className="h-3.5 w-3.5" />
+                              <span className="text-[10px] font-medium">{artwork.likes_count}</span>
+                            </div>
+                          </div>
+                          <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground group-hover:translate-x-0.5 transition-all" />
+                        </div>
                       </div>
                     </div>
                   </Link>

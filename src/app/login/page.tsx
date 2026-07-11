@@ -58,6 +58,11 @@ function LoginForm() {
           密碼已成功更新，請使用新密碼登入。
         </div>
       )}
+      {message === 'registered' && (
+        <div className="mb-6 px-4 py-3 rounded-sm bg-emerald-50 border border-emerald-200 text-xs text-emerald-700 font-medium">
+          註冊成功！我們已自動為您驗證帳號，請直接登入。
+        </div>
+      )}
       {error && (
         <div className="mb-6 px-4 py-3 rounded-sm bg-rose-50 border border-rose-200 text-xs text-rose-700 font-medium whitespace-pre-wrap">
           {decodeURIComponent(error)}
