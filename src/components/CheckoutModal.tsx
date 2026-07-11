@@ -460,7 +460,7 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
                   className="mt-1 h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                 />
                 <label htmlFor="terms-agreement" className="text-xs text-muted-foreground leading-relaxed cursor-pointer select-none">
-                  我已閱讀並同意平台的<a href="/faq" target="_blank" className="text-primary hover:underline">服務條款與退換貨政策</a>。我理解本平台僅為第三方媒合平台，實際交易合約存在於買賣雙方之間。
+                  我已詳細閱讀並同意平台的<a href="/faq" target="_blank" className="text-primary hover:underline">服務條款與退換貨政策</a>與<a href="/contract-template" target="_blank" className="text-primary hover:underline">買賣(租賃)電子合約</a>。我理解本勾選動作即代表雙方數位簽章，同意受合約條款約束。
                 </label>
               </div>
 
@@ -708,16 +708,7 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
                   )}
                 </div>
               )}
-              {orderId && (
-                <a
-                  href={`/contracts/${orderId}`}
-                  target="_blank"
-                  className="w-full flex items-center justify-center gap-2 rounded-sm border border-amber-300 bg-amber-50 text-amber-800 py-3 text-sm font-semibold hover:bg-amber-100 transition-all"
-                >
-                  <Shield className="h-4 w-4" />
-                  查看並簽署電子合約
-                </a>
-              )}
+              {/* 移除合約簽署按鈕，因為已在結帳時勾選同意 */}
               <button onClick={() => { onClose(); router.push('/profile'); }}
                 className="w-full rounded-sm bg-primary text-primary-foreground py-3 text-sm font-semibold hover:bg-primary/90 transition-all">
                 查看個人紀錄

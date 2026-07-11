@@ -21,7 +21,7 @@ export default function ContractTemplatePage() {
           </div>
           <h1 className="font-serif text-3xl font-semibold text-foreground">智慧合約範本預覽</h1>
           <p className="text-sm text-muted-foreground mt-3 max-w-xl mx-auto leading-relaxed">
-            為了保障藝術家與看展人的雙方權益，每筆交易都會自動生成專屬合約，並採用數位簽章技術確認。
+            為了保障藝術家與看展人的雙方權益，每筆交易都受到本定型化契約保障。在結帳付款時只要勾選同意，即代表雙方數位簽章確認合約效力。
             我們針對「賣斷收藏」與「短期租用」提供不同的標準合約範本。
           </p>
         </div>
