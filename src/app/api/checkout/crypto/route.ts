@@ -32,8 +32,19 @@ async function verifyTransaction(txHash: string, chainId: number): Promise<{
     const receipt = await client.getTransactionReceipt({ hash: txHash as any });
     
     // 基礎驗證：確認交易在區塊鏈上成功
-    // (進階實作應 parseLog 驗證 To Address 與 Amount 是否相符)
-    return { verified: receipt.status === 'success' };
+    if (receipt.status !== 'success') return { verified: false };
+
+    // 進階實作 TODO:
+    // 如果是租賃 (actionType === 'rent')：
+    // 1. parseLog 尋找 GalleryEscrow 合約拋出的 `RentalDeposited` 事件
+    // 2. 驗證 event.artworkId === artworkId
+    // 3. 驗證 event.rentAmount + event.depositAmount 是否正確
+    
+    // 如果是買斷 (actionType === 'buy')：
+    // 1. 驗證 USDC Transfer 事件的 To Address 是否為 PLATFORM_WALLET
+    // 2. 驗證金額是否正確
+
+    return { verified: true };
   } catch (error) {
     console.error('[Crypto Verify Error]', error);
     return { verified: false };
@@ -96,12 +107,13 @@ export async function POST(request: Request) {
       await sql`
         INSERT INTO public.rentals (
           artwork_id, tenant_id, start_date, end_date,
-          monthly_rent, deposit_amount, status, created_at
+          monthly_rent, deposit_amount, status, created_at, payment_transaction_id
         ) VALUES (
           ${artworkId}, ${user.id},
           ${startDate}, ${endDate},
           ${amount}, ${depositAmount},
-          ${'active'}, NOW()
+          ${'active'}, NOW(),
+          ${txHash}
         )
       `;
     } else {

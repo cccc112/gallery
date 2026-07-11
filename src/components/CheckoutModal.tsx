@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { PLATFORM_WALLET, USDC_CONTRACTS, USDC_ABI } from '@/lib/wagmi';
 import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
+import ESCROW_ABI from '@/lib/GalleryEscrowABI.json';
 
 type ActionType = 'buy' | 'rent';
 type PaymentMethod = 'card' | 'crypto';
@@ -210,14 +211,48 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
         return;
       }
 
-      // 正式：呼叫 USDC contract.transfer(platform_wallet, amount)
-      const hash = await writeContractAsync({
-        address: usdcContract,
-        abi: USDC_ABI,
-        functionName: 'transfer',
-        args: [PLATFORM_WALLET as `0x${string}`, usdcRaw],
-      });
-      setPendingTxHash(hash);
+      // 正式：呼叫合約
+      if (isRental) {
+        // 租賃：呼叫 Escrow 合約
+        const ESCROW_ADDRESS = '0x0000000000000000000000000000000000000000'; // TODO: 替換為實際部署的合約地址
+        const artistWallet = '0x0000000000000000000000000000000000000000'; // TODO: 從資料庫取得真實藝術家錢包
+        const rentAmount = BigInt(Math.round((artwork.monthly_rent_price || 0) * 0.031 * 1_000_000));
+        const depositAmt = BigInt(Math.round((artwork.deposit_amount || 0) * 0.031 * 1_000_000));
+
+        // 1. Approve USDC
+        await writeContractAsync({
+          address: usdcContract as `0x${string}`,
+          abi: [{
+            "constant": false,
+            "inputs": [{"name": "_spender", "type": "address"}, {"name": "_value", "type": "uint256"}],
+            "name": "approve",
+            "outputs": [{"name": "", "type": "bool"}],
+            "payable": false,
+            "stateMutability": "nonpayable",
+            "type": "function"
+          }],
+          functionName: 'approve',
+          args: [ESCROW_ADDRESS as `0x${string}`, usdcRaw],
+        });
+
+        // 2. Rent Artwork
+        const hash = await writeContractAsync({
+          address: ESCROW_ADDRESS as `0x${string}`,
+          abi: ESCROW_ABI,
+          functionName: 'rentArtwork',
+          args: [artwork.id, artistWallet, rentAmount, depositAmt],
+        });
+        setPendingTxHash(hash);
+      } else {
+        // 買斷：直接轉帳
+        const hash = await writeContractAsync({
+          address: usdcContract as `0x${string}`,
+          abi: USDC_ABI,
+          functionName: 'transfer',
+          args: [PLATFORM_WALLET as `0x${string}`, usdcRaw],
+        });
+        setPendingTxHash(hash);
+      }
       // isTxConfirmed effect 會自動呼叫 confirmCryptoOnServer
 
     } catch (err: any) {
