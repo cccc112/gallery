@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Heart, ImageIcon, ArrowRight, Trash2 } from 'lucide-react';
+import { ProtectedImage } from '@/components/protected-image';
 
 interface FavoriteArtwork {
   artwork_id: string;
@@ -97,13 +98,13 @@ export default function FavoritesPage() {
                   <Link href={`/artwork/${artwork_id}`}>
                     <div className="relative aspect-[3/4] rounded-sm overflow-hidden bg-stone-100 border border-border/30 shadow-sm hover:shadow-md transition-all duration-300">
                       {a.preview_file_url ? (
-                        <Image
+                        <ProtectedImage
                           src={a.preview_file_url}
                           alt={a.title}
                           fill
                           className="object-cover group-hover:scale-105 transition-transform duration-500 pointer-events-none"
-                          draggable={false}
-                          onContextMenu={e => e.preventDefault()}
+                          showWatermark={true}
+                          watermarkSize="md"
                         />
                       ) : (
                         <div className="absolute inset-0 flex items-center justify-center">
