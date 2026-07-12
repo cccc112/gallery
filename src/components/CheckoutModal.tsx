@@ -476,7 +476,7 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
                   </div>
                   <div className="flex-1">
                     <p className="text-sm font-semibold text-foreground">
-                      信用卡安全結帳 {isRental ? '(Stripe)' : '(綠界 ECPay)'}
+                      信用卡安全結帳
                     </p>
                     <p className="text-xs text-muted-foreground font-light">
                       支援各大銀行信用卡、Apple Pay、Google Pay

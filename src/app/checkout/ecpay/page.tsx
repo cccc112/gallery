@@ -59,7 +59,7 @@ export default async function ECPayRedirectPage({ searchParams }: ECPayPageProps
     <div className="min-h-screen flex flex-col items-center justify-center bg-stone-50">
       <div className="text-center space-y-4">
         <div className="h-12 w-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto" />
-        <h1 className="font-serif text-xl font-semibold text-foreground">正在導向綠界科技安全付款閘道...</h1>
+        <h1 className="font-serif text-xl font-semibold text-foreground">正在導向安全付款閘道...</h1>
         <p className="text-sm text-muted-foreground">請勿關閉視窗，這可能需要幾秒鐘的時間</p>
       </div>
 

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { X, Send, MessageSquare, Loader2 } from 'lucide-react';
+import { X, Send, MessageSquare, Loader2, Paperclip, ImageIcon, FileText } from 'lucide-react';
 
 interface Message {
   id: string;
@@ -35,6 +35,7 @@ export function ArtworkChatModal({
   const [sending, setSending] = useState(false);
   const [sellerId, setSellerId] = useState<string>('');
   const bottomRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const supabase = createClient();
 
   // 初始化：取得或建立聊天室
@@ -132,6 +133,90 @@ export function ArtworkChatModal({
     return d.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' });
   };
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !chatId || sending) return;
+
+    setSending(true);
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('chatId', chatId);
+
+    try {
+      const res = await fetch('/api/artwork-chats/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+
+      // 判斷是圖片還是檔案
+      const isImage = file.type.startsWith('image/');
+      const content = isImage ? `![${data.name}](${data.url})` : `[📁 ${data.name}](${data.url})`;
+
+      // 送出訊息
+      const sendRes = await fetch('/api/artwork-chats', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chatId, content }),
+      });
+      const sendData = await sendRes.json();
+      if (sendRes.ok && sendData.message) {
+        setMessages((prev) => {
+          if (prev.find((m) => m.id === sendData.message.id)) return prev;
+          return [...prev, sendData.message];
+        });
+      }
+    } catch (e: any) {
+      alert('上傳失敗: ' + (e.message || '未知錯誤'));
+    } finally {
+      setSending(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const renderContent = (content: string) => {
+    // 簡單解析圖片 ![alt](url)
+    const imgRegex = /!\[([^\]]*)\]\((.*?)\)/g;
+    // 解析連結 [text](url)
+    const linkRegex = /\[([^\]]+)\]\((.*?)\)/g;
+
+    let parts: React.ReactNode[] = [];
+    let lastIndex = 0;
+
+    // 將所有匹配找出來處理
+    const textWithImagesReplaced = content.replace(imgRegex, (match, alt, url) => {
+      return `__IMG__${alt}__URL__${url}__END__`;
+    }).replace(linkRegex, (match, text, url) => {
+      return `__LINK__${text}__URL__${url}__END__`;
+    });
+
+    const tokens = textWithImagesReplaced.split(/(__IMG__.*?__END__|__LINK__.*?__END__)/g);
+
+    return tokens.map((token, i) => {
+      if (token.startsWith('__IMG__')) {
+        const alt = token.split('__IMG__')[1].split('__URL__')[0];
+        const url = token.split('__URL__')[1].split('__END__')[0];
+        return (
+          <a key={i} href={url} target="_blank" rel="noreferrer" className="block mt-1">
+            <img src={url} alt={alt} className="max-w-[200px] max-h-[200px] rounded-lg object-contain border border-border/30 bg-white" />
+          </a>
+        );
+      }
+      if (token.startsWith('__LINK__')) {
+        const text = token.split('__LINK__')[1].split('__URL__')[0];
+        const url = token.split('__URL__')[1].split('__END__')[0];
+        return (
+          <a key={i} href={url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-blue-500 hover:underline underline-offset-2">
+            <FileText className="h-3.5 w-3.5" />
+            {text}
+          </a>
+        );
+      }
+      return <span key={i} className="whitespace-pre-wrap break-words">{token}</span>;
+    });
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -197,7 +282,7 @@ export function ArtworkChatModal({
                           : 'bg-secondary text-foreground rounded-bl-sm'
                       }`}
                     >
-                      {msg.content}
+                      {renderContent(msg.content)}
                     </div>
                     <p className={`text-[10px] text-muted-foreground/60 ${isMe ? 'text-right' : 'text-left'} px-1`}>
                       {formatTime(msg.created_at)}
@@ -224,6 +309,21 @@ export function ArtworkChatModal({
             ))}
           </div>
           <div className="flex items-end gap-2 p-3">
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={sending}
+              className="h-10 w-10 rounded-xl bg-stone-100 flex items-center justify-center text-muted-foreground hover:bg-stone-200 hover:text-foreground transition-all disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+              title="附加上傳"
+            >
+              <Paperclip className="h-4 w-4" />
+            </button>
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileUpload}
+              className="hidden"
+              accept="image/*,.pdf,.doc,.docx"
+            />
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}

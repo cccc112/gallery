@@ -7,7 +7,7 @@ import {
   Package, Palette, ShoppingBag, Clock, Download,
   TrendingUp, ImageIcon, Upload, ExternalLink,
   Coins, CreditCard, RotateCcw, CheckCircle2, AlertCircle,
-  Eye, MessageSquare, Star, Loader2
+  Eye, MessageSquare, Star, Loader2, Search
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -137,6 +137,8 @@ function CollectionTab({ orders, rentals }: { orders: OrderRow[]; rentals: Renta
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState('');
   const [submittingReview, setSubmittingReview] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortOrder, setSortOrder] = useState<'date_desc'|'date_asc'|'price_desc'|'price_asc'>('date_desc');
   const router = useRouter();
 
   const handleReviewSubmit = async (e: React.FormEvent) => {
@@ -167,6 +169,16 @@ function CollectionTab({ orders, rentals }: { orders: OrderRow[]; rentals: Renta
     }
   };
 
+  const filteredOrders = orders
+    .filter(o => o.title.toLowerCase().includes(searchQuery.toLowerCase()))
+    .sort((a, b) => {
+      if (sortOrder === 'date_desc') return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      if (sortOrder === 'date_asc') return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      if (sortOrder === 'price_desc') return b.amount - a.amount;
+      if (sortOrder === 'price_asc') return a.amount - b.amount;
+      return 0;
+    });
+
   return (
     <div className="space-y-6">
       {/* Sub-tabs */}
@@ -191,11 +203,35 @@ function CollectionTab({ orders, rentals }: { orders: OrderRow[]; rentals: Renta
 
       {/* Orders */}
       {subTab === 'orders' && (
-        <div className="space-y-3">
-          {orders.length === 0 ? (
-            <EmptyState icon={ShoppingBag} label="尚無購買紀錄" action={{ href: '/gallery', text: '探索藝廊' }} />
-          ) : (
-            orders.map(o => (
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder="搜尋作品名稱..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 text-sm border border-border/60 rounded-sm bg-white/60 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+              />
+            </div>
+            <select
+              value={sortOrder}
+              onChange={(e) => setSortOrder(e.target.value as any)}
+              className="px-3 py-2 text-sm border border-border/60 rounded-sm bg-white/60 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer"
+            >
+              <option value="date_desc">購買日期 (新到舊)</option>
+              <option value="date_asc">購買日期 (舊到新)</option>
+              <option value="price_desc">價格 (高到低)</option>
+              <option value="price_asc">價格 (低到高)</option>
+            </select>
+          </div>
+
+          <div className="space-y-3">
+            {filteredOrders.length === 0 ? (
+              <EmptyState icon={ShoppingBag} label="尚無符合的紀錄" action={{ href: '/gallery', text: '探索藝廊' }} />
+            ) : (
+              filteredOrders.map(o => (
               <div key={o.id} className="flex items-center gap-4 p-4 bg-white/60 border border-border/50 rounded-sm hover:bg-white/80 transition-colors">
                 <ArtworkThumb url={o.preview_file_url} title={o.title} />
                 <div className="flex-1 min-w-0">

@@ -13,6 +13,7 @@ interface ArtworkGalleryProps {
   images: string[];
   title: string;
   artworkId?: string;
+  isPurchased?: boolean;
 }
 
 function ImagePlaceholder({ label }: { label: string }) {
@@ -24,7 +25,7 @@ function ImagePlaceholder({ label }: { label: string }) {
   );
 }
 
-export function ArtworkGallery({ images, title, artworkId }: ArtworkGalleryProps) {
+export function ArtworkGallery({ images, title, artworkId, isPurchased = false }: ArtworkGalleryProps) {
   const [currentImage, setCurrentImage] = useState(0);
   const [isLiked, setIsLiked] = useState(false);
   const [likeLoading, setLikeLoading] = useState(false);
@@ -117,7 +118,7 @@ export function ArtworkGallery({ images, title, artworkId }: ArtworkGalleryProps
                   sizes="(max-width: 1280px) 50vw, 640px"
                   priority
                   className="object-cover transition-all duration-700 hover:scale-105"
-                  showWatermark={true}
+                  showWatermark={!isPurchased}
                   watermarkSize="md"
                   onError={() => setImageError(true)}
                 />
@@ -165,7 +166,7 @@ export function ArtworkGallery({ images, title, artworkId }: ArtworkGalleryProps
         {/* Thumbnails */}
         {images.length > 1 && (
           <div className="flex gap-3 mt-4 overflow-x-auto pb-2">
-            {images.map((image, index) => (
+            {images.map((img, index) => (
               <button
                 key={index}
                 onClick={() => setCurrentImage(index)}
@@ -175,12 +176,13 @@ export function ArtworkGallery({ images, title, artworkId }: ArtworkGalleryProps
                     : 'opacity-60 hover:opacity-100 border-border'
                 }`}
               >
-                <Image
-                  src={image}
-                  alt={`${title} thumbnail ${index + 1}`}
+                <ProtectedImage
+                  src={img}
+                  alt={`${title} - view ${index + 1}`}
                   fill
                   className="object-cover pointer-events-none"
-                  draggable={false}
+                  sizes="(max-width: 640px) 25vw, (max-width: 1024px) 15vw, 10vw"
+                  showWatermark={!isPurchased}
                 />
               </button>
             ))}

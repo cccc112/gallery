@@ -6,6 +6,7 @@ import { ArtworkGallery } from '@/components/artwork-gallery';
 import { ArtworkDetails } from '@/components/artwork-details';
 import { ArtistInfo } from '@/components/artist-info';
 import { ArtworkGrid } from '@/components/artwork-grid';
+import { ArtworkReviews } from '@/components/ArtworkReviews';
 import { ArrowLeft } from 'lucide-react';
 import type { Metadata } from 'next';
 
@@ -124,6 +125,27 @@ export default async function ArtworkPage({ params }: ArtworkPageProps) {
         WHERE artwork_id = ${id} AND status = 'active'
       `;
       artwork.is_rented = Number(rentedCheck[0].count) > 0;
+
+      // 檢查當前用戶是否已購買
+      if (isLoggedIn) {
+        const purchaseCheck = await sql`
+          SELECT count(*) FROM public.orders
+          WHERE artwork_id = ${id} AND buyer_id = ${currentUserId} AND (payment_status = 'paid' OR payment_status = 'completed')
+        `;
+        artwork.is_purchased = Number(purchaseCheck[0].count) > 0;
+      } else {
+        artwork.is_purchased = false;
+      }
+
+      // 取得評論
+      const reviews = await sql`
+        SELECT r.id, r.rating, r.comment, r.created_at, u.display_name, u.avatar_url, u.email
+        FROM public.reviews r
+        LEFT JOIN public.users u ON r.reviewer_id = u.id
+        WHERE r.artwork_id = ${id}
+        ORDER BY r.created_at DESC
+      `;
+      artwork.reviews = reviews;
     }
   } catch (error) {
     console.error('Failed to fetch artwork page data:', error);
@@ -178,6 +200,7 @@ export default async function ArtworkPage({ params }: ArtworkPageProps) {
                 images={[artwork.preview_file_url]}
                 title={artwork.title}
                 artworkId={artwork.id}
+                isPurchased={artwork.is_purchased}
               />
             </div>
 
@@ -189,6 +212,7 @@ export default async function ArtworkPage({ params }: ArtworkPageProps) {
                 isSold={artwork.is_sold}
                 isRented={artwork.is_rented}
                 isOwner={currentUserId === artwork.artist_id}
+                isPurchased={artwork.is_purchased}
                 currentUserId={currentUserId}
               />
             </div>
@@ -198,6 +222,11 @@ export default async function ArtworkPage({ params }: ArtworkPageProps) {
 
       {/* Artist Section */}
       <ArtistInfo artist={artistInfo} />
+
+      {/* Reviews */}
+      {artwork.reviews && artwork.reviews.length > 0 && (
+        <ArtworkReviews reviews={artwork.reviews} />
+      )}
 
       {/* Related Artworks */}
       {otherArtworks.length > 0 && (

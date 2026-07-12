@@ -44,8 +44,9 @@ export function ArtworkDetails({
   isSold = false,
   isRented = false,
   isOwner = false,
+  isPurchased = false,
   currentUserId = '',
-}: ArtworkDetailsProps & { isLoggedIn?: boolean; isSold?: boolean; isRented?: boolean; isOwner?: boolean; currentUserId?: string }) {
+}: ArtworkDetailsProps & { isLoggedIn?: boolean; isSold?: boolean; isRented?: boolean; isOwner?: boolean; isPurchased?: boolean; currentUserId?: string }) {
   const router = useRouter();
   const [modalOpen, setModalOpen] = useState(false);
   const [modalAction, setModalAction] = useState<'buy' | 'rent'>('buy');
@@ -80,7 +81,27 @@ export function ArtworkDetails({
         console.error('Copy failed:', err);
       }
     }
+    }
   };
+
+  const handleDownload = async () => {
+    try {
+      const res = await fetch(`/api/download/${artwork.id}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || '無法下載');
+      
+      const a = document.createElement('a');
+      a.href = data.url;
+      a.download = data.filename || 'download';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
+
+  const hasStock = artwork.stock === null || artwork.stock > 0;
 
   const handleDelete = async () => {
     if (!confirm('確定要刪除此作品嗎？此操作無法復原。')) return;
@@ -298,6 +319,23 @@ export function ArtworkDetails({
             <p className="text-sm font-semibold text-primary">這是您的發布作品</p>
             <p className="text-xs text-primary/70 mt-0.5">身為創作者，您無法購買或租賃自己的作品。</p>
           </div>
+        </div>
+      ) : isPurchased ? (
+        <div className="flex flex-col gap-3 pt-4">
+          <div className="flex items-center gap-3 px-5 py-4 rounded-lg bg-green-50 border border-green-200">
+            <div className="h-2.5 w-2.5 rounded-full bg-green-500 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-green-800">您已收藏此作品</p>
+              <p className="text-xs text-green-600 mt-0.5">感謝您的支持，您現在可以下載高畫質原檔了。</p>
+            </div>
+          </div>
+          <Button
+            onClick={handleDownload}
+            size="lg"
+            className="w-full h-14 text-base font-semibold tracking-wide bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-300 shadow-md flex items-center justify-center gap-2"
+          >
+            <Box className="h-4 w-4" /> 下載高畫質原檔
+          </Button>
         </div>
       ) : (isSold || isRented) ? (
         <div className="flex items-center gap-3 px-5 py-4 rounded-lg bg-rose-50 border border-rose-200">
