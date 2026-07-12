@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Send, User, MessageSquare } from 'lucide-react';
+import { ArrowLeft, Send, User, MessageSquare, Paperclip, FileText, Loader2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
 export default function ChatDashboardPage() {
@@ -12,6 +12,8 @@ export default function ChatDashboardPage() {
   const [messages, setMessages] = useState<any[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(true);
+  const [sendingImage, setSendingImage] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const supabase = createClient();
   const router = useRouter();
@@ -75,6 +77,89 @@ export default function ChatDashboardPage() {
     } catch (e) {
       console.error(e);
     }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !selectedSessionId) return;
+
+    // 檢查檔案大小 (< 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('檔案大小不能超過 5MB');
+      return;
+    }
+
+    setSendingImage(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('chatId', selectedSessionId);
+
+      const res = await fetch('/api/artwork-chats/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+
+      const isImage = file.type.startsWith('image/');
+      const content = isImage ? `![${data.name}](${data.url})` : `[📁 ${data.name}](${data.url})`;
+
+      const sendRes = await fetch('/api/artwork-chats', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chatId: selectedSessionId, content }),
+      });
+      const sendData = await sendRes.json();
+      if (sendRes.ok && sendData.message) {
+        setMessages(prev => {
+          if (prev.find(m => m.id === sendData.message.id)) return prev;
+          return [...prev, sendData.message];
+        });
+        fetchSessions();
+      }
+    } catch (e: any) {
+      alert('上傳失敗: ' + (e.message || '未知錯誤'));
+    } finally {
+      setSendingImage(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const renderContent = (content: string) => {
+    const imgRegex = /!\[([^\]]*)\]\((.*?)\)/g;
+    const linkRegex = /\[([^\]]+)\]\((.*?)\)/g;
+
+    const textWithImagesReplaced = content.replace(imgRegex, (match, alt, url) => {
+      return `__IMG__${alt}__URL__${url}__END__`;
+    }).replace(linkRegex, (match, text, url) => {
+      return `__LINK__${text}__URL__${url}__END__`;
+    });
+
+    const tokens = textWithImagesReplaced.split(/(__IMG__.*?__END__|__LINK__.*?__END__)/g);
+
+    return tokens.map((token, i) => {
+      if (token.startsWith('__IMG__')) {
+        const alt = token.split('__IMG__')[1].split('__URL__')[0];
+        const url = token.split('__URL__')[1].split('__END__')[0];
+        return (
+          <a key={i} href={url} target="_blank" rel="noreferrer" className="block mt-1">
+            <img src={url} alt={alt} className="max-w-[200px] max-h-[200px] rounded-lg object-contain border border-border/30 bg-white" />
+          </a>
+        );
+      }
+      if (token.startsWith('__LINK__')) {
+        const text = token.split('__LINK__')[1].split('__URL__')[0];
+        const url = token.split('__URL__')[1].split('__END__')[0];
+        return (
+          <a key={i} href={url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-blue-500 hover:underline underline-offset-2">
+            <FileText className="h-3.5 w-3.5" />
+            {text}
+          </a>
+        );
+      }
+      return <span key={i} className="whitespace-pre-wrap break-words">{token}</span>;
+    });
   };
 
   if (loading) return <div className="p-10 text-center text-muted-foreground">載入中...</div>;
@@ -158,7 +243,7 @@ export default function ChatDashboardPage() {
                     return (
                       <div key={m.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
                         <div className={`max-w-[70%] p-3 rounded-sm text-sm ${isMe ? 'bg-primary text-primary-foreground' : 'bg-white border border-border/50'}`}>
-                          {m.content}
+                          {renderContent(m.content)}
                           <div className={`text-[9px] mt-1 text-right ${isMe ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
                             {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </div>
@@ -167,13 +252,29 @@ export default function ChatDashboardPage() {
                     );
                   })}
                 </div>
-                <form onSubmit={sendMessage} className="p-4 bg-white/60 border-t border-border/50 flex gap-2">
+                <form onSubmit={sendMessage} className="p-4 bg-white/60 border-t border-border/50 flex gap-2 items-end">
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={sendingImage}
+                    className="h-10 w-10 flex-shrink-0 flex items-center justify-center bg-stone-100 rounded-sm text-muted-foreground hover:bg-stone-200 hover:text-foreground transition-colors disabled:opacity-50"
+                    title="附加上傳"
+                  >
+                    {sendingImage ? <Loader2 className="h-4 w-4 animate-spin" /> : <Paperclip className="h-4 w-4" />}
+                  </button>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileUpload}
+                    className="hidden"
+                    accept="image/*,.pdf,.doc,.docx"
+                  />
                   <input
                     type="text"
                     value={input}
                     onChange={e => setInput(e.target.value)}
                     placeholder="輸入訊息..."
-                    className="flex-1 bg-white border border-border/50 rounded-sm px-4 text-sm focus:outline-none focus:border-primary transition-colors"
+                    className="flex-1 bg-white border border-border/50 rounded-sm px-4 h-10 text-sm focus:outline-none focus:border-primary transition-colors"
                   />
                   <button
                     type="submit"
