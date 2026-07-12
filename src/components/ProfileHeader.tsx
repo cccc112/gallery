@@ -12,7 +12,8 @@ export default function ProfileHeader({
   displayName,
   avatarUrl,
   myArtworks,
-  orderCount
+  orderCount,
+  salesCount
 }: {
   user: any;
   profile: any;

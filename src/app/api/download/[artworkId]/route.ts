@@ -23,7 +23,7 @@ export async function GET(
     SELECT * FROM public.orders
     WHERE artwork_id = ${artworkId}
       AND buyer_id = ${user.id}
-      AND payment_status = 'paid'
+      AND (payment_status = 'paid' OR payment_status = 'completed')
     LIMIT 1
   `;
 
@@ -31,18 +31,18 @@ export async function GET(
     return NextResponse.json({ error: '您尚未購買此作品' }, { status: 403 });
   }
 
-  // 3. 取得作品的 full_file_url
+  // 3. 取得作品的 high_res_file_url
   const artworks = await sql`
-    SELECT full_file_url, title, art_type FROM public.artworks WHERE id = ${artworkId} LIMIT 1
+    SELECT high_res_file_url, preview_file_url, title, art_type FROM public.artworks WHERE id = ${artworkId} LIMIT 1
   `;
   if (!artworks.length) {
     return NextResponse.json({ error: '找不到作品' }, { status: 404 });
   }
 
   const artwork = artworks[0];
-  const fullUrl: string | null = artwork.full_file_url;
+  const fullUrl: string | null = artwork.high_res_file_url || artwork.preview_file_url;
 
-  // 如果沒有 full_file_url，回退到 preview（暫時）
+  // 如果沒有 high_res_file_url，回退到 preview（暫時）
   if (!fullUrl) {
     return NextResponse.json(
       { error: '此作品尚未上傳高畫質原檔，請聯絡藝術家' },
