@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { CheckCircle, ArrowRight, Home, Download, Loader2 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface SuccessPageProps {
   searchParams: {
@@ -74,6 +74,51 @@ export default function CheckoutSuccessPage({ searchParams }: SuccessPageProps) 
   const isRental = checkoutType === 'rent';
   const isDigital = artType === 'digital' || artType === 'photography';
 
+  const [paymentStatus, setPaymentStatus] = useState<'pending' | 'paid' | 'failed'>('pending');
+  const [isVerifying, setIsVerifying] = useState(true);
+
+  useEffect(() => {
+    if (isMock || !searchParams.session_id) {
+      setIsVerifying(false);
+      setPaymentStatus('paid'); // Mock environment defaults to paid
+      return;
+    }
+
+    let intervalId: NodeJS.Timeout;
+    const checkStatus = async () => {
+      try {
+        const res = await fetch(`/api/checkout/status?session_id=${searchParams.session_id}&type=${checkoutType}`);
+        const data = await res.json();
+        if (data.isPaid || data.status === 'paid') {
+          setPaymentStatus('paid');
+          setIsVerifying(false);
+          clearInterval(intervalId);
+        } else if (data.status === 'failed') {
+          setPaymentStatus('failed');
+          setIsVerifying(false);
+          clearInterval(intervalId);
+        }
+      } catch (err) {
+        console.error('Failed to check status', err);
+      }
+    };
+
+    // Check immediately, then poll every 2 seconds
+    checkStatus();
+    intervalId = setInterval(checkStatus, 2000);
+
+    // Timeout after 30 seconds
+    const timeoutId = setTimeout(() => {
+      clearInterval(intervalId);
+      setIsVerifying(false);
+    }, 30000);
+
+    return () => {
+      clearInterval(intervalId);
+      clearTimeout(timeoutId);
+    };
+  }, [searchParams.session_id, isMock, checkoutType]);
+
   return (
     <div className="marble-bg min-h-screen flex items-center justify-center px-6 py-16">
       <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
@@ -87,15 +132,15 @@ export default function CheckoutSuccessPage({ searchParams }: SuccessPageProps) 
         </div>
 
         <h1 className="font-serif text-3xl font-semibold text-foreground mb-2">
-          {isRental ? '租賃申請成功！' : '收藏成功！'}
+          {isVerifying ? '正在確認付款狀態...' : paymentStatus === 'paid' ? (isRental ? '租賃申請成功！' : '收藏成功！') : '付款未完成'}
         </h1>
 
         <p className="text-sm text-muted-foreground font-light leading-relaxed mb-2">
-          {isRental
+          {isVerifying ? '這可能需要幾秒鐘的時間，請稍候。' : paymentStatus === 'paid' ? (isRental
             ? '您的租賃申請已完成付款，押金已預授權。我們將於 2 個工作天內安排配送。'
             : isDigital
             ? '感謝您的典藏！您可以立即下載高畫質原檔。'
-            : '感謝您的典藏。我們將於 2-3 個工作天內處理您的訂單並安排配送。'}
+            : '感謝您的典藏。我們將於 2-3 個工作天內處理您的訂單並安排配送。') : '我們未能確認您的付款成功。如果您取消了付款，可以返回重新結帳。'}
         </p>
 
         {isMock && (
@@ -130,7 +175,7 @@ export default function CheckoutSuccessPage({ searchParams }: SuccessPageProps) 
         {/* CTA buttons */}
         <div className="mt-8 flex flex-col gap-3">
           {/* 數位作品買斷 → 顯示下載按鈕 */}
-          {isDigital && !isRental && artworkId && !isMock && (
+          {isDigital && !isRental && artworkId && !isMock && paymentStatus === 'paid' && (
             <DownloadButton artworkId={artworkId} />
           )}
 

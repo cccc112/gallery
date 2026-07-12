@@ -19,6 +19,7 @@ export default async function ProfilePage() {
   let profile: any = null;
   let myArtworks: any[] = [];
   let orderCount = 0;
+  let salesCount = 0;
 
   try {
     const profiles = await sql`SELECT * FROM public.users WHERE id = ${user.id} LIMIT 1`;
@@ -34,6 +35,14 @@ export default async function ProfilePage() {
       SELECT COUNT(*) as count FROM public.orders WHERE buyer_id = ${user.id}
     `;
     orderCount = Number(orders[0]?.count || 0);
+
+    const sales = await sql`
+      SELECT COUNT(*) as count 
+      FROM public.orders 
+      WHERE artwork_id IN (SELECT id FROM public.artworks WHERE artist_id = ${user.id})
+        AND (payment_status = 'paid' OR payment_status = 'completed')
+    `;
+    salesCount = Number(sales[0]?.count || 0);
   } catch (e) {
     console.error('Profile fetch error:', e);
   }
@@ -59,7 +68,8 @@ export default async function ProfilePage() {
           displayName={displayName} 
           avatarUrl={avatarUrl} 
           myArtworks={myArtworks} 
-          orderCount={orderCount} 
+          orderCount={orderCount}
+          salesCount={salesCount}
         />
 
         {/* ── My Artworks ── */}

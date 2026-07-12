@@ -20,6 +20,7 @@ export default function ProfileHeader({
   avatarUrl: string;
   myArtworks: any[];
   orderCount: number;
+  salesCount: number;
 }) {
   const router = useRouter();
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
@@ -161,11 +162,10 @@ export default function ProfileHeader({
           </div>
         </div>
 
-        {/* Stats row */}
         <div className="grid grid-cols-3 gap-4 pt-4 border-t border-border/40">
           {[
             { label: '我的作品', value: myArtworks.length, icon: Package },
-            { label: '購買紀錄', value: orderCount, icon: ShoppingBag },
+            { label: myArtworks.length > 0 ? '銷售紀錄' : '購買紀錄', value: myArtworks.length > 0 ? salesCount : orderCount, icon: ShoppingBag },
             { label: '會員等級', value: 'Standard', icon: Edit3 },
           ].map(({ label, value, icon: Icon }) => (
             <div key={label} className="text-center">

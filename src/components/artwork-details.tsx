@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Check, Truck, Shield, RotateCcw, Box, Lock, RefreshCw, CreditCard, LogIn, Camera, Trash2, MessageSquare, Eye, Heart } from "lucide-react"
+import { Check, Truck, Shield, RotateCcw, Box, Lock, RefreshCw, CreditCard, LogIn, Camera, Trash2, MessageSquare, Eye, Heart, Share2 } from "lucide-react"
 import { CheckoutModal } from '@/components/CheckoutModal';
 import { ArtworkChatModal } from '@/components/ArtworkChatModal';
 
@@ -58,6 +58,28 @@ export function ArtworkDetails({
       return;
     }
     setChatOpen(true);
+  };
+
+  const handleShare = async () => {
+    const url = window.location.href;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: artwork.title,
+          text: `來看看 ${artwork.artist_name} 的精選作品：${artwork.title}`,
+          url: url,
+        });
+      } catch (err) {
+        console.error('Share failed:', err);
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(url);
+        alert('連結已複製到剪貼簿！');
+      } catch (err) {
+        console.error('Copy failed:', err);
+      }
+    }
   };
 
   const handleDelete = async () => {
@@ -334,13 +356,22 @@ export function ArtworkDetails({
           {deleting ? '刪除中...' : '刪除此作品'}
         </button>
       ) : (
-        <button
-          onClick={handleContactArtist}
-          className="w-full mt-2 flex items-center justify-center gap-2 text-xs font-semibold text-foreground hover:bg-stone-100 border border-border/60 rounded-lg py-2.5 transition-colors"
-        >
-          <MessageSquare className="h-3.5 w-3.5" />
-          💬 詢問藝術家
-        </button>
+        <div className="flex gap-2 mt-2">
+          <button
+            onClick={handleContactArtist}
+            className="flex-1 flex items-center justify-center gap-2 text-xs font-semibold text-foreground hover:bg-stone-100 border border-border/60 rounded-lg py-2.5 transition-colors"
+          >
+            <MessageSquare className="h-3.5 w-3.5" />
+            💬 詢問藝術家
+          </button>
+          <button
+            onClick={handleShare}
+            className="flex-1 flex items-center justify-center gap-2 text-xs font-semibold text-foreground hover:bg-stone-100 border border-border/60 rounded-lg py-2.5 transition-colors"
+          >
+            <Share2 className="h-3.5 w-3.5" />
+            分享作品
+          </button>
+        </div>
       )}
 
       {/* Checkout Modal */}
