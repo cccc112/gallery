@@ -137,11 +137,10 @@ export default async function ArtworkPage({ params }: ArtworkPageProps) {
         artwork.is_purchased = false;
       }
 
-      // 取得評論
       const reviews = await sql`
         SELECT r.id, r.rating, r.comment, r.created_at, u.display_name, u.avatar_url, u.email
         FROM public.reviews r
-        LEFT JOIN public.users u ON r.reviewer_id = u.id
+        LEFT JOIN public.users u ON r.buyer_id = u.id
         WHERE r.artwork_id = ${id}
         ORDER BY r.created_at DESC
       `;

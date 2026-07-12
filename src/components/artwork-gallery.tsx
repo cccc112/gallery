@@ -118,7 +118,7 @@ export function ArtworkGallery({ images, title, artworkId, isPurchased = false }
                   sizes="(max-width: 1280px) 50vw, 640px"
                   priority
                   className="object-cover transition-all duration-700 hover:scale-105"
-                  showWatermark={!isPurchased}
+                  showWatermark={true}
                   watermarkSize="md"
                   onError={() => setImageError(true)}
                 />
@@ -182,7 +182,7 @@ export function ArtworkGallery({ images, title, artworkId, isPurchased = false }
                   fill
                   className="object-cover pointer-events-none"
                   sizes="(max-width: 640px) 25vw, (max-width: 1024px) 15vw, 10vw"
-                  showWatermark={!isPurchased}
+                  showWatermark={true}
                 />
               </button>
             ))}
