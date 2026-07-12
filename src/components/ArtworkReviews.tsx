@@ -48,7 +48,7 @@ export function ArtworkReviews({ reviews }: { reviews: Review[] }) {
                 </div>
                 
                 <p className="text-sm text-foreground/80 leading-relaxed italic flex-1">
-                  "{review.comment}"
+                  &quot;{review.comment}&quot;
                 </p>
               </div>
             );

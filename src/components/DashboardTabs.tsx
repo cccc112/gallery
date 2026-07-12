@@ -275,6 +275,7 @@ function CollectionTab({ orders, rentals }: { orders: OrderRow[]; rentals: Renta
               </div>
             ))
           )}
+          </div>
         </div>
       )}
 

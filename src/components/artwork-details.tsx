@@ -81,7 +81,6 @@ export function ArtworkDetails({
         console.error('Copy failed:', err);
       }
     }
-    }
   };
 
   const handleDownload = async () => {
@@ -101,7 +100,6 @@ export function ArtworkDetails({
     }
   };
 
-  const hasStock = artwork.stock === null || artwork.stock > 0;
 
   const handleDelete = async () => {
     if (!confirm('確定要刪除此作品嗎？此操作無法復原。')) return;
