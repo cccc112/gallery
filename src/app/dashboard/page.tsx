@@ -51,7 +51,7 @@ export default async function DashboardPage() {
         a.title, a.art_type, a.preview_file_url
       FROM public.rentals r
       JOIN public.artworks a ON r.artwork_id = a.id
-      WHERE r.tenant_id = ${user.id} AND a.artist_id != ${user.id}
+      WHERE r.tenant_id = ${user.id} AND a.artist_id != ${user.id} AND r.status = 'active'
       ORDER BY r.created_at DESC
     `;
   } catch (e: any) {
