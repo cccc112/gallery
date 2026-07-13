@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Send, User, MessageSquare, Paperclip, FileText, Loader2 } from 'lucide-react';
@@ -13,7 +13,7 @@ export default function ChatDashboardPage() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(true);
   const [sendingImage, setSendingImage] = useState(false);
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const supabase = createClient();
   const router = useRouter();
