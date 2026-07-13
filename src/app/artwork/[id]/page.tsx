@@ -223,9 +223,7 @@ export default async function ArtworkPage({ params }: ArtworkPageProps) {
       <ArtistInfo artist={artistInfo} />
 
       {/* Reviews */}
-      {artwork.reviews && artwork.reviews.length > 0 && (
-        <ArtworkReviews reviews={artwork.reviews} />
-      )}
+      <ArtworkReviews reviews={artwork.reviews || []} />
 
       {/* Related Artworks */}
       {otherArtworks.length > 0 && (

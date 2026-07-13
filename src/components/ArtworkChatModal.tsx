@@ -34,7 +34,9 @@ export function ArtworkChatModal({
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [sellerId, setSellerId] = useState<string>('');
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const supabase = createClient();
 
@@ -95,27 +97,51 @@ export function ArtworkChatModal({
   }, [messages]);
 
   const sendMessage = async () => {
-    if (!input.trim() || !chatId || sending) return;
-    const content = input.trim();
-    setInput('');
+    if ((!input.trim() && pendingFiles.length === 0) || !chatId || sending) return;
     setSending(true);
 
     try {
+      let finalContent = input.trim();
+      
+      if (pendingFiles.length > 0) {
+        const uploadPromises = pendingFiles.map(async (file) => {
+          const formData = new FormData();
+          formData.append('file', file);
+          formData.append('chatId', chatId);
+          
+          const res = await fetch('/api/artwork-chats/upload', {
+            method: 'POST',
+            body: formData,
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error);
+          
+          const isImage = file.type.startsWith('image/');
+          return isImage ? `![${data.name}](${data.url})` : `[📁 ${data.name}](${data.url})`;
+        });
+        
+        const uploadedLinks = await Promise.all(uploadPromises);
+        if (finalContent) finalContent += '\n\n';
+        finalContent += uploadedLinks.join('\n');
+      }
+
       const res = await fetch('/api/artwork-chats', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chatId, content }),
+        body: JSON.stringify({ chatId, content: finalContent }),
       });
       const data = await res.json();
       if (res.ok && data.message) {
-        // 樂觀更新
         setMessages((prev) => {
           if (prev.find((m) => m.id === data.message.id)) return prev;
           return [...prev, data.message];
         });
       }
-    } catch (e) {
-      console.error(e);
+      
+      setInput('');
+      setPendingFiles([]);
+    } catch (e: any) {
+      alert('發送失敗: ' + (e.message || '未知錯誤'));
     } finally {
       setSending(false);
     }
@@ -133,46 +159,21 @@ export function ArtworkChatModal({
     return d.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' });
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !chatId || sending) return;
-
-    setSending(true);
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('chatId', chatId);
-
-    try {
-      const res = await fetch('/api/artwork-chats/upload', {
-        method: 'POST',
-        body: formData,
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-
-      // 判斷是圖片還是檔案
-      const isImage = file.type.startsWith('image/');
-      const content = isImage ? `![${data.name}](${data.url})` : `[📁 ${data.name}](${data.url})`;
-
-      // 送出訊息
-      const sendRes = await fetch('/api/artwork-chats', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chatId, content }),
-      });
-      const sendData = await sendRes.json();
-      if (sendRes.ok && sendData.message) {
-        setMessages((prev) => {
-          if (prev.find((m) => m.id === sendData.message.id)) return prev;
-          return [...prev, sendData.message];
-        });
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const newFiles = Array.from(e.target.files);
+      const oversized = newFiles.find(f => f.size > 5 * 1024 * 1024);
+      if (oversized) {
+        alert('檔案大小不能超過 5MB');
+        return;
       }
-    } catch (e: any) {
-      alert('上傳失敗: ' + (e.message || '未知錯誤'));
-    } finally {
-      setSending(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
+      setPendingFiles(prev => [...prev, ...newFiles]);
     }
+    e.target.value = '';
+  };
+
+  const removePendingFile = (index: number) => {
+    setPendingFiles(prev => prev.filter((_, i) => i !== index));
   };
 
   const renderContent = (content: string) => {
@@ -308,21 +309,53 @@ export function ArtworkChatModal({
               </button>
             ))}
           </div>
+          {pendingFiles.length > 0 && (
+            <div className="flex flex-wrap gap-2 px-3 pt-2 pb-1 bg-stone-50">
+              {pendingFiles.map((f, i) => (
+                <div key={i} className="flex items-center gap-1.5 bg-white border border-border/60 rounded-md px-2 py-1 text-xs">
+                  {f.type.startsWith('image/') ? <ImageIcon className="h-3 w-3 text-muted-foreground" /> : <FileText className="h-3 w-3 text-muted-foreground" />}
+                  <span className="max-w-[150px] truncate text-muted-foreground">{f.name}</span>
+                  <button onClick={() => removePendingFile(i)} className="text-muted-foreground hover:text-rose-500 ml-1">
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
           <div className="flex items-end gap-2 p-3">
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={sending}
-              className="h-10 w-10 rounded-xl bg-stone-100 flex items-center justify-center text-muted-foreground hover:bg-stone-200 hover:text-foreground transition-all disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
-              title="附加上傳"
-            >
-              <Paperclip className="h-4 w-4" />
-            </button>
+            <div className="flex gap-1 flex-shrink-0">
+              <button
+                onClick={() => imageInputRef.current?.click()}
+                disabled={sending}
+                className="h-10 w-10 rounded-xl bg-stone-100 flex items-center justify-center text-muted-foreground hover:bg-stone-200 hover:text-foreground transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                title="上傳圖片"
+              >
+                <ImageIcon className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={sending}
+                className="h-10 w-10 rounded-xl bg-stone-100 flex items-center justify-center text-muted-foreground hover:bg-stone-200 hover:text-foreground transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                title="上傳檔案"
+              >
+                <Paperclip className="h-4 w-4" />
+              </button>
+            </div>
             <input
               type="file"
-              ref={fileInputRef}
-              onChange={handleFileUpload}
+              multiple
+              ref={imageInputRef}
+              onChange={handleFileSelect}
               className="hidden"
-              accept="image/*,.pdf,.doc,.docx"
+              accept="image/*"
+            />
+            <input
+              type="file"
+              multiple
+              ref={fileInputRef}
+              onChange={handleFileSelect}
+              className="hidden"
+              accept=".pdf,.doc,.docx"
             />
             <textarea
               value={input}
@@ -340,7 +373,7 @@ export function ArtworkChatModal({
           />
           <button
             onClick={sendMessage}
-            disabled={!input.trim() || sending}
+            disabled={(!input.trim() && pendingFiles.length === 0) || sending}
             className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center text-primary-foreground hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
           >
             {sending ? (

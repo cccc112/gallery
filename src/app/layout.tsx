@@ -74,7 +74,7 @@ export default function RootLayout({
   return (
     <html lang="zh-TW" className="light">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-background text-foreground flex flex-col`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen marble-bg text-foreground flex flex-col`}
       >
         <GoogleAnalytics />
         <Web3Providers>

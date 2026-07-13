@@ -73,17 +73,22 @@ export function ProtectedImage({
         style={{ userSelect: 'none', WebkitUserSelect: 'none' } as React.CSSProperties}
       />
 
-      {/* ── 浮水印層：平鋪斜置文字 ── */}
+      {/* ── 浮水印層：單一居中斜置文字 ── */}
       {showWatermark && (
         <div
           aria-hidden="true"
-          className="absolute inset-0 pointer-events-none select-none z-20"
-          style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg width='200' height='150' xmlns='http://www.w3.org/2000/svg'%3E%3Ctext x='50%25' y='50%25' font-size='${fontSize}' font-family='Georgia, serif' font-weight='700' letter-spacing='0.2em' fill='rgba(255,255,255,0.6)' text-anchor='middle' dominant-baseline='middle' transform='rotate(-20, 100, 75)' style='text-shadow: 0 0 8px rgba(0,0,0,0.8), 1px 1px 0px rgba(0,0,0,0.6), -1px -1px 0px rgba(0,0,0,0.6)'%3E${encodeURIComponent(watermarkText)}%3C/text%3E%3C/svg%3E")`,
-            backgroundRepeat: 'repeat',
-            backgroundPosition: 'center',
-          }}
-        />
+          className="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-20"
+        >
+          <div
+            className="text-white/60 font-serif font-bold uppercase tracking-[0.2em] -rotate-12"
+            style={{
+              fontSize: `${fontSize}px`,
+              textShadow: '0 0 8px rgba(0,0,0,0.8), 1px 1px 0px rgba(0,0,0,0.6), -1px -1px 0px rgba(0,0,0,0.6)'
+            }}
+          >
+            {watermarkText}
+          </div>
+        </div>
       )}
     </div>
   );

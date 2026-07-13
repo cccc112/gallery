@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Send, User, MessageSquare, Paperclip, FileText, Loader2 } from 'lucide-react';
+import { ArrowLeft, Send, User, MessageSquare, Paperclip, FileText, Loader2, ImageIcon, X } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
 export default function ChatDashboardPage() {
@@ -13,6 +13,8 @@ export default function ChatDashboardPage() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(true);
   const [sendingImage, setSendingImage] = useState(false);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const imageInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const supabase = createClient();
@@ -57,73 +59,73 @@ export default function ChatDashboardPage() {
 
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || !selectedSessionId) return;
+    if ((!input.trim() && pendingFiles.length === 0) || !selectedSessionId || sendingImage) return;
 
-    const content = input;
-    setInput('');
-    setMessages(prev => [...prev, { id: 'tmp', content, sender_id: currentUser?.id, created_at: new Date().toISOString() }]);
+    setSendingImage(true);
 
     try {
+      let finalContent = input.trim();
+
+      if (pendingFiles.length > 0) {
+        const uploadPromises = pendingFiles.map(async (file) => {
+          const formData = new FormData();
+          formData.append('file', file);
+          formData.append('chatId', selectedSessionId);
+
+          const res = await fetch('/api/artwork-chats/upload', {
+            method: 'POST',
+            body: formData,
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error);
+
+          const isImage = file.type.startsWith('image/');
+          return isImage ? `![${data.name}](${data.url})` : `[📁 ${data.name}](${data.url})`;
+        });
+
+        const uploadedLinks = await Promise.all(uploadPromises);
+        if (finalContent) finalContent += '\n\n';
+        finalContent += uploadedLinks.join('\n');
+      }
+
+      setMessages(prev => [...prev, { id: 'tmp', content: finalContent, sender_id: currentUser?.id, created_at: new Date().toISOString() }]);
+
       const res = await fetch('/api/artwork-chats', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chatId: selectedSessionId, content })
+        body: JSON.stringify({ chatId: selectedSessionId, content: finalContent })
       });
       const data = await res.json();
       if (data.message) {
         setMessages(prev => prev.map(m => m.id === 'tmp' ? data.message : m));
         fetchSessions(); // Refresh list to update latest message
       }
-    } catch (e) {
+      
+      setInput('');
+      setPendingFiles([]);
+    } catch (e: any) {
       console.error(e);
+      alert('發送失敗: ' + (e.message || '未知錯誤'));
+    } finally {
+      setSendingImage(false);
     }
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !selectedSessionId) return;
-
-    // 檢查檔案大小 (< 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      alert('檔案大小不能超過 5MB');
-      return;
-    }
-
-    setSendingImage(true);
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('chatId', selectedSessionId);
-
-      const res = await fetch('/api/artwork-chats/upload', {
-        method: 'POST',
-        body: formData,
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-
-      const isImage = file.type.startsWith('image/');
-      const content = isImage ? `![${data.name}](${data.url})` : `[📁 ${data.name}](${data.url})`;
-
-      const sendRes = await fetch('/api/artwork-chats', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chatId: selectedSessionId, content }),
-      });
-      const sendData = await sendRes.json();
-      if (sendRes.ok && sendData.message) {
-        setMessages(prev => {
-          if (prev.find(m => m.id === sendData.message.id)) return prev;
-          return [...prev, sendData.message];
-        });
-        fetchSessions();
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const newFiles = Array.from(e.target.files);
+      const oversized = newFiles.find(f => f.size > 5 * 1024 * 1024);
+      if (oversized) {
+        alert('檔案大小不能超過 5MB');
+        return;
       }
-    } catch (e: any) {
-      alert('上傳失敗: ' + (e.message || '未知錯誤'));
-    } finally {
-      setSendingImage(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
+      setPendingFiles(prev => [...prev, ...newFiles]);
     }
+    e.target.value = '';
+  };
+
+  const removePendingFile = (index: number) => {
+    setPendingFiles(prev => prev.filter((_, i) => i !== index));
   };
 
   const renderContent = (content: string) => {
@@ -252,38 +254,73 @@ export default function ChatDashboardPage() {
                     );
                   })}
                 </div>
-                <form onSubmit={sendMessage} className="p-4 bg-white/60 border-t border-border/50 flex gap-2 items-end">
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={sendingImage}
-                    className="h-10 w-10 flex-shrink-0 flex items-center justify-center bg-stone-100 rounded-sm text-muted-foreground hover:bg-stone-200 hover:text-foreground transition-colors disabled:opacity-50"
-                    title="附加上傳"
-                  >
-                    {sendingImage ? <Loader2 className="h-4 w-4 animate-spin" /> : <Paperclip className="h-4 w-4" />}
-                  </button>
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleFileUpload}
-                    className="hidden"
-                    accept="image/*,.pdf,.doc,.docx"
-                  />
-                  <input
-                    type="text"
-                    value={input}
-                    onChange={e => setInput(e.target.value)}
-                    placeholder="輸入訊息..."
-                    className="flex-1 bg-white border border-border/50 rounded-sm px-4 h-10 text-sm focus:outline-none focus:border-primary transition-colors"
-                  />
-                  <button
-                    type="submit"
-                    disabled={!input.trim()}
-                    className="p-3 bg-primary text-primary-foreground rounded-sm hover:bg-primary/90 disabled:opacity-50 transition-colors"
-                  >
-                    <Send className="h-4 w-4" />
-                  </button>
-                </form>
+                <div className="flex flex-col bg-white/60 border-t border-border/50">
+                  {pendingFiles.length > 0 && (
+                    <div className="flex flex-wrap gap-2 px-4 pt-3 pb-1">
+                      {pendingFiles.map((f, i) => (
+                        <div key={i} className="flex items-center gap-1.5 bg-white border border-border/60 rounded-sm px-2 py-1 text-xs">
+                          {f.type.startsWith('image/') ? <ImageIcon className="h-3 w-3 text-muted-foreground" /> : <FileText className="h-3 w-3 text-muted-foreground" />}
+                          <span className="max-w-[150px] truncate text-muted-foreground">{f.name}</span>
+                          <button type="button" onClick={() => removePendingFile(i)} className="text-muted-foreground hover:text-rose-500 ml-1">
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <form onSubmit={sendMessage} className="p-4 flex gap-2 items-end">
+                    <div className="flex gap-1 flex-shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => imageInputRef.current?.click()}
+                        disabled={sendingImage}
+                        className="h-10 w-10 flex-shrink-0 flex items-center justify-center bg-stone-100 rounded-sm text-muted-foreground hover:bg-stone-200 hover:text-foreground transition-colors disabled:opacity-50"
+                        title="上傳圖片"
+                      >
+                        <ImageIcon className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={sendingImage}
+                        className="h-10 w-10 flex-shrink-0 flex items-center justify-center bg-stone-100 rounded-sm text-muted-foreground hover:bg-stone-200 hover:text-foreground transition-colors disabled:opacity-50"
+                        title="上傳檔案"
+                      >
+                        <Paperclip className="h-4 w-4" />
+                      </button>
+                    </div>
+                    <input
+                      type="file"
+                      multiple
+                      ref={imageInputRef}
+                      onChange={handleFileSelect}
+                      className="hidden"
+                      accept="image/*"
+                    />
+                    <input
+                      type="file"
+                      multiple
+                      ref={fileInputRef}
+                      onChange={handleFileSelect}
+                      className="hidden"
+                      accept=".pdf,.doc,.docx"
+                    />
+                    <input
+                      type="text"
+                      value={input}
+                      onChange={e => setInput(e.target.value)}
+                      placeholder="輸入訊息..."
+                      className="flex-1 bg-white border border-border/50 rounded-sm px-4 h-10 text-sm focus:outline-none focus:border-primary transition-colors"
+                    />
+                    <button
+                      type="submit"
+                      disabled={(!input.trim() && pendingFiles.length === 0) || sendingImage}
+                      className="p-3 bg-primary text-primary-foreground rounded-sm hover:bg-primary/90 disabled:opacity-50 transition-colors"
+                    >
+                      {sendingImage ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                    </button>
+                  </form>
+                </div>
               </>
             ) : (
               <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground">
