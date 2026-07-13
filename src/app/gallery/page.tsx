@@ -4,6 +4,7 @@ import { Search, Eye, Tag, SlidersHorizontal, X, Heart } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import Image from 'next/image';
 import { AnimatedGrid, AnimatedCard } from '@/components/AnimatedGrid';
+import { ProtectedImage } from '@/components/protected-image';
 import GalleryForm from './GalleryForm';
 
 export const revalidate = 0;
@@ -269,12 +270,14 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
                 <Link href={`/artwork/${artwork.id}`} className="aspect-[4/5] w-full bg-stone-50 overflow-hidden relative block cursor-pointer">
                   <div className="absolute inset-0 p-3 flex items-center justify-center pointer-events-none">
                     <div className="relative w-full h-full border border-stone-200/60 shadow-md bg-white overflow-hidden pointer-events-auto">
-                      <Image
+                      <ProtectedImage
                         src={artwork.preview_file_url}
                         alt={artwork.title}
                         fill
                         sizes="(max-w-xs) 100vw, 30vw"
                         className="object-cover transition-transform duration-500 group-hover:scale-105"
+                        showWatermark={true}
+                        watermarkSize="sm"
                       />
                     </div>
                   </div>

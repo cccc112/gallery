@@ -11,7 +11,21 @@ interface Review {
 }
 
 export function ArtworkReviews({ reviews }: { reviews: Review[] }) {
-  if (!reviews || reviews.length === 0) return null;
+  if (!reviews || reviews.length === 0) {
+    return (
+      <section className="py-12 border-t border-border/40 mt-12 bg-stone-50/50">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8">
+          <h3 className="text-xl font-serif font-semibold text-foreground mb-8 flex items-center gap-2">
+            <MessageCircle className="h-5 w-5 text-primary" />
+            藏家評價
+          </h3>
+          <p className="text-sm text-muted-foreground bg-white p-6 rounded-lg border border-border/50 text-center">
+            目前尚無評價。當有藏家收藏此作品並留下評價後，將會顯示於此。
+          </p>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="py-12 border-t border-border/40 mt-12 bg-stone-50/50">
