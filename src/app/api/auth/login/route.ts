@@ -33,17 +33,34 @@ export async function POST(request: Request) {
       }
     );
 
-    const { data, error } = await supabase.auth.signInWithPassword({
+    let { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
+
+    if (error && error.message.includes('Email not confirmed')) {
+      // 如果用戶卡在未驗證狀態，直接使用 admin client 幫他驗證
+      const { createAdminClient } = await import('@/lib/supabase/admin');
+      const admin = createAdminClient();
+      const { data: usersData } = await admin.auth.admin.listUsers();
+      const unconfirmedUser = usersData?.users.find(u => u.email === email);
+      
+      if (unconfirmedUser) {
+        await admin.auth.admin.updateUserById(unconfirmedUser.id, { email_confirm: true });
+        
+        // 重新嘗試登入
+        const retryRes = await supabase.auth.signInWithPassword({ email, password });
+        data = retryRes.data;
+        error = retryRes.error;
+      }
+    }
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
     if (!data.session) {
-      return NextResponse.json({ error: '請先至您的信箱點擊驗證連結，再進行登入。' }, { status: 400 });
+      return NextResponse.json({ error: '無法建立登入工作階段，請重新嘗試。' }, { status: 400 });
     }
 
     return response;

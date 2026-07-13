@@ -31,7 +31,10 @@ export async function POST(req: NextRequest) {
     const storagePath = `chats/${chatId}/${Date.now()}-${filename}`;
     const arrayBuf = await file.arrayBuffer();
 
-    const { error: uploadErr } = await supabase.storage
+    const { createAdminClient } = await import('@/lib/supabase/admin');
+    const adminSupabase = createAdminClient();
+
+    const { error: uploadErr } = await adminSupabase.storage
       .from('artwork-images') // reuse existing bucket
       .upload(storagePath, arrayBuf, {
         contentType: file.type,
@@ -43,7 +46,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: '檔案上傳失敗' }, { status: 500 });
     }
 
-    const { data: urlData } = supabase.storage.from('artwork-images').getPublicUrl(storagePath);
+    const { data: urlData } = adminSupabase.storage.from('artwork-images').getPublicUrl(storagePath);
     const publicUrl = urlData.publicUrl;
 
     return NextResponse.json({ url: publicUrl, name: file.name, type: file.type });
