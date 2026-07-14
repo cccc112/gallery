@@ -389,18 +389,17 @@ export function ArtworkDetails({
         </div>
       )}
 
-      {/* 藝術家刪除作品按鈕 */}
-      {isOwner ? (
-        <button
-          onClick={handleDelete}
-          disabled={deleting}
-          className="w-full mt-2 flex items-center justify-center gap-2 text-xs text-rose-500 hover:text-rose-700 hover:bg-rose-50 border border-rose-200 rounded-lg py-2.5 transition-colors disabled:opacity-50"
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-          {deleting ? '刪除中...' : '刪除此作品'}
-        </button>
-      ) : (
-        <div className="flex gap-2 mt-2">
+      <div className="flex gap-2 mt-2">
+        {isOwner ? (
+          <button
+            onClick={handleDelete}
+            disabled={deleting}
+            className="flex-1 flex items-center justify-center gap-2 text-xs text-rose-500 hover:text-rose-700 hover:bg-rose-50 border border-rose-200 rounded-lg py-2.5 transition-colors disabled:opacity-50"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            {deleting ? '刪除中...' : '刪除此作品'}
+          </button>
+        ) : (
           <button
             onClick={handleContactArtist}
             className="flex-1 flex items-center justify-center gap-2 text-xs font-semibold text-foreground hover:bg-stone-100 border border-border/60 rounded-lg py-2.5 transition-colors"
@@ -408,15 +407,15 @@ export function ArtworkDetails({
             <MessageSquare className="h-3.5 w-3.5" />
             💬 詢問藝術家
           </button>
-          <button
-            onClick={handleShare}
-            className="flex-1 flex items-center justify-center gap-2 text-xs font-semibold text-foreground hover:bg-stone-100 border border-border/60 rounded-lg py-2.5 transition-colors"
-          >
-            <Share2 className="h-3.5 w-3.5" />
-            分享作品
-          </button>
-        </div>
-      )}
+        )}
+        <button
+          onClick={handleShare}
+          className="flex-1 flex items-center justify-center gap-2 text-xs font-semibold text-foreground hover:bg-stone-100 border border-border/60 rounded-lg py-2.5 transition-colors"
+        >
+          <Share2 className="h-3.5 w-3.5" />
+          分享作品
+        </button>
+      </div>
 
       {/* Checkout Modal */}
       <CheckoutModal
