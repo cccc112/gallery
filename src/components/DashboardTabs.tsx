@@ -621,6 +621,9 @@ function FinanceTab({ totalFiatRevenue }: { totalFiatRevenue: number }) {
         </form>
         {errorMsg && <p className="text-rose-500 text-xs mt-2">{errorMsg}</p>}
         {successMsg && <p className="text-emerald-600 text-xs mt-2">{successMsg}</p>}
+        <p className="text-[10px] text-muted-foreground mt-3 leading-relaxed">
+          💡 溫馨提醒：實際匯款時，銀行將自動內扣跨行轉帳手續費（通常為 NT$ 15）。若您綁定的收款帳戶與平台匯出銀行相同，則免收手續費。
+        </p>
       </div>
 
       <div className="bg-white/60 border border-border/50 rounded-sm overflow-hidden">
