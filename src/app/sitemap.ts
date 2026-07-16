@@ -6,9 +6,8 @@ const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  // 強制使用正確的主網域，避免 Vercel 預設產生的網址導致 Google Search Console 發生跨網域錯誤
-  const baseUrl = 'https://atelier-blanc-gallery.vercel.app';
-  
+  // 使用環境變數中的網址，避免 GSC 跨網域錯誤。若未設定則使用預設
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://art-gallery.vercel.app';
   // 建立 Supabase client
   const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   
