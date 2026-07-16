@@ -517,7 +517,10 @@ function FinanceTab({ totalFiatRevenue }: { totalFiatRevenue: number }) {
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
-  const availableBalance = totalFiatRevenue - totalWithdrawn;
+  // 系統自動扣除 10% 平台服務費
+  const netRevenue = Math.floor(totalFiatRevenue * 0.9);
+  const platformFee = totalFiatRevenue - netRevenue;
+  const availableBalance = netRevenue - totalWithdrawn;
 
   useEffect(() => {
     fetchFinance();
@@ -576,18 +579,22 @@ function FinanceTab({ totalFiatRevenue }: { totalFiatRevenue: number }) {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <div className="p-5 bg-white/60 border border-border/50 rounded-sm">
           <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">總銷售額 (TWD)</p>
-          <p className="text-2xl font-serif font-bold text-foreground">{fmt(totalFiatRevenue)}</p>
+          <p className="text-xl font-serif font-bold text-foreground">{fmt(totalFiatRevenue)}</p>
+        </div>
+        <div className="p-5 bg-rose-50/50 border border-rose-100 rounded-sm">
+          <p className="text-xs font-semibold uppercase tracking-widest text-rose-700 mb-2">平台手續費 (10%)</p>
+          <p className="text-xl font-serif font-bold text-rose-700">- {fmt(platformFee)}</p>
         </div>
         <div className="p-5 bg-white/60 border border-border/50 rounded-sm">
           <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">已提領/處理中</p>
-          <p className="text-2xl font-serif font-bold text-rose-600">{fmt(totalWithdrawn)}</p>
+          <p className="text-xl font-serif font-bold text-stone-600">- {fmt(totalWithdrawn)}</p>
         </div>
         <div className="p-5 bg-primary/5 border border-primary/20 rounded-sm">
-          <p className="text-xs font-semibold uppercase tracking-widest text-primary mb-2">可提領餘額</p>
-          <p className="text-2xl font-serif font-bold text-emerald-600">{fmt(availableBalance)}</p>
+          <p className="text-xs font-semibold uppercase tracking-widest text-primary mb-2">可提領餘額 (淨利)</p>
+          <p className="text-xl font-serif font-bold text-emerald-600">{fmt(availableBalance)}</p>
         </div>
       </div>
 
