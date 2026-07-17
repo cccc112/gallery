@@ -40,28 +40,29 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
   try {
     if (tags.length > 0) {
       artworks = await sql`
-        SELECT a.*, u.display_name as artist_name,
+        SELECT a.*, u.display_name as artist_name, s.title as series_title,
                (SELECT count(*) FROM public.page_views WHERE artwork_id = a.id) as views_count,
                (SELECT count(*) FROM public.favorites WHERE artwork_id = a.id) as likes_count
         FROM public.artworks a
         JOIN public.users u ON a.artist_id = u.id
+        LEFT JOIN public.artist_series s ON a.series_id = s.id
         WHERE 
-          (${search} = '' OR a.title ILIKE ${'%' + search + '%'} OR a.description ILIKE ${'%' + search + '%'})
+          (${search} = '' OR a.title ILIKE ${'%' + search + '%'} OR a.description ILIKE ${'%' + search + '%'} OR s.title ILIKE ${'%' + search + '%'})
           AND a.tags @> ${tags}::text[]
           AND (${type} = 'all' OR a.art_type = ${type})
-          AND (${theme} = 'all' OR a.theme = ${theme})
           AND (${rentable} = false OR a.is_rentable = true)
         ORDER BY a.created_at DESC
       `;
     } else {
       artworks = await sql`
-        SELECT a.*, u.display_name as artist_name,
+        SELECT a.*, u.display_name as artist_name, s.title as series_title,
                (SELECT count(*) FROM public.page_views WHERE artwork_id = a.id) as views_count,
                (SELECT count(*) FROM public.favorites WHERE artwork_id = a.id) as likes_count
         FROM public.artworks a
         JOIN public.users u ON a.artist_id = u.id
+        LEFT JOIN public.artist_series s ON a.series_id = s.id
         WHERE 
-          (${search} = '' OR a.title ILIKE ${'%' + search + '%'} OR a.description ILIKE ${'%' + search + '%'})
+          (${search} = '' OR a.title ILIKE ${'%' + search + '%'} OR a.description ILIKE ${'%' + search + '%'} OR s.title ILIKE ${'%' + search + '%'})
           AND (${type} = 'all' OR a.art_type = ${type})
           AND (${rentable} = false OR a.is_rentable = true)
         ORDER BY a.created_at DESC
@@ -326,6 +327,11 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
                   <h3 className="mt-1.5 text-base font-serif font-semibold text-foreground leading-tight line-clamp-1">
                     {artwork.title}
                   </h3>
+                  {artwork.series_title && (
+                    <p className="mt-1 text-[11px] text-primary/80 font-medium flex items-center gap-1">
+                      <span>✤</span> {artwork.series_title}
+                    </p>
+                  )}
 
                   <div className="mt-5 pt-3 border-t border-border/60 flex items-end justify-between">
                     <div>
