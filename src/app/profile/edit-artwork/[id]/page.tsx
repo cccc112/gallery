@@ -264,6 +264,9 @@ export default function EditArtworkPage({ params }: { params: { id: string } }) 
                     <label htmlFor="series" className="block text-xs font-semibold tracking-wider uppercase text-muted-foreground">
                       作品主題 / 系列
                     </label>
+                    <Link href="/profile/series" target="_blank" className="text-xs text-primary hover:underline font-medium">
+                      + 建立新主題
+                    </Link>
                   </div>
                   <select
                     id="series"
