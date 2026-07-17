@@ -12,6 +12,8 @@ export default function SeriesPage() {
   const [loading, setLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   
   // Form state
   const [title, setTitle] = useState('');
@@ -38,6 +40,7 @@ export default function SeriesPage() {
   const handleSave = async () => {
     if (!title.trim()) return alert('請輸入主題名稱');
     
+    setIsSaving(true);
     try {
       const method = editingId ? 'PUT' : 'POST';
       const url = editingId ? `/api/series/${editingId}` : '/api/series';
@@ -53,29 +56,34 @@ export default function SeriesPage() {
         setEditingId(null);
         setTitle('');
         setDescription('');
-        fetchSeries();
+        await fetchSeries();
       } else {
         const data = await res.json();
         alert(data.error || '儲存失敗');
       }
     } catch (e) {
       alert('儲存失敗');
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('確定要刪除此主題嗎？作品將不會被刪除，但會解除與此主題的綁定。')) return;
     
+    setDeletingId(id);
     try {
       const res = await fetch(`/api/series/${id}`, { method: 'DELETE' });
       if (res.ok) {
-        fetchSeries();
+        await fetchSeries();
       } else {
         const data = await res.json();
         alert(data.error || '刪除失敗');
       }
     } catch (e) {
       alert('刪除失敗');
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -132,10 +140,19 @@ export default function SeriesPage() {
                 />
               </div>
               <div className="flex items-center gap-3 pt-2">
-                <button onClick={handleSave} className="flex items-center gap-1.5 bg-foreground text-background px-4 py-2 rounded-md hover:bg-foreground/90 transition-colors text-sm font-medium">
-                  <Check className="h-4 w-4" /> {editingId ? '儲存變更' : '確認建立'}
+                <button 
+                  onClick={handleSave} 
+                  disabled={isSaving}
+                  className="flex items-center gap-1.5 bg-foreground text-background px-4 py-2 rounded-md hover:bg-foreground/90 transition-colors text-sm font-medium disabled:opacity-70"
+                >
+                  {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                  {isSaving ? '儲存中...' : (editingId ? '儲存變更' : '確認建立')}
                 </button>
-                <button onClick={() => { setIsAdding(false); setEditingId(null); }} className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground px-4 py-2 text-sm font-medium">
+                <button 
+                  onClick={() => { setIsAdding(false); setEditingId(null); }} 
+                  disabled={isSaving}
+                  className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground px-4 py-2 text-sm font-medium disabled:opacity-50"
+                >
                   取消
                 </button>
               </div>
@@ -162,11 +179,20 @@ export default function SeriesPage() {
                 {s.description && <p className="text-sm text-muted-foreground mt-2 line-clamp-2">{s.description}</p>}
               </div>
               <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto">
-                <button onClick={() => startEdit(s)} className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 text-sm bg-secondary hover:bg-secondary/80 text-foreground px-3 py-1.5 rounded-md border border-border transition-colors">
+                <button 
+                  onClick={() => startEdit(s)} 
+                  disabled={deletingId === s.id}
+                  className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 text-sm bg-secondary hover:bg-secondary/80 text-foreground px-3 py-1.5 rounded-md border border-border transition-colors disabled:opacity-50"
+                >
                   <Edit2 className="h-3.5 w-3.5" /> 編輯
                 </button>
-                <button onClick={() => handleDelete(s.id)} className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 text-sm text-rose-500 hover:bg-rose-50 px-3 py-1.5 rounded-md border border-transparent hover:border-rose-200 transition-colors">
-                  <Trash2 className="h-3.5 w-3.5" /> 刪除
+                <button 
+                  onClick={() => handleDelete(s.id)} 
+                  disabled={deletingId === s.id}
+                  className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 text-sm text-rose-500 hover:bg-rose-50 px-3 py-1.5 rounded-md border border-transparent hover:border-rose-200 transition-colors disabled:opacity-50"
+                >
+                  {deletingId === s.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                  {deletingId === s.id ? '刪除中' : '刪除'}
                 </button>
               </div>
             </div>
