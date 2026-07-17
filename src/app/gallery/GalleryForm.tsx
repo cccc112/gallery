@@ -1,10 +1,12 @@
 'use client';
 
-import { Search, SlidersHorizontal } from 'lucide-react';
+import { Search, SlidersHorizontal, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useTransition } from 'react';
 
 export default function GalleryForm({ search, type, rentable, tags = [] }: { search: string, type: string, rentable: boolean, tags?: string[] }) {
   const router = useRouter();
+  const [isPending, startTransition] = useTransition();
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -18,7 +20,9 @@ export default function GalleryForm({ search, type, rentable, tags = [] }: { sea
     if (newRentable) p.set('rentable', 'true');
     tags.forEach(t => p.append('tag', t));
     
-    router.push(`/gallery${p.toString() ? `?${p.toString()}` : ''}`);
+    startTransition(() => {
+      router.push(`/gallery${p.toString() ? `?${p.toString()}` : ''}`);
+    });
   };
 
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -40,7 +44,7 @@ export default function GalleryForm({ search, type, rentable, tags = [] }: { sea
           type="text"
           name="search"
           defaultValue={search}
-          placeholder="搜尋作品名稱、藝術家..."
+          placeholder="搜尋作品名稱、藝術家、主題..."
           className="block w-full rounded-lg border border-border bg-background py-2.5 pl-10 pr-3 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary transition-colors"
         />
       </div>
@@ -51,16 +55,18 @@ export default function GalleryForm({ search, type, rentable, tags = [] }: { sea
           value="true"
           defaultChecked={rentable}
           onChange={handleCheckboxChange}
-          className="h-4 w-4 rounded border-border text-primary focus:ring-primary cursor-pointer"
+          disabled={isPending}
+          className="h-4 w-4 rounded border-border text-primary focus:ring-primary cursor-pointer disabled:opacity-50"
         />
         僅顯示可租賃
       </label>
       <button
         type="submit"
-        className="rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 px-5 py-2.5 text-sm font-medium shadow-sm transition-all flex items-center gap-1.5 self-start sm:self-auto"
+        disabled={isPending}
+        className="rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 px-5 py-2.5 text-sm font-medium shadow-sm transition-all flex items-center gap-1.5 self-start sm:self-auto disabled:opacity-70"
       >
-        <SlidersHorizontal className="h-4 w-4" />
-        篩選
+        {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <SlidersHorizontal className="h-4 w-4" />}
+        {isPending ? '篩選中...' : '篩選'}
       </button>
     </form>
   );

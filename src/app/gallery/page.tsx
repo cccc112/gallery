@@ -258,11 +258,17 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
 
         {/* Grid */}
         {artworks.length === 0 ? (
-          <div className="text-center py-20 border border-dashed border-border bg-card/25 rounded-xl">
-            <Tag className="h-10 w-10 text-muted-foreground/50 mx-auto mb-4" />
-            <p className="text-muted-foreground font-medium">沒有找到符合條件的藝術品</p>
-            <Link href="/gallery" className="text-primary hover:underline text-sm mt-2 inline-block font-medium">
-              重設篩選條件
+          <div className="flex flex-col items-center justify-center py-24 px-6 border-2 border-dashed border-border/60 bg-card/40 rounded-2xl mx-auto max-w-2xl mt-8 shadow-sm">
+            <div className="h-20 w-20 bg-secondary rounded-full flex items-center justify-center mb-6 shadow-inner">
+              <Search className="h-10 w-10 text-muted-foreground/40" />
+            </div>
+            <h3 className="text-xl font-serif font-semibold text-foreground mb-2">找不到符合條件的作品</h3>
+            <p className="text-sm text-muted-foreground mb-8 text-center max-w-md leading-relaxed">
+              目前沒有符合您所選條件的藝術品。您可以嘗試減少篩選條件，或是清除條件來探索更多精采創作。
+            </p>
+            <Link href="/gallery" className="rounded-full bg-foreground text-background hover:bg-foreground/90 px-8 py-3 text-sm font-medium transition-all shadow-md flex items-center gap-2">
+              <X className="h-4 w-4" />
+              清除所有篩選條件
             </Link>
           </div>
         ) : (
@@ -333,7 +339,7 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
                     </p>
                   )}
 
-                  <div className="mt-5 pt-3 border-t border-border/60 flex items-end justify-between">
+                  <div className="mt-5 pt-4 border-t border-border/60 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
                     <div>
                       {artwork.price ? (
                         <p className="text-xs text-muted-foreground">
@@ -343,12 +349,12 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
                         <p className="text-xs text-muted-foreground italic">非賣品</p>
                       )}
                       {artwork.is_rentable && artwork.art_type === 'physical' && (
-                        <p className="text-xs text-indigo-900 font-medium mt-0.5 font-mono">
+                        <p className="text-xs text-indigo-900 font-medium mt-1 font-mono">
                           月租: {formatPrice(Number(artwork.monthly_rent_price))}
                         </p>
                       )}
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-4">
                       <div className="flex gap-2.5 items-center mr-1">
                         <div className="flex items-center gap-1 text-muted-foreground" title="瀏覽人次">
                           <Eye className="h-3.5 w-3.5" />
