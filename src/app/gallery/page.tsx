@@ -273,7 +273,7 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
           </div>
         ) : (
           <AnimatedGrid>
-            {artworks.map((artwork: any) => (
+            {artworks.map((artwork: any, index: number) => (
               <AnimatedCard
                 key={artwork.id}
                 className="group relative flex flex-col overflow-hidden bg-card rounded-sm shadow-md hover:shadow-xl transition-all duration-300 border border-border/40"
@@ -290,6 +290,7 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
                         className="object-cover transition-transform duration-500 group-hover:scale-105"
                         showWatermark={true}
                         watermarkSize="sm"
+                        priority={index < 8}
                       />
                     </div>
                   </div>
