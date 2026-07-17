@@ -3,7 +3,7 @@
 import { Search, SlidersHorizontal } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
-export default function GalleryForm({ search, type, rentable, tags = [] }: { search: string, type: string, rentable: boolean, tags?: string[] }) {
+export default function GalleryForm({ search, type, theme = 'all', rentable, tags = [] }: { search: string, type: string, theme?: string, rentable: boolean, tags?: string[] }) {
   const router = useRouter();
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -15,6 +15,7 @@ export default function GalleryForm({ search, type, rentable, tags = [] }: { sea
     const p = new URLSearchParams();
     if (newSearch) p.set('search', newSearch);
     if (type !== 'all') p.set('type', type);
+    if (theme !== 'all') p.set('theme', theme);
     if (newRentable) p.set('rentable', 'true');
     tags.forEach(t => p.append('tag', t));
     

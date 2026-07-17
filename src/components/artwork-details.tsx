@@ -16,6 +16,7 @@ interface ArtworkDetailsProps {
     artist_name: string;
     artist_email?: string;
     art_type: 'physical' | 'digital' | 'photography';
+    theme?: string | null;
     price: number | null;
     is_rentable: boolean;
     monthly_rent_price: number | null;
@@ -161,6 +162,11 @@ export function ArtworkDetails({
 
       {/* Badges */}
       <div className="flex flex-wrap gap-2">
+        {artwork.theme && (
+          <Badge variant="outline" className="px-3 py-1 text-xs font-medium tracking-wide border-primary/30 text-primary bg-primary/5">
+            ✨ {artwork.theme}
+          </Badge>
+        )}
         {artwork.is_ai_generated ? (
           <Badge variant="outline" className="px-3 py-1 text-xs font-medium tracking-wide border-purple-300 text-purple-700 bg-purple-50/50">
             🤖 AI 生成藝術

@@ -276,6 +276,30 @@ export default function UploadPage() {
                   <p className="text-[10px] text-muted-foreground mt-2">* 註：目前僅開放實體作品提供短期租賃服務。</p>
                 </div>
                 
+                {/* Theme Selection */}
+                <div>
+                  <label htmlFor="theme" className="block text-xs font-semibold tracking-wider uppercase text-muted-foreground mb-2">
+                    作品主題 <span className="text-rose-500">*</span>
+                  </label>
+                  <select
+                    id="theme"
+                    name="theme"
+                    required
+                    className="w-full rounded-sm border border-border bg-white/80 px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary transition-colors appearance-none"
+                    style={{ backgroundImage: 'url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3e%3cpolyline points=\'6 9 12 15 18 9\'%3e%3c/polyline%3e%3c/svg%3e")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem center', backgroundSize: '1em' }}
+                  >
+                    <option value="" disabled selected>請選擇作品主題...</option>
+                    <option value="抽象 (Abstract)">抽象 (Abstract)</option>
+                    <option value="風景 (Landscape)">風景 (Landscape)</option>
+                    <option value="人像 (Portrait)">人像 (Portrait)</option>
+                    <option value="靜物 (Still Life)">靜物 (Still Life)</option>
+                    <option value="動植物 (Nature & Animals)">動植物 (Nature & Animals)</option>
+                    <option value="超現實 (Surrealism)">超現實 (Surrealism)</option>
+                    <option value="當代 (Contemporary)">當代 (Contemporary)</option>
+                    <option value="其他 (Other)">其他 (Other)</option>
+                  </select>
+                </div>
+                
                 {/* AI Generated Checkbox */}
                 <div className="pt-2">
                   <label className="flex items-center gap-3 cursor-pointer group">
