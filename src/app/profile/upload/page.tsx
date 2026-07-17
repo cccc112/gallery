@@ -26,6 +26,9 @@ export default function UploadPage() {
   const [tagInput, setTagInput] = useState('');
   const [isAIGenerated, setIsAIGenerated] = useState(false);
   const [originalGuaranteed, setOriginalGuaranteed] = useState(false);
+  
+  const [seriesList, setSeriesList] = useState<any[]>([]);
+  const [selectedSeries, setSelectedSeries] = useState('');
 
   useEffect(() => {
     async function checkRole() {
@@ -38,6 +41,13 @@ export default function UploadPage() {
       const { data } = await supabase.from('users').select('role').eq('id', user.id).single();
       setUserRole(data?.role || 'buyer');
       setIsCheckingRole(false);
+      
+      // Fetch user's series
+      try {
+        const res = await fetch('/api/series');
+        const d = await res.json();
+        if (res.ok) setSeriesList(d.series || []);
+      } catch (e) {}
     }
     checkRole();
   }, [router]);
@@ -89,6 +99,7 @@ export default function UploadPage() {
     }
     formData.set('is_rentable', isRentable.toString());
     formData.set('tags', JSON.stringify(tags));
+    if (selectedSeries) formData.set('series_id', selectedSeries);
 
     try {
       const res = await fetch('/api/artworks', {
@@ -276,27 +287,29 @@ export default function UploadPage() {
                   <p className="text-[10px] text-muted-foreground mt-2">* 註：目前僅開放實體作品提供短期租賃服務。</p>
                 </div>
                 
-                {/* Theme Selection */}
+
+                {/* Series Selection */}
                 <div>
-                  <label htmlFor="theme" className="block text-xs font-semibold tracking-wider uppercase text-muted-foreground mb-2">
-                    作品主題 <span className="text-rose-500">*</span>
-                  </label>
+                  <div className="flex items-center justify-between mb-2">
+                    <label htmlFor="series" className="block text-xs font-semibold tracking-wider uppercase text-muted-foreground">
+                      作品主題 / 系列
+                    </label>
+                    <Link href="/profile/series" target="_blank" className="text-xs text-primary hover:underline font-medium">
+                      + 建立新主題
+                    </Link>
+                  </div>
                   <select
-                    id="theme"
-                    name="theme"
-                    required
+                    id="series"
+                    name="series_id"
+                    value={selectedSeries}
+                    onChange={(e) => setSelectedSeries(e.target.value)}
                     className="w-full rounded-sm border border-border bg-white/80 px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary transition-colors appearance-none"
                     style={{ backgroundImage: 'url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3e%3cpolyline points=\'6 9 12 15 18 9\'%3e%3c/polyline%3e%3c/svg%3e")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem center', backgroundSize: '1em' }}
                   >
-                    <option value="" disabled selected>請選擇作品主題...</option>
-                    <option value="抽象 (Abstract)">抽象 (Abstract)</option>
-                    <option value="風景 (Landscape)">風景 (Landscape)</option>
-                    <option value="人像 (Portrait)">人像 (Portrait)</option>
-                    <option value="靜物 (Still Life)">靜物 (Still Life)</option>
-                    <option value="動植物 (Nature & Animals)">動植物 (Nature & Animals)</option>
-                    <option value="超現實 (Surrealism)">超現實 (Surrealism)</option>
-                    <option value="當代 (Contemporary)">當代 (Contemporary)</option>
-                    <option value="其他 (Other)">其他 (Other)</option>
+                    <option value="">(不加入任何系列)</option>
+                    {seriesList.map(s => (
+                      <option key={s.id} value={s.id}>{s.title}</option>
+                    ))}
                   </select>
                 </div>
                 

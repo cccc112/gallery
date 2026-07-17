@@ -26,17 +26,7 @@ const TYPE_TABS = [
   { value: 'photography', label: '攝影' },
 ];
 
-const THEME_TABS = [
-  { value: 'all', label: '所有主題' },
-  { value: '抽象 (Abstract)', label: '抽象' },
-  { value: '風景 (Landscape)', label: '風景' },
-  { value: '人像 (Portrait)', label: '人像' },
-  { value: '靜物 (Still Life)', label: '靜物' },
-  { value: '動植物 (Nature & Animals)', label: '動植物' },
-  { value: '超現實 (Surrealism)', label: '超現實' },
-  { value: '當代 (Contemporary)', label: '當代' },
-  { value: '其他 (Other)', label: '其他' },
-];
+
 
 export default async function GalleryPage({ searchParams }: GalleryPageProps) {
   const search = searchParams.search || '';
@@ -73,7 +63,6 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
         WHERE 
           (${search} = '' OR a.title ILIKE ${'%' + search + '%'} OR a.description ILIKE ${'%' + search + '%'})
           AND (${type} = 'all' OR a.art_type = ${type})
-          AND (${theme} = 'all' OR a.theme = ${theme})
           AND (${rentable} = false OR a.is_rentable = true)
         ORDER BY a.created_at DESC
       `;
@@ -125,18 +114,6 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
     const p = new URLSearchParams();
     if (search) p.set('search', search);
     if (t !== 'all') p.set('type', t);
-    if (theme !== 'all') p.set('theme', theme);
-    if (rentable) p.set('rentable', 'true');
-    tags.forEach(tg => p.append('tag', tg));
-    const qs = p.toString();
-    return `/gallery${qs ? `?${qs}` : ''}`;
-  }
-
-  function themeUrl(th: string) {
-    const p = new URLSearchParams();
-    if (search) p.set('search', search);
-    if (type !== 'all') p.set('type', type);
-    if (th !== 'all') p.set('theme', th);
     if (rentable) p.set('rentable', 'true');
     tags.forEach(tg => p.append('tag', tg));
     const qs = p.toString();
@@ -159,7 +136,6 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
     const p = new URLSearchParams();
     if (filterToRemove !== 'search' && search) p.set('search', search);
     if (filterToRemove !== 'type' && type !== 'all') p.set('type', type);
-    if (filterToRemove !== 'theme' && theme !== 'all') p.set('theme', theme);
     if (filterToRemove !== 'rentable' && rentable) p.set('rentable', 'true');
     
     if (filterToRemove === 'tag' && tagValue) {
@@ -223,32 +199,8 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
             })}
           </div>
 
-          {/* Theme Tab Pills */}
-          <div className="flex items-center gap-2 flex-wrap pt-2 border-t border-border/40">
-            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mr-1">主題</span>
-            {THEME_TABS.map(tab => {
-              const isActive = theme === tab.value;
-              return (
-                <Link
-                  key={tab.value}
-                  href={themeUrl(tab.value)}
-                  className={`px-3 py-1 rounded-full text-[11px] font-medium tracking-wide border transition-all duration-200 ${
-                    isActive
-                      ? 'bg-primary text-primary-foreground border-primary shadow-sm'
-                      : 'bg-white/70 text-muted-foreground border-border hover:border-primary/40 hover:text-foreground'
-                  }`}
-                >
-                  {tab.label}
-                  {isActive && theme !== 'all' && (
-                    <span className="ml-1 opacity-60 text-[8px]">✓</span>
-                  )}
-                </Link>
-              );
-            })}
-          </div>
-
           {/* Search + 租賃 + 送出 */}
-          <GalleryForm search={search} type={type} theme={theme} rentable={rentable} tags={tags} />
+          <GalleryForm search={search} type={type} rentable={rentable} tags={tags} />
 
           {/* Popular Tags */}
           {popularTags.length > 0 && (
@@ -275,12 +227,6 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
               {type !== 'all' && (
                 <Link href={removeFilterUrl('type')} className="group flex items-center gap-1 text-[10px] bg-foreground/10 text-foreground px-2 py-0.5 rounded-full font-medium hover:bg-foreground/20 transition-colors" title="移除類型篩選">
                   {TYPE_TABS.find(t => t.value === type)?.label}
-                  <X className="h-3 w-3 opacity-50 group-hover:opacity-100" />
-                </Link>
-              )}
-              {theme !== 'all' && (
-                <Link href={removeFilterUrl('theme')} className="group flex items-center gap-1 text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium hover:bg-primary/20 transition-colors" title="移除主題篩選">
-                  {THEME_TABS.find(t => t.value === theme)?.label}
                   <X className="h-3 w-3 opacity-50 group-hover:opacity-100" />
                 </Link>
               )}

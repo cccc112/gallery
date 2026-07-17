@@ -30,6 +30,8 @@ export default function EditArtworkPage({ params }: { params: { id: string } }) 
   const [tagInput, setTagInput] = useState('');
   const [isAIGenerated, setIsAIGenerated] = useState(false);
   const [originalGuaranteed, setOriginalGuaranteed] = useState(false);
+  const [seriesList, setSeriesList] = useState<any[]>([]);
+  const [selectedSeries, setSelectedSeries] = useState('');
 
   useEffect(() => {
     async function fetchArtwork() {
@@ -69,6 +71,13 @@ export default function EditArtworkPage({ params }: { params: { id: string } }) 
       setTags(data.tags || []);
       setIsAIGenerated(data.is_ai_generated || false);
       setOriginalGuaranteed(data.original_guaranteed || false);
+      setSelectedSeries(data.series_id || '');
+      
+      try {
+        const res = await fetch('/api/series');
+        const d = await res.json();
+        if (res.ok) setSeriesList(d.series || []);
+      } catch (e) {}
       
       setIsLoading(false);
     }
@@ -108,6 +117,7 @@ export default function EditArtworkPage({ params }: { params: { id: string } }) 
     formData.set('tags', JSON.stringify(tags));
     formData.set('is_ai_generated', isAIGenerated.toString());
     formData.set('original_guaranteed', originalGuaranteed.toString());
+    if (selectedSeries) formData.set('series_id', selectedSeries);
     
     if (price) formData.set('price', price);
     if (monthlyRentPrice) formData.set('monthly_rent_price', monthlyRentPrice);
@@ -246,6 +256,28 @@ export default function EditArtworkPage({ params }: { params: { id: string } }) 
                       className="flex-1 bg-transparent border-none focus:outline-none text-sm text-foreground placeholder:text-muted-foreground/50 min-w-[120px]"
                     />
                   </div>
+                </div>
+                
+                {/* Series Selection */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label htmlFor="series" className="block text-xs font-semibold tracking-wider uppercase text-muted-foreground">
+                      作品主題 / 系列
+                    </label>
+                  </div>
+                  <select
+                    id="series"
+                    name="series_id"
+                    value={selectedSeries}
+                    onChange={(e) => setSelectedSeries(e.target.value)}
+                    className="w-full rounded-sm border border-border bg-white/80 px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary transition-colors appearance-none"
+                    style={{ backgroundImage: 'url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3e%3cpolyline points=\'6 9 12 15 18 9\'%3e%3c/polyline%3e%3c/svg%3e")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem center', backgroundSize: '1em' }}
+                  >
+                    <option value="">(不加入任何系列)</option>
+                    {seriesList.map(s => (
+                      <option key={s.id} value={s.id}>{s.title}</option>
+                    ))}
+                  </select>
                 </div>
                 
                 {/* AI Generated Checkbox */}

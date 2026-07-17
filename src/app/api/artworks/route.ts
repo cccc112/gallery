@@ -20,6 +20,7 @@ export async function POST(request: Request) {
     const description = formData.get('description') as string || '';
     const artType = formData.get('art_type') as 'physical' | 'digital' | 'photography';
     const theme = formData.get('theme') as string || null;
+    const seriesId = formData.get('series_id') as string || null;
     const isAiGenerated = formData.get('is_ai_generated') === 'true';
     const originalGuaranteed = formData.get('original_guaranteed') === 'true';
     // 只有實體作品才能開啟租賃功能
@@ -88,6 +89,7 @@ export async function POST(request: Request) {
         description,
         art_type,
         theme,
+        series_id,
         price,
         is_rentable,
         monthly_rent_price,
@@ -109,6 +111,7 @@ export async function POST(request: Request) {
         ${description},
         ${artType},
         ${theme},
+        ${seriesId},
         ${price},
         ${isRentable},
         ${isRentable ? monthlyRentPrice : null},

@@ -81,10 +81,12 @@ export default async function ArtworkPage({ params }: ArtworkPageProps) {
     // 取得當前藝術品
     const results = await sql`
       SELECT a.*, u.display_name as artist_name, u.email as artist_email, u.bio as artist_bio, u.avatar_url as artist_avatar,
+        s.title as series_title, s.description as series_description,
         (SELECT count(*) FROM public.page_views WHERE artwork_id = a.id) as views_count,
         (SELECT count(*) FROM public.favorites WHERE artwork_id = a.id) as likes_count
       FROM public.artworks a
       JOIN public.users u ON a.artist_id = u.id
+      LEFT JOIN public.artist_series s ON a.series_id = s.id
       WHERE a.id = ${id}
     `;
     
@@ -103,14 +105,29 @@ export default async function ArtworkPage({ params }: ArtworkPageProps) {
         }
       }
 
-      // 取得藝術家其他作品
-      otherArtworks = await sql`
-        SELECT a.*, u.display_name as artist_name
-        FROM public.artworks a
-        JOIN public.users u ON a.artist_id = u.id
-        WHERE a.id != ${id} AND a.artist_id = ${artwork.artist_id}
-        LIMIT 4
-      `;
+      // 取得藝術家其他作品，如果有系列，優先顯示系列中的其他作品
+      if (artwork.series_id) {
+        otherArtworks = await sql`
+          SELECT a.*, u.display_name as artist_name
+          FROM public.artworks a
+          JOIN public.users u ON a.artist_id = u.id
+          WHERE a.id != ${id} AND a.series_id = ${artwork.series_id}
+          LIMIT 4
+        `;
+      }
+      
+      // 如果不是系列作或系列作不足4個，補上其他作品
+      if (otherArtworks.length < 4) {
+        const excludeIds = [id, ...otherArtworks.map(a => a.id)];
+        const moreArtworks = await sql`
+          SELECT a.*, u.display_name as artist_name
+          FROM public.artworks a
+          JOIN public.users u ON a.artist_id = u.id
+          WHERE a.id != ALL(${excludeIds as any}) AND a.artist_id = ${artwork.artist_id}
+          LIMIT ${4 - otherArtworks.length}
+        `;
+        otherArtworks = [...otherArtworks, ...moreArtworks];
+      }
 
       // 檢查是否已售出（paid 訂單）
       const soldCheck = await sql`
@@ -186,6 +203,16 @@ export default async function ArtworkPage({ params }: ArtworkPageProps) {
               <li>
                 <Link href="/gallery" className="hover:text-foreground transition-colors">經典收藏</Link>
               </li>
+              {artwork.series_title && (
+                <>
+                  <li className="text-muted-foreground/30">/</li>
+                  <li>
+                    <Link href={`/artist/${artwork.artist_id}`} className="hover:text-foreground transition-colors text-primary font-medium">
+                      系列：{artwork.series_title}
+                    </Link>
+                  </li>
+                </>
+              )}
               <li className="text-muted-foreground/30">/</li>
               <li className="text-foreground font-medium">{artwork.title}</li>
             </ol>
@@ -229,8 +256,8 @@ export default async function ArtworkPage({ params }: ArtworkPageProps) {
       {otherArtworks.length > 0 && (
         <ArtworkGrid 
           artworks={otherArtworks} 
-          title="該藝術家的其他創作" 
-          viewAllLink="/gallery"
+          title={artwork.series_title ? `系列【${artwork.series_title}】的其他作品` : "該藝術家的其他創作"} 
+          viewAllLink={`/artist/${artwork.artist_id}`}
         />
       )}
     </div>

@@ -81,6 +81,7 @@ export async function PUT(
     const price = formData.get('price') ? Number(formData.get('price')) : null;
     const isAiGenerated = formData.get('is_ai_generated') === 'true';
     const originalGuaranteed = formData.get('original_guaranteed') === 'true';
+    const seriesId = formData.get('series_id') as string || null;
     const monthlyRentPrice = formData.get('monthly_rent_price') ? Number(formData.get('monthly_rent_price')) : null;
     const depositAmount = formData.get('deposit_amount') ? Number(formData.get('deposit_amount')) : null;
     const stock = formData.get('stock') ? Number(formData.get('stock')) : null;
@@ -100,7 +101,8 @@ export async function PUT(
       description,
       is_ai_generated: isAiGenerated,
       original_guaranteed: originalGuaranteed,
-      tags
+      tags,
+      series_id: seriesId
     };
 
     if (price !== null) updates.price = price;

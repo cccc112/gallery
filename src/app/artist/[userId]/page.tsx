@@ -14,6 +14,7 @@ interface ArtistPageProps {
 export default async function ArtistPage({ params }: ArtistPageProps) {
   let artist: any = null;
   let artworks: any[] = [];
+  let series: any[] = [];
 
   try {
     const rows = await sql`SELECT * FROM public.users WHERE id = ${params.userId} LIMIT 1`;
@@ -21,6 +22,12 @@ export default async function ArtistPage({ params }: ArtistPageProps) {
 
     artworks = await sql`
       SELECT * FROM public.artworks
+      WHERE artist_id = ${params.userId}
+      ORDER BY created_at DESC
+    `;
+    
+    series = await sql`
+      SELECT * FROM public.artist_series
       WHERE artist_id = ${params.userId}
       ORDER BY created_at DESC
     `;
@@ -153,57 +160,124 @@ export default async function ArtistPage({ params }: ArtistPageProps) {
           )}
         </div>
 
-        {/* ── Artworks Grid ── */}
-        <div>
-          <div className="mb-5">
-            <p className="text-[10px] font-semibold tracking-widest uppercase text-muted-foreground mb-1">作品集</p>
-            <h2 className="font-serif text-xl font-semibold text-foreground">{displayName} 的創作</h2>
-          </div>
-
+        {/* ── Series & Artworks ── */}
+        <div className="space-y-16">
           {artworks.length === 0 ? (
             <div className="border border-dashed border-border/60 rounded-sm p-16 text-center bg-white/40">
               <ImageIcon className="h-10 w-10 text-muted-foreground/40 mx-auto mb-4" />
               <p className="text-sm text-muted-foreground">尚未發布任何作品</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {artworks.map((artwork) => (
-                <Link
-                  key={artwork.id}
-                  href={`/artwork/${artwork.id}`}
-                  className="group relative bg-white/70 border border-border/50 rounded-sm overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col"
-                >
-                  <div className="aspect-[4/5] bg-stone-50 overflow-hidden relative">
-                    {artwork.preview_file_url ? (
-                      <Image
-                        src={artwork.preview_file_url}
-                        alt={artwork.title}
-                        fill
-                        sizes="(max-width: 640px) 100vw, 33vw"
-                        className="object-cover transition-transform duration-500 group-hover:scale-105"
-                      />
-                    ) : (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <ImageIcon className="h-8 w-8 text-stone-300" />
-                      </div>
-                    )}
-                    <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <span className="flex items-center gap-1.5 text-white text-xs font-medium bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-full">
-                        <Eye className="h-3.5 w-3.5" /> 查看詳情
-                      </span>
+            <>
+              {/* 系列展示區 */}
+              {series.map(s => {
+                const seriesArtworks = artworks.filter(a => a.series_id === s.id);
+                if (seriesArtworks.length === 0) return null;
+                
+                return (
+                  <div key={s.id}>
+                    <div className="mb-6 border-b border-border/60 pb-4">
+                      <p className="text-[10px] font-semibold tracking-widest uppercase text-muted-foreground mb-1">系列作品 Series</p>
+                      <h2 className="font-serif text-2xl font-semibold text-foreground">{s.title}</h2>
+                      {s.description && (
+                        <p className="text-sm text-muted-foreground mt-2 max-w-3xl">{s.description}</p>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {seriesArtworks.map((artwork) => (
+                        <Link
+                          key={artwork.id}
+                          href={`/artwork/${artwork.id}`}
+                          className="group relative bg-white/70 border border-border/50 rounded-sm overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col"
+                        >
+                          <div className="aspect-[4/5] bg-stone-50 overflow-hidden relative">
+                            {artwork.preview_file_url ? (
+                              <Image
+                                src={artwork.preview_file_url}
+                                alt={artwork.title}
+                                fill
+                                sizes="(max-width: 640px) 100vw, 33vw"
+                                className="object-cover transition-transform duration-500 group-hover:scale-105"
+                              />
+                            ) : (
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <ImageIcon className="h-8 w-8 text-stone-300" />
+                              </div>
+                            )}
+                            <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <span className="flex items-center gap-1.5 text-white text-xs font-medium bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-full">
+                                <Eye className="h-3.5 w-3.5" /> 查看詳情
+                              </span>
+                            </div>
+                          </div>
+                          <div className="p-4 flex-1">
+                            <h3 className="font-serif font-semibold text-sm text-foreground line-clamp-1">{artwork.title}</h3>
+                            {artwork.price && (
+                              <p className="text-xs text-muted-foreground mt-1">
+                                買斷 <span className="font-semibold text-foreground">{formatPrice(artwork.price)}</span>
+                              </p>
+                            )}
+                          </div>
+                        </Link>
+                      ))}
                     </div>
                   </div>
-                  <div className="p-4 flex-1">
-                    <h3 className="font-serif font-semibold text-sm text-foreground line-clamp-1">{artwork.title}</h3>
-                    {artwork.price && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        買斷 <span className="font-semibold text-foreground">{formatPrice(artwork.price)}</span>
-                      </p>
-                    )}
+                );
+              })}
+              
+              {/* 未歸類作品 */}
+              {(() => {
+                const unassignedArtworks = artworks.filter(a => !a.series_id);
+                if (unassignedArtworks.length === 0) return null;
+                
+                return (
+                  <div>
+                    <div className="mb-6 border-b border-border/60 pb-4">
+                      <p className="text-[10px] font-semibold tracking-widest uppercase text-muted-foreground mb-1">獨立創作</p>
+                      <h2 className="font-serif text-2xl font-semibold text-foreground">所有其他作品</h2>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {unassignedArtworks.map((artwork) => (
+                        <Link
+                          key={artwork.id}
+                          href={`/artwork/${artwork.id}`}
+                          className="group relative bg-white/70 border border-border/50 rounded-sm overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col"
+                        >
+                          <div className="aspect-[4/5] bg-stone-50 overflow-hidden relative">
+                            {artwork.preview_file_url ? (
+                              <Image
+                                src={artwork.preview_file_url}
+                                alt={artwork.title}
+                                fill
+                                sizes="(max-width: 640px) 100vw, 33vw"
+                                className="object-cover transition-transform duration-500 group-hover:scale-105"
+                              />
+                            ) : (
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <ImageIcon className="h-8 w-8 text-stone-300" />
+                              </div>
+                            )}
+                            <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <span className="flex items-center gap-1.5 text-white text-xs font-medium bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-full">
+                                <Eye className="h-3.5 w-3.5" /> 查看詳情
+                              </span>
+                            </div>
+                          </div>
+                          <div className="p-4 flex-1">
+                            <h3 className="font-serif font-semibold text-sm text-foreground line-clamp-1">{artwork.title}</h3>
+                            {artwork.price && (
+                              <p className="text-xs text-muted-foreground mt-1">
+                                買斷 <span className="font-semibold text-foreground">{formatPrice(artwork.price)}</span>
+                              </p>
+                            )}
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
                   </div>
-                </Link>
-              ))}
-            </div>
+                );
+              })()}
+            </>
           )}
         </div>
       </div>
