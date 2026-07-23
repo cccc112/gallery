@@ -126,59 +126,22 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isTxConfirmed, pendingTxHash]);
 
-  // ── PayPal Checkout ──
-  const handlePayPalCreateOrder = async () => {
-    const res = await fetch('/api/checkout/paypal', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'create', artworkId: artwork.id, actionType }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Failed to create order');
-    return data.id;
-  };
-
-  const handlePayPalApprove = async (data: any) => {
+  // ── Wallet Checkout ──
+  const handleWalletCheckout = async () => {
     setStep('processing');
-    setPayMethod('card');
     try {
-      const res = await fetch('/api/checkout/paypal', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'capture', artworkId: artwork.id, orderID: data.orderID, actionType }),
-      });
-      const captureData = await res.json();
-      if (!res.ok) throw new Error(captureData.error || 'Failed to capture');
-      
-      setTxId(captureData.captureId);
-      setSuccessMsg('PayPal 付款成功');
-      setStep('success');
-    } catch (err: any) {
-      setErrorMsg(err.message || 'PayPal 授權失敗');
-      setStep('error');
-    }
-  };
-
-
-  // ── Credit Card Checkout (ECPay or Stripe for rental) ──
-  const handleCreditCardCheckout = async () => {
-    if (isRental) {
-      window.location.href = `/checkout/rental?id=${artwork.id}`;
-      return;
-    }
-
-    setStep('stripe-loading');
-    try {
-      const res = await fetch('/api/checkout', {
+      const res = await fetch('/api/checkout/wallet', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ artworkId: artwork.id, actionType }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || '建立結帳失敗');
-      window.location.href = data.url;
+      if (!res.ok) throw new Error(data.error || '結帳失敗');
+      
+      setSuccessMsg('點數扣款成功！');
+      setStep('success');
     } catch (err: any) {
-      setErrorMsg(err.message || '無法連線至付款平台，請稍後再試');
+      setErrorMsg(err.message || '無法連線至錢包伺服器，請稍後再試');
       setStep('error');
     }
   };
@@ -466,59 +429,24 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
               </div>
 
               <div className={`space-y-3 transition-opacity duration-300 ${agreedToTerms ? 'opacity-100' : 'opacity-50 pointer-events-none'}`}>
-                {/* Credit Card (ECPay for buy, Stripe for rental) */}
+                {/* Blanc 幣支付 */}
                 <button
-                  onClick={handleCreditCardCheckout}
-                  className="w-full flex items-center gap-4 p-4 border border-border rounded-sm bg-white/60 hover:bg-white hover:border-blue-300 hover:shadow-sm transition-all group text-left"
+                  onClick={handleWalletCheckout}
+                  className="w-full flex items-center gap-4 p-4 border border-border rounded-sm bg-stone-900 hover:bg-stone-800 transition-all group text-left shadow-md"
                 >
-                  <div className="h-10 w-10 rounded-full bg-blue-50 flex items-center justify-center border border-blue-100 flex-shrink-0">
-                    <CreditCard className="h-5 w-5 text-blue-600" />
+                  <div className="h-10 w-10 rounded-full bg-stone-800 flex items-center justify-center border border-stone-700 flex-shrink-0">
+                    <Wallet className="h-5 w-5 text-white" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm font-semibold text-foreground">
-                      信用卡安全結帳
+                    <p className="text-sm font-semibold text-white">
+                      扣除 Blanc 幣付款
                     </p>
-                    <p className="text-xs text-muted-foreground font-light">
-                      支援各大銀行信用卡、Apple Pay、Google Pay
+                    <p className="text-xs text-stone-400 font-light">
+                      自動從您的站內錢包餘額扣除
                     </p>
                   </div>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+                  <ChevronRight className="h-4 w-4 text-stone-400 group-hover:text-white transition-colors" />
                 </button>
-
-              {/* PayPal */}
-              <div className="w-full relative z-10 border border-border rounded-sm bg-white p-4 hover:border-primary/40 transition-all">
-                <p className="text-sm font-semibold text-foreground mb-2">PayPal (國際用戶專用 / USD 計價)</p>
-                {process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID ? (
-                  <PayPalScriptProvider options={{ clientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID, currency: "USD" }}>
-      <PayPalButtons 
-          createOrder={handlePayPalCreateOrder}
-          onApprove={handlePayPalApprove as any}
-          onCancel={() => { setStep('select'); }}
-          style={{ layout: "horizontal", height: 40 }}
-          onError={(err) => { 
-            console.error("PayPal Error:", err);
-            setErrorMsg("PayPal 交易發生錯誤，請稍後再試或聯繫客服。"); 
-            setStep('error'); 
-          }}
-      />
-                  </PayPalScriptProvider>
-                ) : (
-                  <button 
-                    onClick={async () => {
-                      setStep('processing');
-                      try {
-                        const id = await handlePayPalCreateOrder();
-                        await handlePayPalApprove({ orderID: id });
-                      } catch (err: any) {
-                        setErrorMsg(err.message || "PayPal 模擬失敗"); 
-                        setStep('error');
-                      }
-                    }} 
-                    className="w-full h-10 bg-[#FFC439] hover:bg-[#F2BA36] transition-colors rounded text-sm font-bold text-slate-900 flex items-center justify-center"
-                  >
-                    (測試環境) 模擬 PayPal 結帳
-                  </button>
-                )}
               </div>
 
               {/* Web3 */}

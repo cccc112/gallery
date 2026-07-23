@@ -27,7 +27,7 @@ export default function Navbar() {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const [user, setUser] = useState<{ id: string; email: string } | null>(null);
-  const [profile, setProfile] = useState<{ display_name: string; avatar_url?: string; role: string } | null>(null);
+  const [profile, setProfile] = useState<{ display_name: string; avatar_url?: string; role: string; wallet_balance?: number } | null>(null);
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
 
   // 路由切換時關閉選單
@@ -210,6 +210,18 @@ export default function Navbar() {
               >
                 <Upload className="h-3.5 w-3.5" />
                 上傳作品
+              </Link>
+
+              {/* Token Balance */}
+              <Link
+                href="/profile/wallet"
+                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-stone-200 bg-stone-50 hover:bg-stone-100 transition-all shadow-sm group"
+                title="我的 Blanc 幣"
+              >
+                <img src="/silver_coin.png" alt="Blanc Coin" className="h-5 w-5 object-cover rounded-full border border-stone-300 shadow-inner group-hover:rotate-12 transition-transform duration-300" />
+                <span className="text-xs font-bold font-mono text-stone-700">
+                  {profile?.wallet_balance ? Number(profile.wallet_balance).toLocaleString() : 0}
+                </span>
               </Link>
 
               {/* Wallet Button */}
@@ -399,6 +411,10 @@ export default function Navbar() {
                   </Link>
                   <Link href="/profile/upload" className="flex items-center gap-2.5 px-3 py-3 text-sm font-medium text-foreground hover:bg-secondary/50 rounded-md transition-colors">
                     <Upload className="h-4 w-4 text-muted-foreground" /> 上傳作品
+                  </Link>
+                  <Link href="/profile/wallet" className="flex items-center gap-2.5 px-3 py-3 text-sm font-medium text-foreground hover:bg-secondary/50 rounded-md transition-colors">
+                    <img src="/silver_coin.png" alt="Coin" className="h-4 w-4 rounded-full border border-stone-300" /> 
+                    我的錢包餘額: <span className="font-mono font-bold text-stone-700">{profile?.wallet_balance ? Number(profile.wallet_balance).toLocaleString() : 0} Pts</span>
                   </Link>
                   <button onClick={handleLogout} className="w-full flex items-center gap-2.5 px-3 py-3 text-sm font-medium text-rose-600 hover:bg-rose-50 rounded-md transition-colors text-left">
                     <LogOut className="h-4 w-4" /> 登出
