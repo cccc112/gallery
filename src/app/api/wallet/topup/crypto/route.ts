@@ -125,14 +125,29 @@ export async function POST(req: Request) {
       );
     }
 
-    // 3. Verify amount (1 NTD = 1 Point = 0.031 USDC, USDC has 6 decimals)
-    const expectedUsdcRaw = BigInt(Math.round(Number(amount) * 0.031 * 1_000_000));
+    // 3. Verify amount with live rate from CoinGecko (allow 5% slippage for rate fluctuation)
+    let liveRate = 0.031; // fallback
+    try {
+      const rateRes = await fetch(
+        'https://api.coingecko.com/api/v3/simple/price?ids=usd-coin&vs_currencies=twd',
+        { signal: AbortSignal.timeout(3000) }
+      );
+      if (rateRes.ok) {
+        const rateData = await rateRes.json();
+        const usdcInTwd: number = rateData['usd-coin']?.twd;
+        if (usdcInTwd > 0) liveRate = 1 / usdcInTwd;
+      }
+    } catch { /* use fallback */ }
+
+    const expectedUsdcRaw = BigInt(Math.round(Number(amount) * liveRate * 1_000_000));
+    // Allow 5% slippage (rate can move between user initiating and server verifying)
+    const tolerance = expectedUsdcRaw * BigInt(5) / BigInt(100);
     const difference = transferValue > expectedUsdcRaw
       ? transferValue - expectedUsdcRaw
       : expectedUsdcRaw - transferValue;
-    if (difference > BigInt(10000)) {
+    if (difference > tolerance) {
       return NextResponse.json(
-        { error: `Amount mismatch. Expected ${expectedUsdcRaw}, got ${transferValue}` },
+        { error: `Amount mismatch. Expected ~${expectedUsdcRaw} (±5%), got ${transferValue}` },
         { status: 400 }
       );
     }

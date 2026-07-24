@@ -11,6 +11,7 @@ import {
   AlertTriangle, ExternalLink,
 } from 'lucide-react';
 import { PLATFORM_WALLET, USDC_CONTRACTS, USDC_ABI } from '@/lib/crypto';
+import { useUsdcRate } from '@/hooks/useUsdcRate';
 import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 import ESCROW_ABI from '@/lib/GalleryEscrowABI.json';
 
@@ -35,9 +36,6 @@ interface CheckoutModalProps {
 
 const formatNTD = (n: number | null | undefined) =>
   n == null ? '—' : new Intl.NumberFormat('zh-TW', { style: 'currency', currency: 'TWD', minimumFractionDigits: 0 }).format(n);
-
-// USDC 換算：1 TWD ≈ 0.031 USDC（以固定匯率示意，正式環境請接即時匯率）
-const twdToUsdc = (twd: number) => (twd * 0.031).toFixed(2);
 
 // 平台抽成比例（10%）
 const COMMISSION_RATE = 0.10;
@@ -80,6 +78,10 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
   const { isLoading: isTxPending, isSuccess: isTxConfirmed } = useWaitForTransactionReceipt({
     hash: pendingTxHash,
   });
+
+  // Live USDC rate
+  const { rate: usdcRate, usdcInTwd, loading: rateLoading, isFallback: rateFallback } = useUsdcRate();
+  const twdToUsdc = (twd: number) => (twd * usdcRate).toFixed(4);
 
   const isRental = actionType === 'rent';
   const isPhysical = artwork.art_type === 'physical';
@@ -165,7 +167,7 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
       const totalTwd = isRental
         ? (artwork.monthly_rent_price || 0) + (artwork.deposit_amount || 0)
         : (artwork.price || 0);
-      const usdcRaw = BigInt(Math.round(totalTwd * 0.031 * 1_000_000)); // USDC 6 decimals
+      const usdcRaw = BigInt(Math.round(totalTwd * usdcRate * 1_000_000)); // USDC 6 decimals
 
       // 開發環境：模擬 Mock tx hash
       if (process.env.NODE_ENV !== 'production' || !usdcContract) {
@@ -180,8 +182,8 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
         // 租賃：呼叫 Escrow 合約
         const ESCROW_ADDRESS = '0x0000000000000000000000000000000000000000'; // TODO: 替換為實際部署的合約地址
         const artistWallet = '0x0000000000000000000000000000000000000000'; // TODO: 從資料庫取得真實藝術家錢包
-        const rentAmount = BigInt(Math.round((artwork.monthly_rent_price || 0) * 0.031 * 1_000_000));
-        const depositAmt = BigInt(Math.round((artwork.deposit_amount || 0) * 0.031 * 1_000_000));
+        const rentAmount = BigInt(Math.round((artwork.monthly_rent_price || 0) * usdcRate * 1_000_000));
+        const depositAmt = BigInt(Math.round((artwork.deposit_amount || 0) * usdcRate * 1_000_000));
 
         // 1. Approve USDC
         await writeContractAsync({

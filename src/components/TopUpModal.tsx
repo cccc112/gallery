@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Loader2, X, Wallet as WalletIcon, AlertTriangle } from 'lucide-react';
+import { Loader2, X, Wallet as WalletIcon, AlertTriangle, RefreshCw } from 'lucide-react';
 import { useAccount, useChainId, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { PLATFORM_WALLET, USDC_CONTRACTS, USDC_ABI } from '@/lib/crypto';
+import { useUsdcRate } from '@/hooks/useUsdcRate';
 
 const CHAIN_NAMES: Record<number, string> = {
   1: 'Ethereum', 8453: 'Base', 137: 'Polygon',
@@ -14,6 +15,9 @@ export default function TopUpModal({ onClose, onSuccess }: { onClose: () => void
   const [amount, setAmount] = useState<number | ''>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+
+  // Live rate
+  const { rate, usdcInTwd, loading: rateLoading, isFallback } = useUsdcRate();
 
   // wagmi hooks
   const { address: walletAddress, isConnected } = useAccount();
@@ -25,9 +29,9 @@ export default function TopUpModal({ onClose, onSuccess }: { onClose: () => void
     hash: pendingTxHash,
   });
 
-  // Calculate USDC (1 NTD = 1 Point = 0.031 USDC)
+  // Calculate USDC with live rate
   const twdAmount = amount ? Number(amount) : 0;
-  const usdcAmount = (twdAmount * 0.031).toFixed(2);
+  const usdcAmount = (twdAmount * rate).toFixed(4);
 
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -46,7 +50,7 @@ export default function TopUpModal({ onClose, onSuccess }: { onClose: () => void
     setErrorMsg('');
     
     try {
-      const usdcRaw = BigInt(Math.round(twdAmount * 0.031 * 1_000_000)); // USDC 6 decimals
+      const usdcRaw = BigInt(Math.round(twdAmount * rate * 1_000_000)); // USDC 6 decimals
 
       // Dev environment mock
       if (process.env.NODE_ENV !== 'production' || !usdcContract) {
@@ -81,7 +85,8 @@ export default function TopUpModal({ onClose, onSuccess }: { onClose: () => void
           amount: topupAmount,
           txHash: hash,
           chainId,
-          walletAddress
+          walletAddress,
+          rate, // 送出當時的匯率，讓後端驗算
         })
       });
       
@@ -117,7 +122,16 @@ export default function TopUpModal({ onClose, onSuccess }: { onClose: () => void
           <h2 className="text-xl font-serif font-semibold text-stone-900 flex items-center gap-2">
             <WalletIcon className="h-5 w-5 text-purple-600" /> Web3 儲值
           </h2>
-          <p className="text-sm text-stone-500 mt-1">1 點 Blanc 幣 = 1 元新台幣 (NTD)</p>
+          <div className="flex items-center gap-2 mt-1">
+            <p className="text-sm text-stone-500">1 點 Blanc 幣 = 1 元新台幣 (NTD)</p>
+            {rateLoading ? (
+              <Loader2 className="h-3 w-3 animate-spin text-stone-400" />
+            ) : (
+              <span className={`text-xs px-1.5 py-0.5 rounded-full font-mono ${isFallback ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                1 USDC ≈ {usdcInTwd.toFixed(1)} NTD {isFallback ? '(備援)' : '⟳'}
+              </span>
+            )}
+          </div>
         </div>
         
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
@@ -138,9 +152,19 @@ export default function TopUpModal({ onClose, onSuccess }: { onClose: () => void
             </div>
             
             {amount && Number(amount) > 0 && (
-              <div className="mt-3 p-3 bg-purple-50 rounded-lg border border-purple-100 flex justify-between items-center text-sm">
-                <span className="text-purple-700">需支付 USDC:</span>
-                <span className="font-mono font-bold text-purple-900">{usdcAmount} USDC</span>
+              <div className="mt-3 p-3 bg-purple-50 rounded-lg border border-purple-100 space-y-1">
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-purple-700">需支付 USDC:</span>
+                  {rateLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin text-purple-400" />
+                  ) : (
+                    <span className="font-mono font-bold text-purple-900">{usdcAmount} USDC</span>
+                  )}
+                </div>
+                <div className="flex justify-between items-center text-xs text-purple-500">
+                  <span>即時匯率</span>
+                  <span className="font-mono">1 TWD = {rate.toFixed(5)} USDC</span>
+                </div>
               </div>
             )}
           </div>
@@ -179,7 +203,7 @@ export default function TopUpModal({ onClose, onSuccess }: { onClose: () => void
           
           <button
             type="submit"
-            disabled={isSubmitting || (isConnected && !USDC_CONTRACTS[chainId])}
+            disabled={isSubmitting || rateLoading || (isConnected && !USDC_CONTRACTS[chainId])}
             className="w-full bg-purple-600 text-white rounded-xl py-3.5 font-medium hover:bg-purple-700 transition-colors disabled:opacity-50 flex flex-col items-center justify-center h-[52px]"
           >
             {isSubmitting ? (
