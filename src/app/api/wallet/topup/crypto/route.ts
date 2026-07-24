@@ -67,7 +67,7 @@ export async function POST(req: Request) {
     const transferEventAbi = parseAbiItem('event Transfer(address indexed from, address indexed to, uint256 value)');
     
     let isValidTransfer = false;
-    let transferValue = 0n;
+    let transferValue = BigInt(0);
 
     for (const log of receipt.logs) {
       // Check if the log is from the USDC contract
@@ -103,7 +103,7 @@ export async function POST(req: Request) {
     
     // We allow a tiny margin of error (1 cent) due to JS float rounding
     const difference = transferValue > expectedUsdcRaw ? transferValue - expectedUsdcRaw : expectedUsdcRaw - transferValue;
-    if (difference > 10000n) { // > 0.01 USDC difference
+    if (difference > BigInt(10000)) { // > 0.01 USDC difference
       return NextResponse.json({ error: `Amount mismatch. Expected ${expectedUsdcRaw}, got ${transferValue}` }, { status: 400 });
     }
 
