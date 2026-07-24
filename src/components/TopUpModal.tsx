@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Loader2, X, Wallet as WalletIcon, AlertTriangle } from 'lucide-react';
 import { useAccount, useChainId, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { useConnectModal } from '@rainbow-me/rainbowkit';
-import { PLATFORM_WALLET, USDC_CONTRACTS, USDC_ABI } from '@/lib/wagmi';
+import { PLATFORM_WALLET, USDC_CONTRACTS, USDC_ABI } from '@/lib/crypto';
 
 const CHAIN_NAMES: Record<number, string> = {
   1: 'Ethereum', 8453: 'Base', 137: 'Polygon',

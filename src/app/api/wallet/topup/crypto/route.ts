@@ -2,14 +2,49 @@ export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { createPublicClient, http, parseAbiItem, decodeEventLog } from 'viem';
-import { USDC_CONTRACTS, PLATFORM_WALLET } from '@/lib/wagmi';
+import { USDC_CONTRACTS, PLATFORM_WALLET } from '@/lib/crypto';
+
+// ERC20 Transfer event topic (keccak256 of 'Transfer(address,address,uint256)')
+const TRANSFER_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
 
 const RPC_URLS: Record<number, string> = {
   1: 'https://cloudflare-eth.com',
   8453: 'https://mainnet.base.org',
-  137: 'https://polygon-rpc.com'
+  137: 'https://polygon-rpc.com',
 };
+
+/** Decode ABI-encoded address (32 bytes, last 20 bytes) */
+function decodeAddress(hex: string): string {
+  return ('0x' + hex.slice(-40)).toLowerCase();
+}
+
+/** Decode ABI-encoded uint256 */
+function decodeBigInt(hex: string): bigint {
+  return BigInt('0x' + hex.replace(/^0x/, ''));
+}
+
+/** Call eth_getTransactionReceipt via raw JSON-RPC (no viem) */
+async function getReceipt(rpcUrl: string, txHash: string) {
+  const res = await fetch(rpcUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'eth_getTransactionReceipt',
+      params: [txHash],
+    }),
+  });
+  const json = await res.json();
+  return json.result as null | {
+    status: string; // '0x1' = success
+    logs: Array<{
+      address: string;
+      topics: string[];
+      data: string;
+    }>;
+  };
+}
 
 export async function POST(req: Request) {
   try {
@@ -29,7 +64,6 @@ export async function POST(req: Request) {
     // --- Dev/Mock Handling ---
     if (process.env.NODE_ENV !== 'production' || txHash.startsWith('0xMOCK')) {
       const adminClient = createAdminClient();
-      // Check if mock hash already used
       const { data: existingMock } = await adminClient
         .from('wallet_transactions')
         .select('id')
@@ -44,69 +78,66 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true, message: 'Mock points granted' });
     }
 
-    // --- Real Blockchain Verification ---
+    // --- Real Blockchain Verification (pure fetch, no viem) ---
     const rpcUrl = RPC_URLS[chainId as number];
-    const usdcAddress = USDC_CONTRACTS[chainId as number];
+    const usdcAddress = (USDC_CONTRACTS[chainId as number] || '').toLowerCase();
     if (!rpcUrl || !usdcAddress) {
       return NextResponse.json({ error: 'Unsupported chain' }, { status: 400 });
     }
 
-    const publicClient = createPublicClient({
-      transport: http(rpcUrl)
-    });
-
-    // 1. Wait for tx receipt to ensure it's mined and successful
-    const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash as `0x${string}` });
-    
-    if (receipt.status !== 'success') {
+    // 1. Get receipt
+    const receipt = await getReceipt(rpcUrl, txHash);
+    if (!receipt) {
+      return NextResponse.json({ error: 'Transaction not found / not yet mined' }, { status: 400 });
+    }
+    if (receipt.status !== '0x1') {
       return NextResponse.json({ error: 'Transaction failed on chain' }, { status: 400 });
     }
 
-    // 2. Parse ERC20 Transfer events from the receipt
-    const transferEventAbi = parseAbiItem('event Transfer(address indexed from, address indexed to, uint256 value)');
-    
+    // 2. Find Transfer log from USDC contract → platform wallet
     let isValidTransfer = false;
     let transferValue = BigInt(0);
 
     for (const log of receipt.logs) {
-      // Check if the log is from the USDC contract
-      if (log.address.toLowerCase() === usdcAddress.toLowerCase()) {
-        try {
-          const { args } = decodeEventLog({
-            abi: [transferEventAbi],
-            data: log.data,
-            topics: log.topics,
-          });
+      if (
+        log.address.toLowerCase() === usdcAddress &&
+        log.topics[0] === TRANSFER_TOPIC &&
+        log.topics.length === 3
+      ) {
+        const from = decodeAddress(log.topics[1]);
+        const to = decodeAddress(log.topics[2]);
 
-          // Check if sender and receiver match
-          if (
-            args.from?.toLowerCase() === walletAddress.toLowerCase() &&
-            args.to?.toLowerCase() === PLATFORM_WALLET.toLowerCase()
-          ) {
-            isValidTransfer = true;
-            transferValue = args.value as bigint;
-            break;
-          }
-        } catch (e) {
-          // Ignore logs that don't match our ABI
+        if (
+          from === walletAddress.toLowerCase() &&
+          to === PLATFORM_WALLET.toLowerCase()
+        ) {
+          isValidTransfer = true;
+          transferValue = decodeBigInt(log.data);
+          break;
         }
       }
     }
 
     if (!isValidTransfer) {
-      return NextResponse.json({ error: 'Valid USDC transfer to platform not found in transaction' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Valid USDC transfer to platform not found in transaction' },
+        { status: 400 }
+      );
     }
 
-    // 3. Verify amount (1 NTD = 1 Point = 0.031 USDC. USDC has 6 decimals)
+    // 3. Verify amount (1 NTD = 1 Point = 0.031 USDC, USDC has 6 decimals)
     const expectedUsdcRaw = BigInt(Math.round(Number(amount) * 0.031 * 1_000_000));
-    
-    // We allow a tiny margin of error (1 cent) due to JS float rounding
-    const difference = transferValue > expectedUsdcRaw ? transferValue - expectedUsdcRaw : expectedUsdcRaw - transferValue;
-    if (difference > BigInt(10000)) { // > 0.01 USDC difference
-      return NextResponse.json({ error: `Amount mismatch. Expected ${expectedUsdcRaw}, got ${transferValue}` }, { status: 400 });
+    const difference = transferValue > expectedUsdcRaw
+      ? transferValue - expectedUsdcRaw
+      : expectedUsdcRaw - transferValue;
+    if (difference > BigInt(10000)) {
+      return NextResponse.json(
+        { error: `Amount mismatch. Expected ${expectedUsdcRaw}, got ${transferValue}` },
+        { status: 400 }
+      );
     }
 
-    // 4. Double check database for replay attacks
+    // 4. Replay-attack guard
     const adminClient = createAdminClient();
     const { data: existingTx } = await adminClient
       .from('wallet_transactions')
@@ -118,9 +149,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Transaction already processed' }, { status: 400 });
     }
 
-    // 5. Grant Points!
+    // 5. Grant Points
     await grantPoints(adminClient, user.id, amount, txHash, chainId);
-
     return NextResponse.json({ success: true, message: 'Points granted successfully' });
 
   } catch (error: any) {
@@ -130,7 +160,6 @@ export async function POST(req: Request) {
 }
 
 async function grantPoints(adminClient: any, userId: string, amount: number, txHash: string, chainId: string | number) {
-  // Insert transaction record
   const { error: insertError } = await adminClient
     .from('wallet_transactions')
     .insert({
@@ -138,12 +167,11 @@ async function grantPoints(adminClient: any, userId: string, amount: number, txH
       amount,
       type: 'topup_crypto',
       status: 'completed',
-      metadata: { txHash, chainId }
+      metadata: { txHash, chainId },
     });
 
   if (insertError) throw insertError;
 
-  // Update user balance
   const { data: userData } = await adminClient
     .from('users')
     .select('wallet_balance')
@@ -155,7 +183,7 @@ async function grantPoints(adminClient: any, userId: string, amount: number, txH
       .from('users')
       .update({ wallet_balance: Number(userData.wallet_balance || 0) + Number(amount) })
       .eq('id', userId);
-      
+
     if (updateError) throw updateError;
   }
 }

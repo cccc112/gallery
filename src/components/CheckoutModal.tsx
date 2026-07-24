@@ -10,7 +10,7 @@ import {
   MapPin, Lock, Shield, ChevronRight, RefreshCw,
   AlertTriangle, ExternalLink,
 } from 'lucide-react';
-import { PLATFORM_WALLET, USDC_CONTRACTS, USDC_ABI } from '@/lib/wagmi';
+import { PLATFORM_WALLET, USDC_CONTRACTS, USDC_ABI } from '@/lib/crypto';
 import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 import ESCROW_ABI from '@/lib/GalleryEscrowABI.json';
 
