@@ -12,7 +12,6 @@ import {
 } from 'lucide-react';
 import { PLATFORM_WALLET, USDC_CONTRACTS, USDC_ABI } from '@/lib/crypto';
 import { useUsdcRate } from '@/hooks/useUsdcRate';
-import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 import ESCROW_ABI from '@/lib/GalleryEscrowABI.json';
 
 type ActionType = 'buy' | 'rent';

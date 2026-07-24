@@ -14,6 +14,7 @@ const CHAIN_NAMES: Record<number, string> = {
 export default function TopUpModal({ onClose, onSuccess }: { onClose: () => void, onSuccess: () => void }) {
   const [amount, setAmount] = useState<number | ''>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLinePayLoading, setIsLinePayLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
   // Live rate
@@ -103,6 +104,32 @@ export default function TopUpModal({ onClose, onSuccess }: { onClose: () => void
     }
   };
 
+  const handleLinePay = async () => {
+    if (!amount || amount < 1) return setErrorMsg('儲值點數至少需為 1 點');
+    setIsLinePayLoading(true);
+    setErrorMsg('');
+
+    try {
+      const res = await fetch('/api/linepay/request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: twdAmount,
+          orderId: `ORDER_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'LINE Pay 請求失敗');
+
+      // Redirect to LINE Pay
+      window.location.href = data.paymentUrl;
+    } catch (err: any) {
+      setErrorMsg(err.message || '無法啟動 LINE Pay');
+      setIsLinePayLoading(false);
+    }
+  };
+
   // Wait for tx confirmation
   useEffect(() => {
     if (isTxConfirmed && pendingTxHash && isSubmitting) {
@@ -120,7 +147,7 @@ export default function TopUpModal({ onClose, onSuccess }: { onClose: () => void
         
         <div className="px-6 py-5 border-b border-stone-100 bg-stone-50/50">
           <h2 className="text-xl font-serif font-semibold text-stone-900 flex items-center gap-2">
-            <WalletIcon className="h-5 w-5 text-purple-600" /> Web3 儲值
+            <WalletIcon className="h-5 w-5 text-purple-600" /> 點數儲值
           </h2>
           <div className="flex items-center gap-2 mt-1">
             <p className="text-sm text-stone-500">1 點 Blanc 幣 = 1 元新台幣 (NTD)</p>
@@ -212,7 +239,26 @@ export default function TopUpModal({ onClose, onSuccess }: { onClose: () => void
                 {isTxPending ? '等待區塊鏈確認中...' : '處理中...'}
               </div>
             ) : (
-              isConnected ? '確認支付並儲值' : '連接錢包'
+              isConnected ? '確認支付並儲值 (Web3)' : '連接 Web3 錢包'
+            )}
+          </button>
+
+          <div className="relative flex py-2 items-center">
+            <div className="flex-grow border-t border-stone-200"></div>
+            <span className="flex-shrink-0 mx-4 text-stone-400 text-xs">或</span>
+            <div className="flex-grow border-t border-stone-200"></div>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleLinePay}
+            disabled={isSubmitting || isLinePayLoading}
+            className="w-full bg-[#06C755] text-white rounded-xl py-3.5 font-medium hover:bg-[#05b34c] transition-colors disabled:opacity-50 flex flex-col items-center justify-center h-[52px]"
+          >
+            {isLinePayLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              '使用 LINE Pay 儲值'
             )}
           </button>
         </form>
