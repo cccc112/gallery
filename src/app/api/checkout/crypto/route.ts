@@ -13,7 +13,6 @@ const SUPPORTED_CHAINS: Record<number, string> = {
 };
 
 import { createPublicClient, http } from 'viem';
-import { mainnet, base, polygon } from 'viem/chains';
 
 // Mock 或真實環境驗證
 async function verifyTransaction(txHash: string, chainId: number): Promise<{
@@ -24,12 +23,16 @@ async function verifyTransaction(txHash: string, chainId: number): Promise<{
     return { verified: true };
   }
 
-  const chains: Record<number, any> = { 1: mainnet, 8453: base, 137: polygon };
-  const chain = chains[chainId];
-  if (!chain) return { verified: false };
+  const RPC_URLS: Record<number, string> = {
+    1: 'https://cloudflare-eth.com',
+    8453: 'https://mainnet.base.org',
+    137: 'https://polygon-rpc.com'
+  };
+  const rpcUrl = RPC_URLS[chainId];
+  if (!rpcUrl) return { verified: false };
 
   try {
-    const client = createPublicClient({ chain, transport: http() });
+    const client = createPublicClient({ transport: http(rpcUrl) });
     const receipt = await client.getTransactionReceipt({ hash: txHash as any });
     
     // 基礎驗證：確認交易在區塊鏈上成功

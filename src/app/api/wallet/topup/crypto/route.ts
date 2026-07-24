@@ -3,14 +3,13 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createPublicClient, http, parseAbiItem, decodeEventLog } from 'viem';
-import { mainnet, base, polygon } from 'viem/chains';
 import { USDC_CONTRACTS, PLATFORM_WALLET } from '@/lib/wagmi';
 
-const chains = {
-  1: mainnet,
-  8453: base,
-  137: polygon
-} as Record<number, any>;
+const RPC_URLS: Record<number, string> = {
+  1: 'https://cloudflare-eth.com',
+  8453: 'https://mainnet.base.org',
+  137: 'https://polygon-rpc.com'
+};
 
 export async function POST(req: Request) {
   try {
@@ -46,15 +45,14 @@ export async function POST(req: Request) {
     }
 
     // --- Real Blockchain Verification ---
-    const chain = chains[chainId];
-    const usdcAddress = USDC_CONTRACTS[chainId];
-    if (!chain || !usdcAddress) {
+    const rpcUrl = RPC_URLS[chainId as number];
+    const usdcAddress = USDC_CONTRACTS[chainId as number];
+    if (!rpcUrl || !usdcAddress) {
       return NextResponse.json({ error: 'Unsupported chain' }, { status: 400 });
     }
 
     const publicClient = createPublicClient({
-      chain,
-      transport: http()
+      transport: http(rpcUrl)
     });
 
     // 1. Wait for tx receipt to ensure it's mined and successful
