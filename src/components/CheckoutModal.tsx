@@ -447,34 +447,33 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
                   </div>
                   <ChevronRight className="h-4 w-4 text-stone-400 group-hover:text-white transition-colors" />
                 </button>
-              </div>
 
-              {/* Web3 */}
-              <button
-                onClick={() => { setPayMethod('crypto'); setStep('crypto-confirm'); }}
-                className="w-full flex items-center gap-4 p-4 border border-border rounded-sm bg-white/60 hover:bg-white hover:border-purple-300 hover:shadow-sm transition-all group text-left"
-              >
-                <div className="h-10 w-10 rounded-full bg-purple-50 flex items-center justify-center border border-purple-100 flex-shrink-0">
-                  <Wallet className="h-5 w-5 text-purple-600" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-foreground">Web3 錢包支付</p>
-                  <p className="text-xs text-muted-foreground font-light">
-                    MetaMask / WalletConnect · <span className="font-semibold text-purple-600">{usdcAmount}</span>
-                  </p>
-                </div>
-                {isConnected ? (
-                  <div className="flex items-center gap-1.5 text-[10px] text-emerald-600 font-semibold">
-                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                    已連接
+                {/* Web3 */}
+                <button
+                  onClick={() => { setPayMethod('crypto'); setStep('crypto-confirm'); }}
+                  className="w-full flex items-center gap-4 p-4 border border-border rounded-sm bg-white/60 hover:bg-white hover:border-purple-300 hover:shadow-sm transition-all group text-left"
+                >
+                  <div className="h-10 w-10 rounded-full bg-purple-50 flex items-center justify-center border border-purple-100 flex-shrink-0">
+                    <Wallet className="h-5 w-5 text-purple-600" />
                   </div>
-                ) : (
-                  <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
-                )}
-              </button>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-foreground">Web3 錢包支付</p>
+                    <p className="text-xs text-muted-foreground font-light">
+                      MetaMask / WalletConnect · <span className="font-semibold text-purple-600">{usdcAmount}</span>
+                    </p>
+                  </div>
+                  {isConnected ? (
+                    <div className="flex items-center gap-1.5 text-[10px] text-emerald-600 font-semibold">
+                      <div className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                      已連接
+                    </div>
+                  ) : (
+                    <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+                  )}
+                </button>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
           {/* ── Stripe 跳轉 loading ── */}
           {step === 'stripe-loading' && (

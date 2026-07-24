@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createServerClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createPublicClient, http, parseAbiItem } from 'viem';
 import { mainnet, base, polygon } from 'viem/chains';
@@ -13,7 +13,7 @@ const chains = {
 
 export async function POST(req: Request) {
   try {
-    const supabase = createServerClient();
+    const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
