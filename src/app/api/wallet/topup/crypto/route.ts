@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { createPublicClient, http, parseAbiItem } from 'viem';
+import { createPublicClient, http, parseAbiItem, decodeEventLog } from 'viem';
 import { mainnet, base, polygon } from 'viem/chains';
 import { USDC_CONTRACTS, PLATFORM_WALLET } from '@/lib/wagmi';
 
@@ -73,7 +73,7 @@ export async function POST(req: Request) {
       // Check if the log is from the USDC contract
       if (log.address.toLowerCase() === usdcAddress.toLowerCase()) {
         try {
-          const { args } = publicClient.decodeEventLog({
+          const { args } = decodeEventLog({
             abi: [transferEventAbi],
             data: log.data,
             topics: log.topics,
