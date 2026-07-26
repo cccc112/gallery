@@ -6,6 +6,7 @@ import { useAccount, useChainId, useWriteContract, useWaitForTransactionReceipt 
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { PLATFORM_WALLET, USDC_CONTRACTS, USDC_ABI } from '@/lib/crypto';
 import { useUsdcRate } from '@/hooks/useUsdcRate';
+import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 
 const CHAIN_NAMES: Record<number, string> = {
   1: 'Ethereum', 8453: 'Base', 137: 'Polygon',
@@ -127,6 +128,44 @@ export default function TopUpModal({ onClose, onSuccess }: { onClose: () => void
     } catch (err: any) {
       setErrorMsg(err.message || '無法啟動 LINE Pay');
       setIsLinePayLoading(false);
+    }
+  };
+
+  const createPayPalOrder = async () => {
+    if (!amount || amount < 1) {
+      setErrorMsg('儲值點數至少需為 1 點');
+      throw new Error('Invalid amount');
+    }
+    setErrorMsg('');
+    
+    const res = await fetch('/api/paypal/create-order', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ amount: twdAmount }),
+    });
+    
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || '無法建立 PayPal 訂單');
+    return data.id; // Return PayPal order ID
+  };
+
+  const onPayPalApprove = async (data: any, actions: any) => {
+    try {
+      setIsSubmitting(true);
+      const res = await fetch('/api/paypal/capture-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: data.orderID }),
+      });
+      
+      const captureData = await res.json();
+      if (!res.ok) throw new Error(captureData.error || 'PayPal 付款確認失敗');
+      
+      alert('儲值成功！點數已發放至您的錢包。');
+      onSuccess();
+    } catch (err: any) {
+      setErrorMsg(err.message || '發生錯誤');
+      setIsSubmitting(false);
     }
   };
 
@@ -261,6 +300,35 @@ export default function TopUpModal({ onClose, onSuccess }: { onClose: () => void
               '使用 LINE Pay 儲值'
             )}
           </button>
+          <div className="relative flex py-2 items-center">
+            <div className="flex-grow border-t border-stone-200"></div>
+            <span className="flex-shrink-0 mx-4 text-stone-400 text-xs">海外用戶</span>
+            <div className="flex-grow border-t border-stone-200"></div>
+          </div>
+
+          <div className="relative z-0">
+            <PayPalScriptProvider options={{ 
+              clientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || "test",
+              currency: "TWD",
+              intent: "capture"
+            }}>
+              {(!amount || amount < 1) ? (
+                <div className="w-full text-center p-4 bg-stone-50 border border-stone-200 rounded-xl text-sm text-stone-500">
+                  請先輸入儲值點數以啟用 PayPal
+                </div>
+              ) : (
+                <PayPalButtons
+                  style={{ layout: "vertical", shape: "rect", color: "gold" }}
+                  createOrder={createPayPalOrder}
+                  onApprove={onPayPalApprove}
+                  onError={(err) => {
+                    console.error("PayPal Error:", err);
+                    setErrorMsg("PayPal 載入或付款發生錯誤");
+                  }}
+                />
+              )}
+            </PayPalScriptProvider>
+          </div>
         </form>
       </div>
     </div>
