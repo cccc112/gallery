@@ -1,8 +1,15 @@
 import { NextResponse } from 'next/server';
 import { requestLinePay } from '@/lib/linepay';
 import { createClient } from '@/lib/supabase/server';
+import { checkRateLimit } from '@/lib/ratelimit';
+
+export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
+  // Rate limiting
+  const rateLimitResponse = await checkRateLimit('api');
+  if (rateLimitResponse) return rateLimitResponse;
+
   try {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();

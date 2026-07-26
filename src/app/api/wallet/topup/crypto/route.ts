@@ -1,5 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
+import { checkRateLimit } from '@/lib/ratelimit';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { USDC_CONTRACTS, PLATFORM_WALLET } from '@/lib/crypto';

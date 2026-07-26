@@ -267,54 +267,82 @@ export default function TopUpModal({ onClose, onSuccess }: { onClose: () => void
             </div>
           )}
           
-          <button
-            type="submit"
-            disabled={isSubmitting || rateLoading || (isConnected && !USDC_CONTRACTS[chainId])}
-            className="w-full bg-stone-900 text-white rounded-xl py-3.5 font-serif tracking-wide hover:bg-stone-800 transition-colors disabled:opacity-50 flex flex-col items-center justify-center h-[52px]"
-          >
-            {isSubmitting ? (
-              <div className="flex items-center gap-2">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                {isTxPending ? '等待區塊鏈確認中...' : '處理中...'}
-              </div>
-            ) : (
-              isConnected ? '確認支付並儲值 (Web3)' : '連接 Web3 錢包'
-            )}
-          </button>
+          {/* Web3 Button */}
+          <div className="relative group/btn">
+            <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-xl opacity-0 group-hover/btn:opacity-30 blur-md transition duration-500 group-hover/btn:duration-200"></div>
+            <button
+              type="submit"
+              disabled={isSubmitting || rateLoading || (isConnected && !USDC_CONTRACTS[chainId])}
+              className="relative w-full bg-gradient-to-b from-stone-800 to-stone-950 text-white rounded-xl py-4 font-sans tracking-widest uppercase text-xs font-semibold hover:from-stone-700 hover:to-stone-900 transition-all duration-300 disabled:opacity-50 flex items-center justify-center gap-3 h-[56px] border border-stone-800 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1)] overflow-hidden"
+            >
+              <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover/btn:animate-[shimmer_1.5s_infinite]"></div>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin text-purple-300" />
+                  <span>{isTxPending ? '等待區塊鏈確認中...' : '處理中...'}</span>
+                </>
+              ) : (
+                <>
+                  <svg className="w-5 h-5 text-purple-400 drop-shadow-[0_0_8px_rgba(168,85,247,0.5)]" viewBox="0 0 24 24" fill="currentColor"><path d="M11.944 17.97L4.58 13.62 11.943 24l7.37-10.38-7.372 4.35h.003zM12.056 0L4.69 12.223l7.365 4.354 7.365-4.35L12.056 0z"/></svg>
+                  <span>{isConnected ? '確認支付並儲值 (USDC)' : '連接 Web3 錢包'}</span>
+                </>
+              )}
+            </button>
+          </div>
 
-          <button
-            type="button"
-            onClick={handleLinePay}
-            disabled={isSubmitting || isLinePayLoading}
-            className="w-full bg-[#06C755] text-white rounded-xl py-3.5 font-serif tracking-wide hover:bg-[#05b34c] transition-colors disabled:opacity-50 flex flex-col items-center justify-center h-[52px] shadow-sm"
-          >
-            {isLinePayLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              '使用 LINE Pay 儲值'
-            )}
-          </button>
+          {/* LINE Pay Button */}
+          <div className="relative group/btn">
+            <div className="absolute -inset-0.5 bg-gradient-to-r from-[#00C300] to-[#00E000] rounded-xl opacity-0 group-hover/btn:opacity-30 blur-md transition duration-500 group-hover/btn:duration-200"></div>
+            <button
+              type="button"
+              onClick={handleLinePay}
+              disabled={isSubmitting || isLinePayLoading}
+              className="relative w-full bg-gradient-to-b from-[#06C755] to-[#05b34c] text-white rounded-xl py-4 font-sans tracking-widest uppercase text-xs font-semibold hover:from-[#07d85c] hover:to-[#06C755] transition-all duration-300 disabled:opacity-50 flex items-center justify-center gap-2.5 h-[56px] border border-[#04a044] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.2)] overflow-hidden"
+            >
+              <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover/btn:animate-[shimmer_1.5s_infinite]"></div>
+              {isLinePayLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin text-white" />
+              ) : (
+                <>
+                  <div className="bg-white text-[#06C755] font-black italic rounded-md px-1.5 py-0.5 text-[10px] tracking-tighter">LINE</div>
+                  <span>使用 LINE Pay 儲值</span>
+                </>
+              )}
+            </button>
+          </div>
 
-          <div className="relative z-0 mt-2">
+          {/* PayPal Wrapper */}
+          <div className="relative z-0 group/paypal mt-4 pt-4 border-t border-stone-100">
+            <div className="flex items-center justify-center gap-3 mb-4">
+              <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent to-stone-200"></div>
+              <span className="text-[10px] font-semibold text-stone-400 uppercase tracking-widest font-sans">海外專用通道</span>
+              <div className="h-[1px] flex-1 bg-gradient-to-l from-transparent to-stone-200"></div>
+            </div>
+            
             <PayPalScriptProvider options={{ 
               clientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || "test",
               currency: "TWD",
-              intent: "capture"
+              intent: "capture",
+              locale: "zh_TW"
             }}>
               {(!amount || amount < 1) ? (
-                <div className="w-full text-center p-4 bg-stone-50 border border-stone-200 rounded-xl text-sm font-serif tracking-wide text-stone-500">
+                <div className="w-full text-center py-4 bg-stone-50/50 border border-stone-200/60 rounded-xl text-xs font-sans font-medium tracking-wide text-stone-400 flex items-center justify-center gap-2">
+                  <svg className="w-4 h-4 text-blue-800/40" viewBox="0 0 24 24" fill="currentColor"><path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944.901C5.026.382 5.474 0 5.998 0h7.46c2.57 0 4.578.543 5.69 1.81 1.01 1.15 1.304 2.42 1.012 4.287-.023.143-.047.288-.077.437-.983 5.05-4.349 6.797-8.647 6.797h-2.19c-.524 0-.968.382-1.05.9l-1.12 7.106z"/></svg>
                   請先輸入儲值點數以啟用 PayPal
                 </div>
               ) : (
-                <PayPalButtons
-                  style={{ layout: "vertical", shape: "rect", color: "black", label: "paypal" }}
-                  createOrder={createPayPalOrder}
-                  onApprove={onPayPalApprove}
-                  onError={(err) => {
-                    console.error("PayPal Error:", err);
-                    setErrorMsg("PayPal 載入或付款發生錯誤");
-                  }}
-                />
+                <div className="bg-gradient-to-b from-white to-slate-50 p-2 rounded-xl border border-slate-200 shadow-sm transition-all duration-300 group-hover/paypal:border-blue-300 group-hover/paypal:shadow-md">
+                  <PayPalButtons
+                    fundingSource="paypal"
+                    style={{ layout: "vertical", shape: "rect", color: "blue", label: "pay", height: 48 }}
+                    createOrder={createPayPalOrder}
+                    onApprove={onPayPalApprove}
+                    onError={(err) => {
+                      console.error("PayPal Error:", err);
+                      setErrorMsg("PayPal 載入或付款發生錯誤");
+                    }}
+                  />
+                </div>
               )}
             </PayPalScriptProvider>
           </div>
