@@ -65,34 +65,42 @@ export const metadata: Metadata = {
 };
 
 import { GlobalProgressBar } from '@/components/ProgressBar';
+import { NextIntlClientProvider } from 'next-intl';
+import { getMessages } from 'next-intl/server';
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
-}: Readonly<{
+  params: { locale },
+}: {
   children: React.ReactNode;
-}>) {
+  params: { locale: string };
+}) {
+  const messages = await getMessages();
+
   return (
-    <html lang="zh-TW" className="light">
+    <html lang={locale} className="light">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen marble-bg text-foreground flex flex-col`}
       >
-        <GoogleAnalytics />
-        <Web3Providers>
-          <Navbar />
-          <main className="flex-1 flex flex-col">
-            {children}
-          </main>
-          <Footer />
-        </Web3Providers>
-        <Toaster
-          position="bottom-right"
-          richColors
-          toastOptions={{
-            style: { fontFamily: 'var(--font-geist-sans)' },
-          }}
-        />
-        <ScreenshotGuard />
-        <GlobalProgressBar />
+        <NextIntlClientProvider messages={messages}>
+          <GoogleAnalytics />
+          <Web3Providers>
+            <Navbar />
+            <main className="flex-1 flex flex-col">
+              {children}
+            </main>
+            <Footer />
+          </Web3Providers>
+          <Toaster
+            position="bottom-right"
+            richColors
+            toastOptions={{
+              style: { fontFamily: 'var(--font-geist-sans)' },
+            }}
+          />
+          <ScreenshotGuard />
+          <GlobalProgressBar />
+        </NextIntlClientProvider>
       </body>
     </html>
   );

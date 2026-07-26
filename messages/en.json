@@ -1,0 +1,18 @@
+{
+  "Navbar": {
+    "gallery": "Gallery",
+    "wallet": "Wallet",
+    "login": "Login",
+    "logout": "Logout",
+    "language": "Language",
+    "zh": "繁體中文",
+    "en": "English",
+    "switch_locale": "切換至繁體中文",
+    "dashboard": "Dashboard"
+  },
+  "Home": {
+    "title": "Blanc Gallery",
+    "subtitle": "Discover the purest art",
+    "explore": "Explore Now"
+  }
+}

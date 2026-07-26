@@ -270,7 +270,7 @@ export default function TopUpModal({ onClose, onSuccess }: { onClose: () => void
           <button
             type="submit"
             disabled={isSubmitting || rateLoading || (isConnected && !USDC_CONTRACTS[chainId])}
-            className="w-full bg-purple-600 text-white rounded-xl py-3.5 font-medium hover:bg-purple-700 transition-colors disabled:opacity-50 flex flex-col items-center justify-center h-[52px]"
+            className="w-full bg-stone-900 text-white rounded-xl py-3.5 font-serif tracking-wide hover:bg-stone-800 transition-colors disabled:opacity-50 flex flex-col items-center justify-center h-[52px]"
           >
             {isSubmitting ? (
               <div className="flex items-center gap-2">
@@ -286,7 +286,7 @@ export default function TopUpModal({ onClose, onSuccess }: { onClose: () => void
             type="button"
             onClick={handleLinePay}
             disabled={isSubmitting || isLinePayLoading}
-            className="w-full bg-[#06C755] text-white rounded-xl py-3.5 font-medium hover:bg-[#05b34c] transition-colors disabled:opacity-50 flex flex-col items-center justify-center h-[52px]"
+            className="w-full bg-[#06C755] text-white rounded-xl py-3.5 font-serif tracking-wide hover:bg-[#05b34c] transition-colors disabled:opacity-50 flex flex-col items-center justify-center h-[52px] shadow-sm"
           >
             {isLinePayLoading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -302,12 +302,12 @@ export default function TopUpModal({ onClose, onSuccess }: { onClose: () => void
               intent: "capture"
             }}>
               {(!amount || amount < 1) ? (
-                <div className="w-full text-center p-4 bg-stone-50 border border-stone-200 rounded-xl text-sm text-stone-500">
+                <div className="w-full text-center p-4 bg-stone-50 border border-stone-200 rounded-xl text-sm font-serif tracking-wide text-stone-500">
                   請先輸入儲值點數以啟用 PayPal
                 </div>
               ) : (
                 <PayPalButtons
-                  style={{ layout: "vertical", shape: "rect", color: "gold" }}
+                  style={{ layout: "vertical", shape: "rect", color: "black", label: "paypal" }}
                   createOrder={createPayPalOrder}
                   onApprove={onPayPalApprove}
                   onError={(err) => {
