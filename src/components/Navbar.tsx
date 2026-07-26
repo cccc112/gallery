@@ -11,6 +11,8 @@ import {
 import { signOut } from '@/app/auth/actions';
 import { ConnectWalletButton } from '@/components/ConnectWalletButton';
 import { createClient } from '@/lib/supabase/client';
+import { useTranslations, useLocale } from 'next-intl';
+import { Globe } from 'lucide-react';
 
 const IconMap: Record<string, React.ElementType> = {
   Home, Compass, LayoutDashboard, FileText
@@ -20,11 +22,15 @@ export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
+  const t = useTranslations('Navbar');
+  const locale = useLocale();
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [langDropdownOpen, setLangDropdownOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const langDropdownRef = useRef<HTMLDivElement>(null);
 
   const [user, setUser] = useState<{ id: string; email: string } | null>(null);
   const [profile, setProfile] = useState<{ display_name: string; avatar_url?: string; role: string; wallet_balance?: number } | null>(null);
@@ -126,13 +132,23 @@ export default function Navbar() {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setDropdownOpen(false);
       }
+      if (langDropdownRef.current && !langDropdownRef.current.contains(e.target as Node)) {
+        setLangDropdownOpen(false);
+      }
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
   const isActive = (href: string) =>
-    href === '/' ? pathname === '/' : pathname.startsWith(href);
+    href === '/' ? pathname === `/${locale}` || pathname === '/' : pathname.includes(href);
+
+  const changeLocale = (newLocale: string) => {
+    if (newLocale === locale) return;
+    const currentPath = window.location.pathname;
+    const newPath = currentPath.replace(new RegExp(`^/(${locale})`), `/${newLocale}`);
+    window.location.href = newPath || `/${newLocale}`;
+  };
 
   const avatarUrl =
     profile?.avatar_url ||
@@ -152,10 +168,10 @@ export default function Navbar() {
   };
 
   const navLinks = [
-    { href: '/', label: '首頁', icon: 'Home' },
-    { href: '/gallery', label: '探索藝廊', icon: 'Compass' },
+    { href: '/', label: t('Home'), icon: 'Home' },
+    { href: '/gallery', label: t('gallery'), icon: 'Compass' },
     { href: '/contract-template', label: '合約預覽', icon: 'FileText' },
-    ...(profile?.role === 'artist' ? [{ href: '/admin', label: '管理後台', icon: 'LayoutDashboard' }] : []),
+    ...(profile?.role === 'artist' ? [{ href: '/admin', label: t('dashboard'), icon: 'LayoutDashboard' }] : []),
   ];
 
   return (
@@ -236,6 +252,29 @@ export default function Navbar() {
                   </span>
                 )}
               </Link>
+
+              {/* Language Switcher */}
+              <div ref={langDropdownRef} className="relative hidden sm:block mr-1">
+                <button
+                  onClick={() => setLangDropdownOpen(!langDropdownOpen)}
+                  className="flex items-center gap-1.5 p-2 rounded-md text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-all"
+                  aria-expanded={langDropdownOpen}
+                >
+                  <Globe className="h-4 w-4" />
+                  <span className="text-xs font-medium uppercase">{locale}</span>
+                  <ChevronDown className={`h-3 w-3 transition-transform duration-200 ${langDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+                {langDropdownOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-32 bg-white border border-border/80 rounded-sm shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
+                    <button onClick={() => changeLocale('zh')} className={`w-full text-left px-4 py-2.5 text-xs font-medium transition-colors ${locale === 'zh' ? 'bg-secondary/60 text-foreground' : 'text-muted-foreground hover:bg-secondary/40'}`}>
+                      {t('zh')}
+                    </button>
+                    <button onClick={() => changeLocale('en')} className={`w-full text-left px-4 py-2.5 text-xs font-medium transition-colors ${locale === 'en' ? 'bg-secondary/60 text-foreground' : 'text-muted-foreground hover:bg-secondary/40'}`}>
+                      {t('en')}
+                    </button>
+                  </div>
+                )}
+              </div>
 
               {/* Avatar Dropdown */}
               <div ref={dropdownRef} className="relative">
@@ -338,12 +377,27 @@ export default function Navbar() {
             </>
           ) : (
             <div className="hidden sm:flex items-center gap-2">
+              <div ref={langDropdownRef} className="relative hidden sm:block mr-2">
+                <button
+                  onClick={() => setLangDropdownOpen(!langDropdownOpen)}
+                  className="flex items-center gap-1.5 p-2 rounded-md text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-all"
+                >
+                  <Globe className="h-4 w-4" />
+                  <span className="text-xs font-medium uppercase">{locale}</span>
+                </button>
+                {langDropdownOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-32 bg-white border border-border/80 rounded-sm shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
+                    <button onClick={() => changeLocale('zh')} className={`w-full text-left px-4 py-2.5 text-xs font-medium transition-colors ${locale === 'zh' ? 'bg-secondary/60 text-foreground' : 'text-muted-foreground hover:bg-secondary/40'}`}>{t('zh')}</button>
+                    <button onClick={() => changeLocale('en')} className={`w-full text-left px-4 py-2.5 text-xs font-medium transition-colors ${locale === 'en' ? 'bg-secondary/60 text-foreground' : 'text-muted-foreground hover:bg-secondary/40'}`}>{t('en')}</button>
+                  </div>
+                )}
+              </div>
               <Link
                 href="/login"
                 className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
               >
                 <LogIn className="h-3.5 w-3.5" />
-                登入
+                {t('login')}
               </Link>
               <Link
                 href="/register"

@@ -11,8 +11,10 @@
     "dashboard": "Dashboard"
   },
   "Home": {
-    "title": "Blanc Gallery",
-    "subtitle": "Discover the purest art",
-    "explore": "Explore Now"
+    "title": "Atelier Blanc",
+    "subtitle": "Ether Online Gallery",
+    "description": "Curated top-tier contemporary artworks, supporting secure purchases and flexible short-term rentals. Bring art into every living space, physical or digital.",
+    "explore": "Explore All Artworks",
+    "exploreRentals": "Browse Rentals"
   }
 }

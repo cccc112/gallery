@@ -4,10 +4,12 @@ import { Badge } from '@/components/ui/badge';
 import { ArrowRight, ShieldCheck, Gift, HelpCircle, Eye, Sparkles, Heart } from 'lucide-react';
 import { HomeAISection } from '@/components/HomeAISection';
 import { ProtectedImage } from '@/components/protected-image';
+import { getTranslations } from 'next-intl/server';
 
 export const revalidate = 0;
 
 export default async function HomePage() {
+  const t = await getTranslations('Home');
   let artworks: any[] = [];
   let totalCount = 0;
   let physicalCount = 0;
@@ -65,14 +67,13 @@ export default async function HomePage() {
             </Badge>
 
             <h1 className="font-serif text-5xl font-semibold tracking-tight text-foreground sm:text-6xl lg:text-7xl text-balance leading-[1.1]">
-              Atelier Blanc
+              {t('title')}
             </h1>
             <p className="mt-4 text-base lg:text-lg font-light text-muted-foreground tracking-wider">
-              乙太線上藝廊
+              {t('subtitle')}
             </p>
             <p className="mt-8 text-base lg:text-lg text-foreground/70 font-light leading-relaxed max-w-xl mx-auto">
-              精選頂尖當代藝術品，支援安全買斷收藏與靈活短期租賃。
-              讓藝術走入每一個生活空間，無論實體或數位。
+              {t('description')}
             </p>
 
             <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -80,14 +81,14 @@ export default async function HomePage() {
                 href="/gallery"
                 className="inline-flex items-center gap-2 rounded-sm bg-primary px-8 py-3.5 text-sm font-semibold tracking-wide text-primary-foreground shadow-lg hover:bg-primary/90 transition-all duration-300 group"
               >
-                探索全部作品
+                {t('explore')}
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Link>
               <Link
                 href="/gallery?rentable=true"
                 className="inline-flex items-center gap-2 rounded-sm border border-border bg-white/70 backdrop-blur-sm px-8 py-3.5 text-sm font-semibold tracking-wide text-foreground hover:bg-white transition-all duration-300"
               >
-                瀏覽可租賃作品
+                {t('exploreRentals')}
               </Link>
             </div>
           </div>

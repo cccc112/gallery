@@ -11,8 +11,10 @@
     "dashboard": "管理員後台"
   },
   "Home": {
-    "title": "Blanc 藝廊",
-    "subtitle": "探索最純粹的藝術品",
-    "explore": "開始探索"
+    "title": "Atelier Blanc",
+    "subtitle": "乙太線上藝廊",
+    "description": "精選頂尖當代藝術品，支援安全買斷收藏與靈活短期租賃。讓藝術走入每一個生活空間，無論實體或數位。",
+    "explore": "探索全部作品",
+    "exploreRentals": "瀏覽可租賃作品"
   }
 }
