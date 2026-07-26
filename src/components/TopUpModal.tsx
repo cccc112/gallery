@@ -140,7 +140,7 @@ export default function TopUpModal({ onClose, onSuccess }: { onClose: () => void
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
+      <div className="bg-white rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
         <button onClick={onClose} disabled={isSubmitting} className="absolute top-4 right-4 text-stone-400 hover:text-stone-900 transition-colors disabled:opacity-50">
           <X className="h-5 w-5" />
         </button>
