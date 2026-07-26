@@ -25,5 +25,3 @@ export async function GET() {
     return NextResponse.json({ user: null, profile: null }, { status: 500 });
   }
 }
-
-export const dynamic = 'force-dynamic';
