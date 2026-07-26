@@ -282,12 +282,6 @@ export default function TopUpModal({ onClose, onSuccess }: { onClose: () => void
             )}
           </button>
 
-          <div className="relative flex py-2 items-center">
-            <div className="flex-grow border-t border-stone-200"></div>
-            <span className="flex-shrink-0 mx-4 text-stone-400 text-xs">或</span>
-            <div className="flex-grow border-t border-stone-200"></div>
-          </div>
-
           <button
             type="button"
             onClick={handleLinePay}
@@ -300,13 +294,8 @@ export default function TopUpModal({ onClose, onSuccess }: { onClose: () => void
               '使用 LINE Pay 儲值'
             )}
           </button>
-          <div className="relative flex py-2 items-center">
-            <div className="flex-grow border-t border-stone-200"></div>
-            <span className="flex-shrink-0 mx-4 text-stone-400 text-xs">海外用戶</span>
-            <div className="flex-grow border-t border-stone-200"></div>
-          </div>
 
-          <div className="relative z-0">
+          <div className="relative z-0 mt-2">
             <PayPalScriptProvider options={{ 
               clientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || "test",
               currency: "TWD",
