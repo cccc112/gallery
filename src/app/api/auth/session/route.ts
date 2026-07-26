@@ -3,6 +3,8 @@ import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import { supabaseCookieOptions } from '@/lib/supabase/cookies';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: Request) {
   // 1. 列出所有 cookies 名稱（不暴露值）
   const cookieStore = cookies();

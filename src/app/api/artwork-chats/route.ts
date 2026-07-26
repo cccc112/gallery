@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { sql } from '@/lib/db';
 
+export const dynamic = 'force-dynamic';
+
 // GET /api/artwork-chats?artworkId=xxx  → 取得或建立聊天室
 // POST /api/artwork-chats               → 傳送訊息
 export async function GET(req: NextRequest) {

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
+export const dynamic = 'force-dynamic';
+
 // GET /api/artwork-chats/mine → 取得我參與的所有聊天室（dashboard 用）
 export async function GET(req: NextRequest) {
   const supabase = createClient();
