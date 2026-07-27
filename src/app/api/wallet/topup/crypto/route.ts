@@ -175,6 +175,8 @@ export async function POST(req: Request) {
   }
 }
 
+import { sql } from '@/lib/db';
+
 async function grantPoints(adminClient: any, userId: string, amount: number, txHash: string, chainId: string | number) {
   const { error: insertError } = await adminClient
     .from('wallet_transactions')
@@ -188,18 +190,10 @@ async function grantPoints(adminClient: any, userId: string, amount: number, txH
 
   if (insertError) throw insertError;
 
-  const { data: userData } = await adminClient
-    .from('users')
-    .select('wallet_balance')
-    .eq('id', userId)
-    .single();
-
-  if (userData) {
-    const { error: updateError } = await adminClient
-      .from('users')
-      .update({ wallet_balance: Number(userData.wallet_balance || 0) + Number(amount) })
-      .eq('id', userId);
-
-    if (updateError) throw updateError;
-  }
+  // Use atomic SQL update
+  await sql`
+    UPDATE users 
+    SET wallet_balance = wallet_balance + ${amount} 
+    WHERE id = ${userId}
+  `;
 }

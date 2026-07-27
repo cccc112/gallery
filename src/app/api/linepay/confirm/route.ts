@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requestLinePay } from '@/lib/linepay';
 import { createClient } from '@supabase/supabase-js';
+import { sql } from '@/lib/db';
 
 // We need a service role key to bypass RLS for wallet updates since this might not have full user session context from LINE Pay redirect
 const supabaseAdmin = createClient(
@@ -34,28 +35,24 @@ export async function POST(req: Request) {
     // 1 NTD = 1 Blanc Coin
     const pointsToAdd = parseInt(amount);
 
-    // Call stored procedure to safely increment points
-    const { data: updateData, error: updateError } = await supabaseAdmin.rpc('increment_wallet_balance', {
-      user_id_param: userId,
-      amount: pointsToAdd
-    });
-
-    if (updateError) {
-      console.error('Failed to update wallet:', updateError);
-      return NextResponse.json({ error: 'Payment succeeded but wallet update failed.' }, { status: 500 });
-    }
+    // Call raw SQL to safely increment points
+    await sql`
+      UPDATE users 
+      SET wallet_balance = wallet_balance + ${pointsToAdd} 
+      WHERE id = ${userId}
+    `;
 
     // Also record the transaction
     const { error: txError } = await supabaseAdmin
-      .from('transactions')
+      .from('wallet_transactions')
       .insert({
         id: orderId, // Use the generated orderId
         user_id: userId,
         amount: pointsToAdd, // Point amount
-        type: 'topup',
+        type: 'topup_card', // Fallback type for linepay
         status: 'completed',
-        payment_method: 'linepay',
-        payment_id: transactionId,
+        reference_id: transactionId,
+        metadata: { payment_method: 'linepay' }
       });
 
     if (txError) {

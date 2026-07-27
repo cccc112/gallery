@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { capturePayPalOrder } from '@/lib/paypal';
 import { createClient } from '@supabase/supabase-js';
 import { createClient as createServerClient } from '@/lib/supabase/server';
+import { sql } from '@/lib/db';
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -43,28 +44,24 @@ export async function POST(req: Request) {
 
     const pointsToAdd = parseInt(amountStr, 10);
 
-    // Call stored procedure to safely increment points
-    const { error: updateError } = await supabaseAdmin.rpc('increment_wallet_balance', {
-      user_id_param: user.id,
-      amount: pointsToAdd
-    });
-
-    if (updateError) {
-      console.error('Failed to update wallet after PayPal:', updateError);
-      return NextResponse.json({ error: 'Payment succeeded but wallet update failed.' }, { status: 500 });
-    }
+    // Call raw SQL to safely increment points
+    await sql`
+      UPDATE users 
+      SET wallet_balance = wallet_balance + ${pointsToAdd} 
+      WHERE id = ${user.id}
+    `;
 
     // Record the transaction
     const { error: txError } = await supabaseAdmin
-      .from('transactions')
+      .from('wallet_transactions')
       .insert({
         id: customOrderId || `PP_${orderId}`,
         user_id: user.id,
         amount: pointsToAdd,
-        type: 'topup',
+        type: 'topup_card', // Fallback for paypal
         status: 'completed',
-        payment_method: 'paypal',
-        payment_id: capture.id, // The capture ID
+        reference_id: capture.id,
+        metadata: { payment_method: 'paypal' }
       });
 
     if (txError) {
