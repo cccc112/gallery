@@ -5,12 +5,7 @@ import { sql } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
-// 支援的 USDC 合約地址（用於後端驗證 chain）
-const SUPPORTED_CHAINS: Record<number, string> = {
-  1:     '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', // Ethereum
-  8453:  '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', // Base
-  137:   '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359', // Polygon
-};
+import { USDT_CONTRACTS } from '@/lib/crypto';
 
 import { createPublicClient, http } from 'viem';
 
@@ -45,7 +40,7 @@ async function verifyTransaction(txHash: string, chainId: number): Promise<{
     // 3. 驗證 event.rentAmount + event.depositAmount 是否正確
     
     // 如果是買斷 (actionType === 'buy')：
-    // 1. 驗證 USDC Transfer 事件的 To Address 是否為 PLATFORM_WALLET
+    // 1. 驗證 USDT Transfer 事件的 To Address 是否為 PLATFORM_WALLET
     // 2. 驗證金額是否正確
 
     return { verified: true };
@@ -79,7 +74,7 @@ export async function POST(request: Request) {
     }
 
     // 2. 驗證 chain 支援
-    if (!SUPPORTED_CHAINS[chainId]) {
+    if (!USDT_CONTRACTS[chainId]) {
       return NextResponse.json({ error: `不支援的鏈 ID: ${chainId}，請切換至 Ethereum / Base / Polygon` }, { status: 400 });
     }
 
@@ -147,8 +142,8 @@ export async function POST(request: Request) {
       walletAddress,
       chainId,
       message: isRental
-        ? `租賃成功！首月 USDC 已轉帳，押金已鎖定。`
-        : `收藏成功！USDC 轉帳已確認，${isPhysical ? '實體作品將安排配送' : '數位資產已解鎖可下載'}。`,
+        ? `租賃成功！首月 USDT 已轉帳，押金已鎖定。`
+        : `收藏成功！USDT 轉帳已確認，${isPhysical ? '實體作品將安排配送' : '數位資產已解鎖可下載'}。`,
     });
   } catch (error: any) {
     console.error('[Crypto Checkout Error]', error);

@@ -533,7 +533,7 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
                 ))}
               </div>
 
-              {!USDC_CONTRACTS[chainId] && isConnected && (
+              {!USDT_CONTRACTS[chainId] && isConnected && (
                 <div className="flex items-start gap-2.5 p-3 rounded-sm border border-rose-200 bg-rose-50/60 text-xs text-rose-700">
                   <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
                   <p>目前連接的網路不支援，請在 MetaMask 中切換至 Ethereum / Base / Polygon</p>
@@ -542,11 +542,11 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
 
               <button
                 onClick={handleCryptoCheckout}
-                disabled={isConnected && !USDC_CONTRACTS[chainId]}
+                disabled={isConnected && !USDT_CONTRACTS[chainId]}
                 className="w-full rounded-sm bg-purple-700 text-white py-3.5 text-sm font-semibold hover:bg-purple-800 transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Wallet className="h-4 w-4" />
-                {isConnected ? `發送 ${usdcAmount}` : '連接錢包並支付'}
+                {isConnected ? `發送 ${usdtAmount}` : '連接錢包並支付'}
               </button>
               <button type="button" onClick={() => setStep('select')} className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors py-1">
                 ← 返回選擇付款方式

@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { checkRateLimit } from '@/lib/ratelimit';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { USDC_CONTRACTS, PLATFORM_WALLET } from '@/lib/crypto';
+import { USDT_CONTRACTS, PLATFORM_WALLET } from '@/lib/crypto';
 
 // ERC20 Transfer event topic (keccak256 of 'Transfer(address,address,uint256)')
 const TRANSFER_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
@@ -24,7 +24,7 @@ function decodeBigInt(hex: string): bigint {
   return BigInt('0x' + hex.replace(/^0x/, ''));
 }
 
-/** Call eth_getTransactionReceipt via raw JSON-RPC (no viem) */
+/** Call eth_getTransactionReceipt */
 async function getReceipt(rpcUrl: string, txHash: string) {
   const res = await fetch(rpcUrl, {
     method: 'POST',
@@ -47,6 +47,26 @@ async function getReceipt(rpcUrl: string, txHash: string) {
   };
 }
 
+/** Call eth_getTransactionByHash to get value for native ETH transfers */
+async function getTransaction(rpcUrl: string, txHash: string) {
+  const res = await fetch(rpcUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: 2,
+      method: 'eth_getTransactionByHash',
+      params: [txHash],
+    }),
+  });
+  const json = await res.json();
+  return json.result as null | {
+    to: string;
+    from: string;
+    value: string;
+  };
+}
+
 export async function POST(req: Request) {
   try {
     const supabase = createClient();
@@ -56,9 +76,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { amount, txHash, chainId, walletAddress } = await req.json();
+    const { amount, txHash, chainId, walletAddress, token } = await req.json();
 
-    if (!amount || !txHash || !chainId || !walletAddress) {
+    if (!amount || !txHash || !chainId || !walletAddress || !token) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
@@ -75,14 +95,13 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: 'Mock transaction already processed' }, { status: 400 });
       }
 
-      await grantPoints(adminClient, user.id, amount, txHash, 'mock');
+      await grantPoints(adminClient, user.id, amount, txHash, chainId, token);
       return NextResponse.json({ success: true, message: 'Mock points granted' });
     }
 
     // --- Real Blockchain Verification (pure fetch, no viem) ---
     const rpcUrl = RPC_URLS[chainId as number];
-    const usdcAddress = (USDC_CONTRACTS[chainId as number] || '').toLowerCase();
-    if (!rpcUrl || !usdcAddress) {
+    if (!rpcUrl) {
       return NextResponse.json({ error: 'Unsupported chain' }, { status: 400 });
     }
 
@@ -95,60 +114,89 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Transaction failed on chain' }, { status: 400 });
     }
 
-    // 2. Find Transfer log from USDC contract → platform wallet
-    let isValidTransfer = false;
     let transferValue = BigInt(0);
+    let expectedRaw = BigInt(0);
 
-    for (const log of receipt.logs) {
-      if (
-        log.address.toLowerCase() === usdcAddress &&
-        log.topics[0] === TRANSFER_TOPIC &&
-        log.topics.length === 3
-      ) {
-        const from = decodeAddress(log.topics[1]);
-        const to = decodeAddress(log.topics[2]);
-
-        if (
-          from === walletAddress.toLowerCase() &&
-          to === PLATFORM_WALLET.toLowerCase()
-        ) {
-          isValidTransfer = true;
-          transferValue = decodeBigInt(log.data);
-          break;
-        }
-      }
-    }
-
-    if (!isValidTransfer) {
-      return NextResponse.json(
-        { error: 'Valid USDC transfer to platform not found in transaction' },
-        { status: 400 }
-      );
-    }
-
-    // 3. Verify amount with live rate from CoinGecko (allow 5% slippage for rate fluctuation)
-    let liveRate = 0.031; // fallback
+    // 2. Fetch live rate
+    let liveUsdtRate = 0.031;
+    let liveEthRate = 0.0000095;
     try {
       const rateRes = await fetch(
-        'https://api.coingecko.com/api/v3/simple/price?ids=usd-coin&vs_currencies=twd',
+        'https://api.coingecko.com/api/v3/simple/price?ids=tether,ethereum&vs_currencies=twd',
         { signal: AbortSignal.timeout(3000) }
       );
       if (rateRes.ok) {
         const rateData = await rateRes.json();
-        const usdcInTwd: number = rateData['usd-coin']?.twd;
-        if (usdcInTwd > 0) liveRate = 1 / usdcInTwd;
+        const usdtInTwd = rateData['tether']?.twd;
+        const ethInTwd = rateData['ethereum']?.twd;
+        if (usdtInTwd > 0) liveUsdtRate = 1 / usdtInTwd;
+        if (ethInTwd > 0) liveEthRate = 1 / ethInTwd;
       }
     } catch { /* use fallback */ }
 
-    const expectedUsdcRaw = BigInt(Math.round(Number(amount) * liveRate * 1_000_000));
-    // Allow 5% slippage (rate can move between user initiating and server verifying)
-    const tolerance = expectedUsdcRaw * BigInt(5) / BigInt(100);
-    const difference = transferValue > expectedUsdcRaw
-      ? transferValue - expectedUsdcRaw
-      : expectedUsdcRaw - transferValue;
+    // 3. Verify transfer amounts
+    if (token === 'USDT') {
+      const usdtAddress = (USDT_CONTRACTS[chainId as number] || '').toLowerCase();
+      if (!usdtAddress) {
+        return NextResponse.json({ error: 'USDT not supported on this chain' }, { status: 400 });
+      }
+
+      let isValidTransfer = false;
+      for (const log of receipt.logs) {
+        if (
+          log.address.toLowerCase() === usdtAddress &&
+          log.topics[0] === TRANSFER_TOPIC &&
+          log.topics.length === 3
+        ) {
+          const from = decodeAddress(log.topics[1]);
+          const to = decodeAddress(log.topics[2]);
+
+          if (
+            from === walletAddress.toLowerCase() &&
+            to === PLATFORM_WALLET.toLowerCase()
+          ) {
+            isValidTransfer = true;
+            transferValue = decodeBigInt(log.data);
+            break;
+          }
+        }
+      }
+
+      if (!isValidTransfer) {
+        return NextResponse.json({ error: 'Valid USDT transfer to platform not found in transaction' }, { status: 400 });
+      }
+
+      expectedRaw = BigInt(Math.round(Number(amount) * liveUsdtRate * 1_000_000)); // 6 decimals
+    } else if (token === 'ETH') {
+      const transaction = await getTransaction(rpcUrl, txHash);
+      if (!transaction) {
+        return NextResponse.json({ error: 'Transaction details not found' }, { status: 400 });
+      }
+
+      if (transaction.to?.toLowerCase() !== PLATFORM_WALLET.toLowerCase()) {
+        return NextResponse.json({ error: 'Transaction recipient is not the platform wallet' }, { status: 400 });
+      }
+
+      transferValue = BigInt(transaction.value);
+      // 18 decimals for ETH
+      const ethDecimalStr = (Number(amount) * liveEthRate).toFixed(18);
+      // Convert standard float string to Wei representation using string split
+      const [whole = '0', fraction = '0'] = ethDecimalStr.split('.');
+      const fractionPadded = fraction.padEnd(18, '0').slice(0, 18);
+      expectedRaw = BigInt(whole + fractionPadded);
+    } else {
+      return NextResponse.json({ error: 'Unsupported token type' }, { status: 400 });
+    }
+
+    // Allow 5% slippage
+    const tolerance = expectedRaw * BigInt(5) / BigInt(100);
+    const difference = transferValue > expectedRaw
+      ? transferValue - expectedRaw
+      : expectedRaw - transferValue;
+      
     if (difference > tolerance) {
       return NextResponse.json(
-        { error: `Amount mismatch. Expected ~${expectedUsdcRaw} (±5%), got ${transferValue}` },
+        { error: `Amount mismatch. Expected ~${expectedRaw} (±5%), got ${transferValue}` },
         { status: 400 }
       );
     }
@@ -166,7 +214,7 @@ export async function POST(req: Request) {
     }
 
     // 5. Grant Points
-    await grantPoints(adminClient, user.id, amount, txHash, chainId);
+    await grantPoints(adminClient, user.id, amount, txHash, chainId, token);
     return NextResponse.json({ success: true, message: 'Points granted successfully' });
 
   } catch (error: any) {
@@ -177,7 +225,7 @@ export async function POST(req: Request) {
 
 import { sql } from '@/lib/db';
 
-async function grantPoints(adminClient: any, userId: string, amount: number, txHash: string, chainId: string | number) {
+async function grantPoints(adminClient: any, userId: string, amount: number, txHash: string, chainId: string | number, token: string) {
   const { error: insertError } = await adminClient
     .from('wallet_transactions')
     .insert({
@@ -185,7 +233,7 @@ async function grantPoints(adminClient: any, userId: string, amount: number, txH
       amount,
       type: 'topup_crypto',
       status: 'completed',
-      metadata: { txHash, chainId },
+      metadata: { txHash, chainId, token },
     });
 
   if (insertError) throw insertError;
