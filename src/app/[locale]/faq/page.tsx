@@ -1,10 +1,14 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { getTranslations } from 'next-intl/server';
 
-export const metadata: Metadata = {
-  title: '常見問題 FAQ — Atelier Blanc',
-  description: 'Atelier Blanc 常見問題解答，包含購買、租賃、數位作品、付款、運送等問題。',
-};
+export async function generateMetadata({ params: { locale } }: { params: { locale: string } }): Promise<Metadata> {
+  const t = await getTranslations({ locale, namespace: 'FAQ' });
+  return {
+    title: `${t('title')} — Atelier Blanc`,
+    description: t('title'),
+  };
+}
 
 const faqs: { category: string; items: { q: string; a: string }[] }[] = [
   {
@@ -86,21 +90,26 @@ const faqs: { category: string; items: { q: string; a: string }[] }[] = [
   },
 ];
 
-export default function FAQPage() {
+export default async function FAQPage() {
+  const t = await getTranslations('FAQ');
+  // Need to type cast or handle the JSON structure from next-intl
+  // faqs is an array of objects
+  const faqsData = t.raw('faqs') as { category: string; items: { q: string; a: string }[] }[];
+
   return (
     <div className="marble-bg min-h-screen py-16 px-6">
       <div className="max-w-3xl mx-auto">
 
         <div className="mb-12 text-center">
-          <p className="text-xs tracking-widest uppercase text-muted-foreground mb-3">Support</p>
-          <h1 className="font-serif text-4xl font-semibold text-foreground mb-4">常見問題 FAQ</h1>
+          <p className="text-xs tracking-widest uppercase text-muted-foreground mb-3">{t('support')}</p>
+          <h1 className="font-serif text-4xl font-semibold text-foreground mb-4">{t('title')}</h1>
           <p className="text-muted-foreground font-light max-w-lg mx-auto">
-            找不到答案？歡迎<Link href="/contact" className="underline hover:text-foreground transition-colors">聯絡我們</Link>，我們將盡快回覆。
+            {t('subtitlePre')}<Link href="/contact" className="underline hover:text-foreground transition-colors">{t('subtitleLink')}</Link>{t('subtitlePost')}
           </p>
         </div>
 
         <div className="space-y-8">
-          {faqs.map(({ category, items }) => (
+          {faqsData.map(({ category, items }) => (
             <div key={category}>
               <h2 className="text-xs font-semibold tracking-widest uppercase text-muted-foreground mb-4 flex items-center gap-3">
                 <span className="flex-1 h-px bg-border" />
@@ -126,11 +135,11 @@ export default function FAQPage() {
 
         {/* Bottom CTA */}
         <div className="mt-12 text-center p-8 bg-white/60 backdrop-blur-sm border border-border/60 rounded-sm">
-          <p className="text-sm font-medium text-foreground mb-2">仍有疑問？</p>
-          <p className="text-xs text-muted-foreground mb-4">我們的客服團隊週一至週五 10:00–18:00 線上服務</p>
+          <p className="text-sm font-medium text-foreground mb-2">{t('stillHaveQuestions')}</p>
+          <p className="text-xs text-muted-foreground mb-4">{t('serviceHours')}</p>
           <Link href="/contact"
             className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground text-sm font-semibold rounded-sm hover:bg-primary/90 transition-colors">
-            聯絡客服團隊
+            {t('contactSupportBtn')}
           </Link>
         </div>
       </div>

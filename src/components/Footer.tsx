@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { CheckCircle2, Loader2 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 const InstagramIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
@@ -23,6 +24,7 @@ function NewsletterForm() {
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState('');
+  const t = useTranslations('Footer');
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -39,15 +41,15 @@ function NewsletterForm() {
 
       if (res.ok) {
         setStatus('success');
-        setMessage(data.alreadySubscribed ? '您已經是訂閱者了！' : '訂閱成功！感謝您的加入。');
+        setMessage(data.alreadySubscribed ? t('alreadySubscribed') : t('subscribeSuccess'));
         setEmail('');
       } else {
         setStatus('error');
-        setMessage(data.error || '訂閱失敗，請稍後再試');
+        setMessage(data.error || t('subscribeError'));
       }
     } catch {
       setStatus('error');
-      setMessage('連線失敗，請稍後再試');
+      setMessage(t('networkError'));
     }
   }
 
@@ -67,7 +69,7 @@ function NewsletterForm() {
           type="email"
           value={email}
           onChange={e => setEmail(e.target.value)}
-          placeholder="電子郵件"
+          placeholder={t('emailPlaceholder')}
           required
           disabled={status === 'loading'}
           className="flex-1 px-4 py-2.5 bg-primary-foreground/10 border border-primary-foreground/20 rounded-sm text-sm placeholder:text-primary-foreground/45 focus:outline-none focus:border-primary-foreground/40 text-white disabled:opacity-60"
@@ -79,7 +81,7 @@ function NewsletterForm() {
         >
           {status === 'loading' ? (
             <Loader2 className="h-4 w-4 animate-spin" />
-          ) : '訂閱'}
+          ) : t('subscribeBtn')}
         </button>
       </form>
       {status === 'error' && (
@@ -90,6 +92,8 @@ function NewsletterForm() {
 }
 
 export default function Footer() {
+  const t = useTranslations('Footer');
+
   return (
     <footer className="bg-primary text-primary-foreground">
       <div className="max-w-7xl mx-auto px-6 lg:px-8 py-16 lg:py-20">
@@ -102,20 +106,20 @@ export default function Footer() {
               </span>
             </Link>
             <p className="mt-4 text-sm text-primary-foreground/70 leading-relaxed max-w-xs font-light">
-              精選實體與數位當代藝術，為全球藏家提供卓越的純買賣與短期租賃雙軌平台。成立於 2026 年。
+              {t('brandDesc')}
             </p>
             <div className="flex flex-col gap-2 mt-6">
               <div className="flex items-center gap-4">
-                <div className="text-primary-foreground/40 cursor-not-allowed" title="Instagram 社群即將開通">
+                <div className="text-primary-foreground/40 cursor-not-allowed" title={t('igComingSoon')}>
                   <InstagramIcon />
                   <span className="sr-only">Instagram</span>
                 </div>
-                <div className="text-primary-foreground/40 cursor-not-allowed" title="X (Twitter) 社群即將開通">
+                <div className="text-primary-foreground/40 cursor-not-allowed" title={t('xComingSoon')}>
                   <XIcon />
                   <span className="sr-only">X (Twitter)</span>
                 </div>
               </div>
-              <span className="text-[10px] text-primary-foreground/50 tracking-widest uppercase">官方社群即將開通</span>
+              <span className="text-[10px] text-primary-foreground/50 tracking-widest uppercase">{t('socialsComingSoon')}</span>
             </div>
           </div>
 
@@ -127,22 +131,22 @@ export default function Footer() {
             <ul className="space-y-3 font-light text-sm">
               <li>
                 <Link href="/gallery" className="text-primary-foreground/70 hover:text-primary-foreground transition-colors">
-                  探索藝廊
+                  {t('exploreGallery')}
                 </Link>
               </li>
               <li>
                 <Link href="/gallery?type=digital" className="text-primary-foreground/70 hover:text-primary-foreground transition-colors">
-                  數位藝術品
+                  {t('digitalArt')}
                 </Link>
               </li>
               <li>
                 <Link href="/gallery?type=physical" className="text-primary-foreground/70 hover:text-primary-foreground transition-colors">
-                  實體藝術品
+                  {t('physicalArt')}
                 </Link>
               </li>
               <li>
                 <Link href="/generate" className="text-primary-foreground/70 hover:text-primary-foreground transition-colors">
-                  AI 藝術生成
+                  {t('aiGen')}
                 </Link>
               </li>
             </ul>
@@ -156,18 +160,18 @@ export default function Footer() {
             <ul className="space-y-3 font-light text-sm">
               <li>
                 <Link href="/contact" className="text-primary-foreground/70 hover:text-primary-foreground transition-colors">
-                  聯絡我們
+                  {t('contact')}
                 </Link>
               </li>
               <li>
                 <Link href="/shipping" className="text-primary-foreground/70 hover:text-primary-foreground transition-colors">
-                  運送與退還政策
+                  {t('shipping')}
                 </Link>
               </li>
 
               <li>
                 <Link href="/faq" className="text-primary-foreground/70 hover:text-primary-foreground transition-colors">
-                  常見問題 FAQ
+                  {t('faq')}
                 </Link>
               </li>
             </ul>
@@ -176,10 +180,10 @@ export default function Footer() {
           {/* Newsletter */}
           <div>
             <h4 className="text-sm font-medium tracking-widest uppercase mb-6 font-serif">
-              Stay Informed
+              {t('stayInformed')}
             </h4>
             <p className="text-sm text-primary-foreground/70 mb-4 font-light">
-              訂閱以獲取獨家預展資訊與藝術家專訪。
+              {t('newsletterDesc')}
             </p>
             <NewsletterForm />
           </div>
@@ -188,14 +192,14 @@ export default function Footer() {
         {/* Bottom Bar */}
         <div className="mt-16 pt-8 border-t border-primary-foreground/10 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-xs text-primary-foreground/50">
-            &copy; {new Date().getFullYear()} Atelier Blanc. All rights reserved. 買賣與租賃雙軌制線上藝廊
+            &copy; {new Date().getFullYear()} Atelier Blanc. All rights reserved. {t('copyrightSuffix')}
           </p>
           <div className="flex items-center gap-6 text-xs text-primary-foreground/50">
             <Link href="/faq#privacy" className="hover:text-primary-foreground/70 transition-colors">
-              隱私權政策
+              {t('privacy')}
             </Link>
             <Link href="/faq#terms" className="hover:text-primary-foreground/70 transition-colors">
-              服務條款
+              {t('terms')}
             </Link>
           </div>
         </div>

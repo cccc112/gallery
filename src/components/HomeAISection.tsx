@@ -4,12 +4,13 @@ import { useState, useRef } from 'react';
 import Link from 'next/link';
 import { Wand2, Loader2, Sparkles, Download, ArrowRight, ImageIcon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { useTranslations } from 'next-intl';
 
-const QUICK_PROMPTS = [
-  '台灣阿里山日出，雲海翻騰，晨光金黃',
-  '水墨山水，潑墨大寫意，禪意意境',
-  '野獸派油畫，鮮豔色彩，抽象人像',
-  '浮世繪風格，富士山，春日櫻花',
+const QUICK_PROMPTS_KEYS = [
+  'prompt1',
+  'prompt2',
+  'prompt3',
+  'prompt4',
 ];
 
 export function HomeAISection() {
@@ -18,6 +19,7 @@ export function HomeAISection() {
   const [imageB64, setImageB64] = useState<string | null>(null);
   const [error, setError] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
+  const t = useTranslations('HomeAISection');
 
   async function handleGenerate(customPrompt?: string) {
     const finalPrompt = customPrompt || prompt;
@@ -43,9 +45,9 @@ export function HomeAISection() {
       const data = await res.json();
       if (!res.ok) {
         if (res.status === 401) {
-          setError('請先登入才能使用 AI 生圖功能');
+          setError(t('loginRequired'));
         } else {
-          throw new Error(data.error || '生成失敗');
+          throw new Error(data.error || t('generateFailed'));
         }
         return;
       }
@@ -83,33 +85,35 @@ export function HomeAISection() {
                 <Sparkles className="h-4 w-4 text-white" />
               </div>
               <Badge variant="secondary" className="bg-indigo-100 text-indigo-700 hover:bg-indigo-200 border-none px-3 py-1 text-[10px] sm:text-xs">
-                AI 藝術生成 · Z-Image
+                {t('badge')}
               </Badge>
             </div>
 
             <h2 className="font-serif text-3xl lg:text-4xl font-semibold tracking-tight text-foreground text-balance leading-tight">
-              用文字，<br />創作獨一無二的畫作
+              {t('title1')}<br />{t('title2')}
             </h2>
             <p className="mt-4 text-sm text-muted-foreground font-light leading-relaxed max-w-md">
-              輸入任何描述，AI 模型將在數秒內為您生成精美畫作。
-              可直接下載或上架至藝廊販售。
+              {t('description')}
             </p>
 
             {/* 快速提示 */}
             <div className="mt-6 flex flex-wrap gap-2">
-              {QUICK_PROMPTS.map(q => (
-                <button
-                  key={q}
-                  onClick={() => {
-                    setPrompt(q);
-                    handleGenerate(q);
-                  }}
-                  disabled={loading}
-                  className="px-3 py-1.5 text-xs rounded-full border border-indigo-200 bg-indigo-50/60 text-indigo-700 hover:bg-indigo-100 hover:border-indigo-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {q.slice(0, 12)}…
-                </button>
-              ))}
+              {QUICK_PROMPTS_KEYS.map((key) => {
+                const q = t(key);
+                return (
+                  <button
+                    key={key}
+                    onClick={() => {
+                      setPrompt(q);
+                      handleGenerate(q);
+                    }}
+                    disabled={loading}
+                    className="px-3 py-1.5 text-xs rounded-full border border-indigo-200 bg-indigo-50/60 text-indigo-700 hover:bg-indigo-100 hover:border-indigo-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {q.slice(0, 12)}…
+                  </button>
+                );
+              })}
             </div>
 
             {/* 輸入框 */}
@@ -120,7 +124,7 @@ export function HomeAISection() {
                 value={prompt}
                 onChange={e => setPrompt(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleGenerate()}
-                placeholder="描述你想要的畫面…"
+                placeholder={t('placeholder')}
                 disabled={loading}
                 className="flex-1 px-4 py-3 rounded-sm border border-border bg-white/80 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:border-indigo-400 transition-colors disabled:opacity-60"
               />
@@ -134,7 +138,7 @@ export function HomeAISection() {
                 ) : (
                   <Wand2 className="h-4 w-4" />
                 )}
-                {loading ? '生成中' : '生成'}
+                {loading ? t('generating') : t('generate')}
               </button>
             </div>
 
@@ -143,7 +147,7 @@ export function HomeAISection() {
                 {error}
                 {error.includes('登入') && (
                   <Link href="/login" className="ml-2 underline font-medium">
-                    前往登入
+                    {t('goToLogin')}
                   </Link>
                 )}
               </div>
@@ -153,7 +157,7 @@ export function HomeAISection() {
               href="/generate"
               className="mt-6 inline-flex items-center gap-1.5 text-xs font-medium text-indigo-600 hover:text-indigo-800 transition-colors"
             >
-              進入完整 AI 工作室
+              {t('enterFullStudio')}
               <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </div>
@@ -172,8 +176,8 @@ export function HomeAISection() {
                     <Sparkles className="absolute inset-0 m-auto h-8 w-8 text-indigo-400" />
                   </div>
                   <div className="text-center">
-                    <p className="text-sm font-medium text-foreground">AI 正在創作中…</p>
-                    <p className="text-xs text-muted-foreground mt-1">約需 10–30 秒</p>
+                    <p className="text-sm font-medium text-foreground">{t('aiCreating')}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{t('eta')}</p>
                   </div>
                 </div>
               ) : imageB64 ? (
@@ -181,7 +185,7 @@ export function HomeAISection() {
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={`data:image/png;base64,${imageB64}`}
-                    alt="AI 生成畫作"
+                    alt={t('aiGeneratedAlt')}
                     className="w-full h-full object-cover pointer-events-none select-none"
                     draggable={false}
                     onContextMenu={e => e.preventDefault()}
@@ -196,7 +200,7 @@ export function HomeAISection() {
                   <button
                     onClick={handleDownload}
                     className="absolute top-3 right-3 h-9 w-9 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-sm flex items-center justify-center text-white transition-all"
-                    title="下載圖片"
+                    title={t('downloadImg')}
                   >
                     <Download className="h-4 w-4" />
                   </button>
@@ -207,10 +211,10 @@ export function HomeAISection() {
                     <ImageIcon className="h-8 w-8 text-indigo-300" />
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    在左側輸入描述，AI 將在此生成您的專屬畫作
+                    {t('previewHint1')}
                   </p>
                   <p className="text-[10px] text-muted-foreground">
-                    由 Hugging Face Z-Image 提供支援
+                    {t('previewHint2')}
                   </p>
                 </div>
               )}

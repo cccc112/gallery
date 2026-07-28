@@ -63,7 +63,7 @@ export default async function HomePage() {
           <div className="mx-auto max-w-3xl text-center">
             <Badge variant="outline" className="mb-6 px-4 py-1.5 text-xs font-medium tracking-widest uppercase border-border text-muted-foreground bg-white/60 backdrop-blur-sm">
               <Sparkles className="h-3 w-3 mr-1.5 inline" />
-              雙軌制 · 買賣 & 短期租賃
+              {t('heroBadge')}
             </Badge>
 
             <h1 className="font-serif text-5xl font-semibold tracking-tight text-foreground sm:text-6xl lg:text-7xl text-balance leading-[1.1]">
@@ -97,9 +97,9 @@ export default async function HomePage() {
           {totalCount > 0 && (
             <div className="mt-16 flex flex-wrap justify-center gap-x-12 gap-y-4">
               {[
-                { label: '典藏作品', value: totalCount },
-                { label: '實體畫作', value: physicalCount },
-                { label: '支援租賃', value: rentableCount },
+                { label: t('statTotal'), value: totalCount },
+                { label: t('statPhysical'), value: physicalCount },
+                { label: t('statRentable'), value: rentableCount },
               ].map(({ label, value }) => (
                 <div key={label} className="text-center">
                   <p className="text-3xl font-serif font-semibold text-foreground">{value}</p>
@@ -117,16 +117,16 @@ export default async function HomePage() {
           <div className="mx-auto max-w-7xl px-6 lg:px-8">
             <div className="flex items-end justify-between mb-10">
               <div>
-                <p className="text-xs font-semibold tracking-widest uppercase text-muted-foreground mb-2">精選典藏</p>
+                <p className="text-xs font-semibold tracking-widest uppercase text-muted-foreground mb-2">{t('featuredSubtitle')}</p>
                 <h2 className="text-2xl lg:text-3xl font-serif font-semibold tracking-tight text-foreground">
-                  本季主打作品
+                  {t('featuredTitle')}
                 </h2>
               </div>
               <Link
                 href="/gallery"
                 className="hidden sm:flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors group"
               >
-                瀏覽全部
+                {t('browseAll')}
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Link>
             </div>
@@ -168,11 +168,11 @@ export default async function HomePage() {
                               : 'bg-blue-50/90 text-blue-700 border-blue-200'
                           }`}
                         >
-                          {artwork.art_type === 'physical' ? '實體' : '數位'}
+                          {artwork.art_type === 'physical' ? t('physicalBadge') : t('digitalBadge')}
                         </Badge>
                         {artwork.is_rentable && artwork.art_type === 'physical' && (
                           <Badge className="bg-emerald-600/90 text-white text-[9px] font-semibold tracking-wider px-2 py-0.5 border-transparent">
-                            可租用
+                            {t('rentableBadge')}
                           </Badge>
                         )}
                       </div>
@@ -181,7 +181,7 @@ export default async function HomePage() {
                       <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-end p-4">
                         <span className="flex items-center gap-1.5 text-white text-xs font-medium bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-full">
                           <Eye className="h-3.5 w-3.5" />
-                          查看詳情
+                          {t('viewDetails')}
                         </span>
                       </div>
                     </div>
@@ -198,7 +198,7 @@ export default async function HomePage() {
                         <div>
                           {artwork.price && (
                             <p className="text-xs text-muted-foreground">
-                              買斷{' '}
+                              {t('buyout')}{' '}
                               <span className="text-sm font-bold text-foreground font-mono">
                                 {formatPrice(Number(artwork.price))}
                               </span>
@@ -206,17 +206,17 @@ export default async function HomePage() {
                           )}
                           {artwork.is_rentable && artwork.art_type === 'physical' && artwork.monthly_rent_price && (
                             <p className="text-xs text-indigo-900 font-medium mt-0.5 font-mono">
-                              月租: {new Intl.NumberFormat('zh-TW', { style: 'currency', currency: 'TWD', minimumFractionDigits: 0 }).format(Number(artwork.monthly_rent_price))}
+                              {t('monthlyRent')} {new Intl.NumberFormat('zh-TW', { style: 'currency', currency: 'TWD', minimumFractionDigits: 0 }).format(Number(artwork.monthly_rent_price))}
                             </p>
                           )}
                         </div>
                         <div className="flex items-center gap-3">
                           <div className="flex gap-2.5 items-center mr-1">
-                            <div className="flex items-center gap-1 text-muted-foreground" title="瀏覽人次">
+                            <div className="flex items-center gap-1 text-muted-foreground" title={t('views')}>
                               <Eye className="h-3.5 w-3.5" />
                               <span className="text-[10px] font-medium">{artwork.views_count}</span>
                             </div>
-                            <div className="flex items-center gap-1 text-rose-500" title="收藏人數">
+                            <div className="flex items-center gap-1 text-rose-500" title={t('likes')}>
                               <Heart className="h-3.5 w-3.5" />
                               <span className="text-[10px] font-medium">{artwork.likes_count}</span>
                             </div>
@@ -232,7 +232,7 @@ export default async function HomePage() {
 
             <div className="sm:hidden mt-8 text-center">
               <Link href="/gallery" className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-                瀏覽全部作品
+                {t('browseAllWorks')}
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
@@ -244,9 +244,9 @@ export default async function HomePage() {
       {artworks.length === 0 && (
         <section className="py-24 border-t border-border/40">
           <div className="mx-auto max-w-7xl px-6 text-center">
-            <p className="text-muted-foreground font-light mb-4">藝廊目前尚無典藏作品</p>
+            <p className="text-muted-foreground font-light mb-4">{t('emptyState')}</p>
             <Link href="/admin" className="text-sm font-medium text-primary hover:underline">
-              前往管理後台新增作品 →
+              {t('goToAdmin')}
             </Link>
           </div>
         </section>
@@ -259,12 +259,12 @@ export default async function HomePage() {
       <section className="py-16 lg:py-24 border-t border-border/40 bg-stone-50/40">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <div className="text-center mb-14">
-            <p className="text-xs font-semibold tracking-widest uppercase text-muted-foreground mb-3">為何選擇 Atelier Blanc</p>
+            <p className="text-xs font-semibold tracking-widest uppercase text-muted-foreground mb-3">{t('whyChooseUsSub')}</p>
             <h2 className="text-2xl lg:text-3xl font-serif font-semibold tracking-tight text-foreground">
-              極致尊榮的藝術雙軌體驗
+              {t('whyChooseUsTitle')}
             </h2>
             <p className="mt-4 text-sm text-muted-foreground font-light max-w-xl mx-auto leading-relaxed">
-              結合頂級藝廊品味與靈活金融授權，讓藝術收藏不再遙不可及。
+              {t('whyChooseUsDesc')}
             </p>
           </div>
 
@@ -272,18 +272,18 @@ export default async function HomePage() {
             {[
               {
                 icon: ShieldCheck,
-                title: '多元支付與 Web3 整合',
-                desc: '支援 Stripe 信用卡、PayPal 全球金流，以及 MetaMask 等 Web3 錢包，提供最安全靈活的結帳體驗。',
+                title: t('feature1Title'),
+                desc: t('feature1Desc'),
               },
               {
                 icon: Gift,
-                title: '彈性買斷與短期租賃',
-                desc: '針對不同藏家需求，除了永久買斷珍藏外，亦提供按月計算的短期租賃方案，讓藝術點綴生活更無負擔。',
+                title: t('feature2Title'),
+                desc: t('feature2Desc'),
               },
               {
                 icon: HelpCircle,
-                title: 'AI 靈感生成工作室',
-                desc: '內建強大的 AI 繪圖引擎，輸入文字即可快速生成專屬數位藝術，並能一鍵發布至藝廊販售。',
+                title: t('feature3Title'),
+                desc: t('feature3Desc'),
               },
             ].map(({ icon: Icon, title, desc }) => (
               <div
@@ -305,16 +305,16 @@ export default async function HomePage() {
       <section className="py-16 lg:py-24 border-t border-border/40">
         <div className="mx-auto max-w-2xl px-6 text-center">
           <h2 className="text-2xl lg:text-3xl font-serif font-semibold tracking-tight text-foreground mb-4">
-            準備好開啟您的收藏之旅？
+            {t('ctaTitle')}
           </h2>
           <p className="text-sm text-muted-foreground font-light leading-relaxed mb-8">
-            無論是買斷永久珍藏，還是短期租用點綴空間，Atelier Blanc 都能滿足您的需求。
+            {t('ctaDesc')}
           </p>
           <Link
             href="/gallery"
             className="inline-flex items-center gap-2 rounded-sm bg-primary px-10 py-4 text-sm font-semibold tracking-wide text-primary-foreground shadow-lg hover:bg-primary/90 transition-all duration-300 group"
           >
-            立即探索典藏作品
+            {t('ctaBtn')}
             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
           </Link>
         </div>

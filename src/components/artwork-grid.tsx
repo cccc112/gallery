@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';
 import { ArrowRight, ImageIcon, ZoomIn, X } from 'lucide-react';
 import { ProtectedImage } from '@/components/protected-image';
+import { useTranslations } from 'next-intl';
 
 interface Artwork {
   id: string;
@@ -32,6 +33,7 @@ interface LightboxProps {
 }
 
 function Lightbox({ artwork, onClose }: LightboxProps) {
+  const t = useTranslations('Artwork');
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     document.addEventListener('keydown', onKey);
@@ -54,7 +56,7 @@ function Lightbox({ artwork, onClose }: LightboxProps) {
       <button
         onClick={onClose}
         className="absolute top-4 right-4 z-10 h-10 w-10 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 flex items-center justify-center text-white transition-all"
-        aria-label="關閉"
+        aria-label={t('close')}
       >
         <X className="h-5 w-5" />
       </button>
@@ -91,7 +93,7 @@ function Lightbox({ artwork, onClose }: LightboxProps) {
 
         {/* 底部提示 */}
         <p className="text-[10px] text-white/30 tracking-widest">
-          按 ESC 或點擊空白處關閉 · © Atelier Blanc · Preview Only
+          {t('previewOnly')}
         </p>
       </div>
     </div>
@@ -108,6 +110,8 @@ interface ArtworkCardProps {
 }
 
 function ArtworkCard({ artwork, gridClass, aspectClass, formatPrice, onZoom }: ArtworkCardProps) {
+  const t = useTranslations('Artwork');
+  const tGallery = useTranslations('Gallery');
   const [imageError, setImageError] = useState(false);
 
   const badgeStyle =
@@ -118,9 +122,9 @@ function ArtworkCard({ artwork, gridClass, aspectClass, formatPrice, onZoom }: A
       : 'bg-amber-50/90 text-amber-700 border-amber-200';
 
   const badgeLabel =
-    artwork.art_type === 'digital' ? 'Digital'
-    : artwork.art_type === 'photography' ? 'Photography'
-    : 'Physical';
+    artwork.art_type === 'digital' ? tGallery('digital')
+    : artwork.art_type === 'photography' ? tGallery('photography')
+    : tGallery('physical');
 
   const itemVariants = {
     hidden: { opacity: 0, y: 20 },
@@ -165,7 +169,7 @@ function ArtworkCard({ artwork, gridClass, aspectClass, formatPrice, onZoom }: A
           </Badge>
           {artwork.is_rentable && (
             <Badge className="bg-emerald-600/90 text-white text-[10px] font-medium tracking-wider px-2 py-0.5 border-transparent">
-              可租賃
+              {tGallery('rentable')}
             </Badge>
           )}
         </div>
@@ -178,7 +182,7 @@ function ArtworkCard({ artwork, gridClass, aspectClass, formatPrice, onZoom }: A
             onZoom(artwork);
           }}
           className="absolute top-3 right-3 z-40 h-8 w-8 rounded-full bg-black/40 hover:bg-black/70 backdrop-blur-sm flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-110"
-          aria-label={`放大預覽：${artwork.title}`}
+          aria-label={`${t('zoomInPreview')}: ${artwork.title}`}
         >
           <ZoomIn className="h-3.5 w-3.5" />
         </button>
@@ -195,7 +199,7 @@ function ArtworkCard({ artwork, gridClass, aspectClass, formatPrice, onZoom }: A
             <p className="text-sm font-semibold text-white/95 mt-1 font-mono">
               {artwork.price !== null
                 ? formatPrice(Number(artwork.price))
-                : `月租金 ${formatPrice(Number(artwork.monthly_rent_price))}`}
+                : `${t('monthlyRent')} ${formatPrice(Number(artwork.monthly_rent_price))}`}
             </p>
           </div>
         </Link>
@@ -221,13 +225,14 @@ const ASPECT_CLASSES = [
 ];
 
 export function ArtworkGrid({ artworks, title, viewAllLink }: ArtworkGridProps) {
+  const t = useTranslations('Artwork');
   const [lightboxArtwork, setLightboxArtwork] = useState<Artwork | null>(null);
 
   const closeLightbox = useCallback(() => setLightboxArtwork(null), []);
 
   const formatPrice = (price: number | null) => {
-    if (price === null) return '僅供租賃';
-    return new Intl.NumberFormat('zh-TW', {
+    if (price === null) return t('rentOnly');
+    return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'TWD',
       minimumFractionDigits: 0,
@@ -247,7 +252,7 @@ export function ArtworkGrid({ artworks, title, viewAllLink }: ArtworkGridProps) 
               href={viewAllLink}
               className="hidden sm:flex items-center gap-2 text-sm font-medium tracking-wide text-muted-foreground hover:text-foreground transition-colors group"
             >
-              瀏覽全部
+              {t('viewAll')}
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Link>
           )}
@@ -281,7 +286,7 @@ export function ArtworkGrid({ artworks, title, viewAllLink }: ArtworkGridProps) 
               href={viewAllLink}
               className="inline-flex items-center gap-2 text-sm font-medium tracking-wide text-muted-foreground hover:text-foreground transition-colors"
             >
-              瀏覽全部
+              {t('viewAll')}
               <ArrowRight className="h-4 w-4" />
             </Link>
           </div>

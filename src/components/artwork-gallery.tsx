@@ -8,6 +8,7 @@ import { ZoomIn, Heart, ImageIcon, X, ChevronLeft, ChevronRight } from 'lucide-r
 import { Button } from '@/components/ui/button';
 import { ProtectedImage } from '@/components/protected-image';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 
 interface ArtworkGalleryProps {
   images: string[];
@@ -26,6 +27,7 @@ function ImagePlaceholder({ label }: { label: string }) {
 }
 
 export function ArtworkGallery({ images, title, artworkId, isPurchased = false }: ArtworkGalleryProps) {
+  const t = useTranslations('Artwork');
   const [currentImage, setCurrentImage] = useState(0);
   const [isLiked, setIsLiked] = useState(false);
   const [likeLoading, setLikeLoading] = useState(false);
@@ -58,8 +60,8 @@ export function ArtworkGallery({ images, title, artworkId, isPurchased = false }
         body: JSON.stringify({ artwork_id: artworkId }),
       });
       if (res.status === 401) {
-        toast.error('請先登入才能收藏作品', {
-          action: { label: '前往登入', onClick: () => window.location.href = `/login?redirectTo=${window.location.pathname}` },
+        toast.error(t('loginToFavorite'), {
+          action: { label: t('goToLogin'), onClick: () => window.location.href = `/login?redirectTo=${window.location.pathname}` },
         });
         setLikeLoading(false);
         return;
@@ -68,13 +70,13 @@ export function ArtworkGallery({ images, title, artworkId, isPurchased = false }
       if (res.ok) {
         setIsLiked(d.liked);
         if (d.liked) {
-          toast.success('已加入收藏 ❤️', { description: '可在「我的收藏」頁面查看' });
+          toast.success(t('addedToFavorites'), { description: t('checkInFavoritesPage') });
         } else {
-          toast('已移除收藏');
+          toast(t('removedFromFavorites'));
         }
       }
     } catch {
-      toast.error('操作失敗，請稍後再試');
+      toast.error(t('actionFailed'));
     }
     setLikeLoading(false);
   }
@@ -137,14 +139,14 @@ export function ArtworkGallery({ images, title, artworkId, isPurchased = false }
                 className={`h-10 w-10 rounded-full bg-background/90 hover:bg-background shadow-md border border-border/40 transition-all ${
                   isLiked ? 'border-rose-300 bg-rose-50/90' : ''
                 }`}
-                title={isLiked ? '已加入最愛' : '加入最愛'}
+                title={isLiked ? t('alreadyFavorited') : t('addToFavorites')}
               >
                 <Heart
                   className={`h-4 w-4 transition-all duration-200 ${
                     isLiked ? 'fill-rose-500 text-rose-500 scale-110' : 'text-foreground'
                   }`}
                 />
-                <span className="sr-only">{isLiked ? '取消最愛' : '加入最愛'}</span>
+                <span className="sr-only">{isLiked ? t('removeFavorite') : t('addToFavorites')}</span>
               </Button>
             </motion.div>
 
@@ -154,10 +156,10 @@ export function ArtworkGallery({ images, title, artworkId, isPurchased = false }
                 size="icon"
                 onClick={() => setLightboxOpen(true)}
                 className="h-10 w-10 rounded-full bg-background/90 hover:bg-background shadow-md border border-border/40 text-foreground"
-                title="放大檢視"
+                title={t('zoomIn')}
               >
                 <ZoomIn className="h-4 w-4" />
-                <span className="sr-only">放大檢視</span>
+                <span className="sr-only">{t('zoomIn')}</span>
               </Button>
             )}
           </div>
@@ -202,7 +204,7 @@ export function ArtworkGallery({ images, title, artworkId, isPurchased = false }
             className="absolute top-6 right-6 px-4 py-2 rounded-full border border-border bg-white hover:bg-secondary flex items-center gap-2 text-foreground text-sm font-medium transition-colors shadow-sm z-50"
           >
             <X className="h-4 w-4" />
-            關閉
+            {t('close')}
           </button>
 
           {/* 標題 */}

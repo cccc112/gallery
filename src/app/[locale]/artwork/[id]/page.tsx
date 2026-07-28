@@ -1,5 +1,6 @@
 import { sql } from '@/lib/db';
 import { notFound } from 'next/navigation';
+import { getTranslations } from 'next-intl/server';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { ArtworkGallery } from '@/components/artwork-gallery';
@@ -18,6 +19,7 @@ interface ArtworkPageProps {
 
 // ── 動態 SEO Metadata ──────────────────────────────────────────
 export async function generateMetadata({ params }: ArtworkPageProps): Promise<Metadata> {
+  const t = await getTranslations('ArtworkPage');
   try {
     const rows = await sql`
       SELECT a.title, a.description, a.price, a.art_type, a.preview_file_url,
@@ -27,14 +29,16 @@ export async function generateMetadata({ params }: ArtworkPageProps): Promise<Me
       WHERE a.id = ${params.id}
       LIMIT 1
     `;
-    if (!rows.length) return { title: '作品不存在' };
+    if (!rows.length) return { title: t('notFoundTitle') };
 
     const a = rows[0];
-    const title = `${a.title} — ${a.artist_name || '藝術家'}`;
+    const artistName = a.artist_name || t('artistFallback');
+    const title = `${a.title} — ${artistName}`;
+    const descSuffix = a.art_type === 'digital' ? t('digitalDesc') : t('physicalDesc');
     const description = a.description
       ? `${a.description.slice(0, 120)}…`
-      : `${a.artist_name || '藝術家'} 的精選${a.art_type === 'digital' ? '數位' : '實體'}作品。${
-          a.price ? `售價 NT$${Number(a.price).toLocaleString()}。` : ''
+      : `${artistName} ${descSuffix}${
+          a.price ? ` ${t('pricePrefix')} ${Number(a.price).toLocaleString()}。` : ''
         }`;
     const image = a.preview_file_url || '/og-default.jpg';
 
@@ -62,6 +66,7 @@ export async function generateMetadata({ params }: ArtworkPageProps): Promise<Me
 
 
 export default async function ArtworkPage({ params }: ArtworkPageProps) {
+  const t = await getTranslations('ArtworkPage');
   const { id } = params;
 
   // 取得登入狀態與用戶 ID
@@ -173,10 +178,10 @@ export default async function ArtworkPage({ params }: ArtworkPageProps) {
 
   // 藝術家檔案資訊
   const artistInfo = {
-    name: artwork.artist_name || "未知藝術家",
-    bio: artwork.artist_bio || "這位藝術家尚未填寫個人簡介，但他/她透過精彩的作品展現獨特的藝術視角。我們期待未來有更多關於這位創作者的故事與您分享。",
+    name: artwork.artist_name || t('unknownArtist'),
+    bio: artwork.artist_bio || t('emptyBio'),
     image: artwork.artist_avatar || `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(artwork.artist_name || 'artist')}`,
-    location: "台灣",
+    location: t('taiwan'),
     artworksCount: otherArtworks.length + 1,
   };
 
@@ -190,25 +195,25 @@ export default async function ArtworkPage({ params }: ArtworkPageProps) {
             className="inline-flex items-center gap-1.5 text-xs font-medium uppercase tracking-widest text-muted-foreground hover:text-foreground mb-8 transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
-            返回探索藝廊
+            {t('backToGallery')}
           </Link>
 
           {/* Breadcrumb */}
           <nav className="mb-8 lg:mb-12">
             <ol className="flex items-center gap-2 text-xs font-light text-muted-foreground uppercase tracking-widest">
               <li>
-                <Link href="/" className="hover:text-foreground transition-colors">首頁</Link>
+                <Link href="/" className="hover:text-foreground transition-colors">{t('home')}</Link>
               </li>
               <li className="text-muted-foreground/30">/</li>
               <li>
-                <Link href="/gallery" className="hover:text-foreground transition-colors">經典收藏</Link>
+                <Link href="/gallery" className="hover:text-foreground transition-colors">{t('classicCollection')}</Link>
               </li>
               {artwork.series_title && (
                 <>
                   <li className="text-muted-foreground/30">/</li>
                   <li>
                     <Link href={`/artist/${artwork.artist_id}`} className="hover:text-foreground transition-colors text-primary font-medium">
-                      系列：{artwork.series_title}
+                      {t('seriesPrefix')}{artwork.series_title}
                     </Link>
                   </li>
                 </>
@@ -256,7 +261,7 @@ export default async function ArtworkPage({ params }: ArtworkPageProps) {
       {otherArtworks.length > 0 && (
         <ArtworkGrid 
           artworks={otherArtworks} 
-          title={artwork.series_title ? `系列【${artwork.series_title}】的其他作品` : "該藝術家的其他創作"} 
+          title={artwork.series_title ? t('otherArtworksInSeries', { seriesTitle: artwork.series_title }) : t('otherArtworksByArtist')} 
           viewAllLink={`/artist/${artwork.artist_id}`}
         />
       )}

@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Check, Truck, Shield, RotateCcw, Box, Lock, RefreshCw, CreditCard, LogIn, Camera, Trash2, MessageSquare, Eye, Heart, Share2 } from "lucide-react"
 import { CheckoutModal } from '@/components/CheckoutModal';
 import { ArtworkChatModal } from '@/components/ArtworkChatModal';
+import { useTranslations } from 'next-intl';
 
 interface ArtworkDetailsProps {
   artwork: {
@@ -49,6 +50,7 @@ export function ArtworkDetails({
   currentUserId = '',
 }: ArtworkDetailsProps & { isLoggedIn?: boolean; isSold?: boolean; isRented?: boolean; isOwner?: boolean; isPurchased?: boolean; currentUserId?: string }) {
   const router = useRouter();
+  const t = useTranslations('ArtworkDetails');
   const [modalOpen, setModalOpen] = useState(false);
   const [modalAction, setModalAction] = useState<'buy' | 'rent'>('buy');
   const [deleting, setDeleting] = useState(false);
@@ -68,7 +70,7 @@ export function ArtworkDetails({
       try {
         await navigator.share({
           title: artwork.title,
-          text: `來看看 ${artwork.artist_name} 的精選作品：${artwork.title}`,
+          text: t('shareText', { artistName: artwork.artist_name, title: artwork.title }),
           url: url,
         });
       } catch (err) {
@@ -77,7 +79,7 @@ export function ArtworkDetails({
     } else {
       try {
         await navigator.clipboard.writeText(url);
-        alert('連結已複製到剪貼簿！');
+        alert(t('copySuccess'));
       } catch (err) {
         console.error('Copy failed:', err);
       }
@@ -88,7 +90,7 @@ export function ArtworkDetails({
     try {
       const res = await fetch(`/api/download/${artwork.id}`);
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || '無法下載');
+      if (!res.ok) throw new Error(data.error || t('downloadFailed'));
       
       const a = document.createElement('a');
       a.href = data.url;
@@ -103,16 +105,16 @@ export function ArtworkDetails({
 
 
   const handleDelete = async () => {
-    if (!confirm('確定要刪除此作品嗎？此操作無法復原。')) return;
+    if (!confirm(t('deleteConfirm'))) return;
     setDeleting(true);
     const res = await fetch(`/api/artworks/${artwork.id}`, { method: 'DELETE' });
     const data = await res.json();
     if (res.ok) {
-      alert('作品已刪除');
+      alert(t('deleteSuccess'));
       router.push('/profile/upload');
       router.refresh();
     } else {
-      alert(data.error || '刪除失敗');
+      alert(data.error || t('deleteFailed'));
       setDeleting(false);
     }
   };
@@ -152,7 +154,7 @@ export function ArtworkDetails({
           {artwork.title}
         </h1>
         <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-          <span>{isPhysical ? '實體創作品 · 獨一無二' : isPhotography ? '攝影藝術 · 限量沖印版' : '數位授權藝術 · 限量發行'}</span>
+          <span>{isPhysical ? t('physicalSub') : isPhotography ? t('photographySub') : t('digitalSub')}</span>
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1"><Eye className="w-4 h-4" /> {artwork.views_count || 0}</span>
             <span className="flex items-center gap-1"><Heart className="w-4 h-4" /> {artwork.likes_count || 0}</span>
@@ -169,11 +171,11 @@ export function ArtworkDetails({
         )}
         {artwork.is_ai_generated ? (
           <Badge variant="outline" className="px-3 py-1 text-xs font-medium tracking-wide border-purple-300 text-purple-700 bg-purple-50/50">
-            🤖 AI 生成藝術
+            {t('aiArt')}
           </Badge>
         ) : (
           <Badge variant="outline" className="px-3 py-1 text-xs font-medium tracking-wide border-amber-300 text-amber-700 bg-amber-50/50">
-            🖌️ 藝術家原創
+            {t('originalArt')}
           </Badge>
         )}
         <Badge variant="secondary" className={`px-3 py-1 text-xs font-medium tracking-wide ${
@@ -187,7 +189,7 @@ export function ArtworkDetails({
         </Badge>
         {artwork.is_rentable && (
           <Badge variant="outline" className="px-3 py-1 text-xs font-medium tracking-wide border-emerald-300 text-emerald-700 bg-emerald-50/50">
-            支援短期租賃
+            {t('supportRent')}
           </Badge>
         )}
         {(isPhysical || isPhotography) && (
@@ -195,10 +197,10 @@ export function ArtworkDetails({
             {hasStock ? (
               <span className="flex items-center gap-1">
                 <Check className="h-3 w-3" />
-                Available ({artwork.stock} 件)
+                {t('available')} ({artwork.stock} {t('pieces')})
               </span>
             ) : (
-              'Sold Out'
+              t('soldOutBadge')
             )}
           </Badge>
         )}
@@ -209,26 +211,26 @@ export function ArtworkDetails({
         {artwork.price !== null && (
           <div className="space-y-1">
             <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-              買斷收藏價
+              {t('buyPrice')}
             </p>
             <p className="text-3xl font-serif font-semibold text-foreground">
               {formatPrice(Number(artwork.price))}
             </p>
             <p className="text-xs text-muted-foreground">
-              一次付款，終身典藏
+              {t('oneTimePayment')}
             </p>
           </div>
         )}
         {artwork.is_rentable && artwork.art_type === 'physical' && artwork.monthly_rent_price !== null && (
           <div className="space-y-1">
             <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-              短期月租金
+              {t('monthlyRentPrice')}
             </p>
             <p className="text-3xl font-serif font-semibold text-foreground text-indigo-900 dark:text-indigo-200">
-              {formatPrice(Number(artwork.monthly_rent_price))} <span className="text-xs font-normal">/ 月</span>
+              {formatPrice(Number(artwork.monthly_rent_price))} <span className="text-xs font-normal">{t('perMonth')}</span>
             </p>
             <p className="text-xs text-indigo-600 dark:text-indigo-300">
-              押金額度：{formatPrice(Number(artwork.deposit_amount))} (預授權不扣款)
+              {t('depositAmount')}{formatPrice(Number(artwork.deposit_amount))} {t('depositNote')}
             </p>
           </div>
         )}
@@ -239,19 +241,19 @@ export function ArtworkDetails({
         <div className="space-y-3">
           <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase flex items-center gap-1.5">
             <Box className="h-4 w-4 text-primary" />
-            實體作品規格
+            {t('physicalSpecs')}
           </p>
           <dl className="grid grid-cols-2 gap-4 text-sm bg-secondary/30 p-4 rounded-lg border border-border/60">
             <div>
-              <dt className="text-xs text-muted-foreground">作品尺寸 (寬 × 高 × 深)</dt>
+              <dt className="text-xs text-muted-foreground">{t('dimensions')}</dt>
               <dd className="font-semibold text-foreground mt-0.5">
                 {Number(artwork.width)} × {Number(artwork.height)} {artwork.depth ? `× ${Number(artwork.depth)}` : ''} cm
               </dd>
             </div>
             <div>
-              <dt className="text-xs text-muted-foreground">重量</dt>
+              <dt className="text-xs text-muted-foreground">{t('weight')}</dt>
               <dd className="font-semibold text-foreground mt-0.5">
-                {artwork.weight ? `${Number(artwork.weight)} kg` : '未載明'}
+                {artwork.weight ? `${Number(artwork.weight)} kg` : t('notSpecified')}
               </dd>
             </div>
           </dl>
@@ -260,33 +262,33 @@ export function ArtworkDetails({
         <div className="space-y-3">
           <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase flex items-center gap-1.5">
             <Camera className="h-4 w-4 text-violet-600" />
-            攝影作品規格
+            {t('photographySpecs')}
           </p>
           <dl className="grid grid-cols-2 gap-4 text-sm bg-violet-50/40 p-4 rounded-lg border border-violet-200/50">
             <div>
-              <dt className="text-xs text-muted-foreground">沖印尺寸</dt>
+              <dt className="text-xs text-muted-foreground">{t('printSize')}</dt>
               <dd className="font-semibold text-foreground mt-0.5">
                 {artwork.width && artwork.height
                   ? `${Number(artwork.width)} × ${Number(artwork.height)} cm`
-                  : '未載明'}
+                  : t('notSpecified')}
               </dd>
             </div>
             <div>
-              <dt className="text-xs text-muted-foreground">版數 (Edition)</dt>
+              <dt className="text-xs text-muted-foreground">{t('editionSize')}</dt>
               <dd className="font-semibold text-foreground mt-0.5">
-                {artwork.edition_size ? `限量 ${artwork.edition_size} 張` : '不限版數'}
+                {artwork.edition_size ? t('limitedEdition', { count: artwork.edition_size }) : t('unlimitedEdition')}
               </dd>
             </div>
             <div>
-              <dt className="text-xs text-muted-foreground">沖印材質</dt>
+              <dt className="text-xs text-muted-foreground">{t('printMaterial')}</dt>
               <dd className="font-semibold text-foreground mt-0.5">
-                {artwork.print_material || '未載明'}
+                {artwork.print_material || t('notSpecified')}
               </dd>
             </div>
             <div>
-              <dt className="text-xs text-muted-foreground">庫存</dt>
+              <dt className="text-xs text-muted-foreground">{t('stock')}</dt>
               <dd className="font-semibold text-foreground mt-0.5">
-                {artwork.stock !== null ? `${artwork.stock} 張` : '未載明'}
+                {artwork.stock !== null ? t('countPieces', { count: artwork.stock }) : t('notSpecified')}
               </dd>
             </div>
           </dl>
@@ -295,10 +297,10 @@ export function ArtworkDetails({
         <div className="space-y-3">
           <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase flex items-center gap-1.5">
             <Lock className="h-4 w-4 text-primary" />
-            數位版權與下載保護
+            {t('digitalProtection')}
           </p>
           <div className="text-sm bg-secondary/30 p-4 rounded-lg border border-border/60 text-muted-foreground leading-relaxed">
-            本畫作之高解析度無損原始檔 (.tif) 已加密託管。買斷或租用合約生效後，系統將在結帳成功頁面自動提供您的專屬安全下載連結。
+            {t('digitalProtectionDesc')}
           </div>
         </div>
       )}
@@ -306,7 +308,7 @@ export function ArtworkDetails({
       {/* About description */}
       <div>
         <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase mb-3">
-          作品介紹
+          {t('artworkIntro')}
         </p>
         <p className="text-base leading-relaxed text-foreground/80 font-light">
           {artwork.description}
@@ -320,8 +322,8 @@ export function ArtworkDetails({
         <div className="flex items-center gap-3 px-5 py-4 rounded-lg bg-primary/5 border border-primary/20">
           <div className="h-2.5 w-2.5 rounded-full bg-primary flex-shrink-0" />
           <div>
-            <p className="text-sm font-semibold text-primary">這是您的發布作品</p>
-            <p className="text-xs text-primary/70 mt-0.5">身為創作者，您無法購買或租賃自己的作品。</p>
+            <p className="text-sm font-semibold text-primary">{t('yourArtwork')}</p>
+            <p className="text-xs text-primary/70 mt-0.5">{t('cantBuyOwn')}</p>
           </div>
         </div>
       ) : isPurchased && !isPhysical ? (
@@ -329,8 +331,8 @@ export function ArtworkDetails({
           <div className="flex items-center gap-3 px-5 py-4 rounded-lg bg-green-50 border border-green-200">
             <div className="h-2.5 w-2.5 rounded-full bg-green-500 flex-shrink-0" />
             <div>
-              <p className="text-sm font-semibold text-green-800">您已收藏此作品</p>
-              <p className="text-xs text-green-600 mt-0.5">感謝您的支持，您現在可以下載高畫質原檔了。</p>
+              <p className="text-sm font-semibold text-green-800">{t('alreadyPurchased')}</p>
+              <p className="text-xs text-green-600 mt-0.5">{t('thanksSupportDownload')}</p>
             </div>
           </div>
           <Button
@@ -338,7 +340,7 @@ export function ArtworkDetails({
             size="lg"
             className="w-full h-14 text-base font-semibold tracking-wide bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-300 shadow-md flex items-center justify-center gap-2"
           >
-            <Box className="h-4 w-4" /> 下載高畫質原檔
+            <Box className="h-4 w-4" /> {t('downloadHighRes')}
           </Button>
         </div>
       ) : (isSold || isRented) && (!isPhysical || artwork.stock === 0) ? (
@@ -346,10 +348,10 @@ export function ArtworkDetails({
           <div className="h-2.5 w-2.5 rounded-full bg-rose-500 flex-shrink-0" />
           <div>
             <p className="text-sm font-semibold text-rose-800">
-              {isSold ? '此作品已售出，暫停交易' : '此作品租賃中，暫停交易'}
+              {isSold ? t('soldOutTradeSuspended') : t('rentedTradeSuspended')}
             </p>
             <p className="text-xs text-rose-600 mt-0.5">
-              {isSold ? '買斷交易已完成，作品已歸藏家收藏。' : '此作品目前租賃中，租期結束後可再次購買或租用。'}
+              {isSold ? t('soldOutDesc') : t('rentedDesc')}
             </p>
           </div>
         </div>
@@ -360,7 +362,7 @@ export function ArtworkDetails({
               {isPurchased && isPhysical && (
                 <div className="text-xs text-amber-600 bg-amber-50 px-3 py-2 rounded-md border border-amber-200 flex items-center gap-2">
                   <div className="h-1.5 w-1.5 rounded-full bg-amber-500 flex-shrink-0" />
-                  溫馨提醒：您先前已經收藏過此作品了喔！
+                  {t('alreadyPurchasedReminder')}
                 </div>
               )}
               <Button
@@ -370,9 +372,9 @@ export function ArtworkDetails({
                 className="w-full h-14 text-base font-semibold tracking-wide bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-300 shadow-md flex items-center justify-center gap-2 disabled:opacity-60"
               >
                 {!isLoggedIn ? (
-                  <><LogIn className="h-4 w-4" /> 登入後收藏</>
+                  <><LogIn className="h-4 w-4" /> {t('loginToBuy')}</>
                 ) : (
-                  <><CreditCard className="h-4 w-4" /> {hasStock ? '立即收藏（買斷）' : '已售罄'}</>
+                  <><CreditCard className="h-4 w-4" /> {hasStock ? t('buyNow') : t('outOfStockBtn')}</>
                 )}
               </Button>
             </div>
@@ -386,9 +388,9 @@ export function ArtworkDetails({
               className="flex-1 h-14 text-base font-semibold tracking-wide border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-300 flex items-center justify-center gap-2"
             >
               {!isLoggedIn ? (
-                <><LogIn className="h-4 w-4" /> 登入後租用</>
+                <><LogIn className="h-4 w-4" /> {t('loginToRent')}</>
               ) : (
-                <><RefreshCw className="h-4 w-4" /> 短期租用（月付方案）</>
+                <><RefreshCw className="h-4 w-4" /> {t('rentNow')}</>
               )}
             </Button>
           )}
@@ -403,7 +405,7 @@ export function ArtworkDetails({
             className="flex-1 flex items-center justify-center gap-2 text-xs text-rose-500 hover:text-rose-700 hover:bg-rose-50 border border-rose-200 rounded-lg py-2.5 transition-colors disabled:opacity-50"
           >
             <Trash2 className="h-3.5 w-3.5" />
-            {deleting ? '刪除中...' : '刪除此作品'}
+            {deleting ? t('deleting') : t('deleteArtwork')}
           </button>
         ) : (
           <button
@@ -411,7 +413,7 @@ export function ArtworkDetails({
             className="flex-1 flex items-center justify-center gap-2 text-xs font-semibold text-foreground hover:bg-stone-100 border border-border/60 rounded-lg py-2.5 transition-colors"
           >
             <MessageSquare className="h-3.5 w-3.5" />
-            💬 詢問藝術家
+            {t('askArtist')}
           </button>
         )}
         <button
@@ -419,7 +421,7 @@ export function ArtworkDetails({
           className="flex-1 flex items-center justify-center gap-2 text-xs font-semibold text-foreground hover:bg-stone-100 border border-border/60 rounded-lg py-2.5 transition-colors"
         >
           <Share2 className="h-3.5 w-3.5" />
-          分享作品
+          {t('shareArtwork')}
         </button>
       </div>
 
@@ -448,8 +450,8 @@ export function ArtworkDetails({
             <Truck className="h-5 w-5 text-muted-foreground" />
           </div>
           <div>
-            <p className="text-xs font-semibold text-foreground">買賣雙方協議運輸</p>
-            <p className="text-[10px] text-muted-foreground">請透過平台私訊確認運費與細節</p>
+            <p className="text-xs font-semibold text-foreground">{t('transportation')}</p>
+            <p className="text-[10px] text-muted-foreground">{t('transportationDesc')}</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -457,8 +459,8 @@ export function ArtworkDetails({
             <Shield className="h-5 w-5 text-muted-foreground" />
           </div>
           <div>
-            <p className="text-xs font-semibold text-foreground">原創保證</p>
-            <p className="text-[10px] text-muted-foreground">由平台認證藝術家親自發布</p>
+            <p className="text-xs font-semibold text-foreground">{t('originalGuarantee')}</p>
+            <p className="text-[10px] text-muted-foreground">{t('originalGuaranteeDesc')}</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -466,8 +468,8 @@ export function ArtworkDetails({
             <RotateCcw className="h-5 w-5 text-muted-foreground" />
           </div>
           <div>
-            <p className="text-xs font-semibold text-foreground">7 天鑑賞期</p>
-            <p className="text-[10px] text-muted-foreground">非數位作品享 7 天猶豫期</p>
+            <p className="text-xs font-semibold text-foreground">{t('sevenDays')}</p>
+            <p className="text-[10px] text-muted-foreground">{t('sevenDaysDesc')}</p>
           </div>
         </div>
       </div>

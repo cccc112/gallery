@@ -1,3 +1,4 @@
+import { getTranslations } from 'next-intl/server';
 import Link from 'next/link';
 import { sql } from '@/lib/db';
 import { Search, Eye, Tag, SlidersHorizontal, X, Heart } from 'lucide-react';
@@ -19,22 +20,21 @@ interface GalleryPageProps {
   };
 }
 
-const TYPE_TABS = [
-  { value: 'all',         label: '全部' },
-  { value: 'physical',    label: '實體' },
-  { value: 'digital',     label: '數位' },
-  { value: 'photography', label: '攝影' },
-];
-
-
-
 export default async function GalleryPage({ searchParams }: GalleryPageProps) {
+  const t = await getTranslations('Gallery');
   const search = searchParams.search || '';
   const type = searchParams.type || 'all';
   const theme = searchParams.theme || 'all';
   const rentable = searchParams.rentable === 'true';
   const tagParam = searchParams.tag;
   const tags: string[] = tagParam ? (Array.isArray(tagParam) ? tagParam : [tagParam]) : [];
+
+  const TYPE_TABS = [
+    { value: 'all',         label: t('all') },
+    { value: 'physical',    label: t('physical') },
+    { value: 'digital',     label: t('digital') },
+    { value: 'photography', label: t('photography') },
+  ];
 
   let artworks: any[] = [];
   try {
@@ -89,7 +89,6 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
     console.error('Failed to query tags:', error);
   }
 
-  // If no tags in DB yet, show some default recommendations
   if (popularTags.length === 0) {
     popularTags = [
       { tag: '油畫', count: 0 },
@@ -102,15 +101,14 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
   }
 
   const formatPrice = (price: number | null) => {
-    if (price === null) return '僅供租賃';
-    return new Intl.NumberFormat('zh-TW', {
+    if (price === null) return t('notForSale');
+    return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'TWD',
       minimumFractionDigits: 0,
     }).format(price);
   };
 
-  // 建構帶 type 的搜尋 URL（保留其他 params）
   function typeUrl(t: string) {
     const p = new URLSearchParams();
     if (search) p.set('search', search);
@@ -155,30 +153,27 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
     return 'bg-blue-50/90 text-blue-700 border-blue-200';
   };
   const badgeLabel = (artType: string) => {
-    if (artType === 'physical') return '實體';
-    if (artType === 'photography') return '攝影';
-    return '數位';
+    if (artType === 'physical') return t('physical');
+    if (artType === 'photography') return t('photography');
+    return t('digital');
   };
 
   return (
     <div className="marble-bg min-h-screen">
       <div className="mx-auto max-w-7xl px-6 lg:px-8 py-12">
 
-        {/* Header */}
         <div className="mb-10">
           <h1 className="text-3xl font-serif font-semibold tracking-tight text-foreground sm:text-4xl animate-fade-in">
-            探索典藏作品
+            {t('title')}
           </h1>
           <p className="mt-2 text-sm text-muted-foreground font-light">
-            尋覓、收藏與短期租賃當代畫作，體驗實體與數位的極致之美。
+            {t('description')}
           </p>
         </div>
 
-        {/* ── 篩選區塊 ── */}
         <div className="bg-card/60 backdrop-blur-sm p-4 rounded-xl border border-border/80 mb-10 shadow-sm space-y-3">
-          {/* Type Tab Pills */}
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mr-1">類型</span>
+            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mr-1">{t('type')}</span>
             {TYPE_TABS.map(tab => {
               const isActive = type === tab.value;
               return (
@@ -200,14 +195,12 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
             })}
           </div>
 
-          {/* Search + 租賃 + 送出 */}
           <GalleryForm search={search} type={type} rentable={rentable} tags={tags} />
 
-          {/* Popular Tags */}
           {popularTags.length > 0 && (
             <div className="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-border/40">
               <span className="text-xs text-muted-foreground font-medium flex items-center gap-1">
-                <Tag className="h-3 w-3" /> 熱門標籤:
+                <Tag className="h-3 w-3" /> {t('popularTags')}
               </span>
               {popularTags.map(pt => (
                 <Link
@@ -221,36 +214,35 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
             </div>
           )}
 
-          {/* 當前篩選標示 */}
           {(type !== 'all' || theme !== 'all' || rentable || search || tags.length > 0) && (
             <div className="flex items-center gap-2 pt-1 border-t border-border/40 flex-wrap mt-2">
-              <span className="text-[10px] text-muted-foreground">目前篩選：</span>
+              <span className="text-[10px] text-muted-foreground">{t('currentFilters')}</span>
               {type !== 'all' && (
-                <Link href={removeFilterUrl('type')} className="group flex items-center gap-1 text-[10px] bg-foreground/10 text-foreground px-2 py-0.5 rounded-full font-medium hover:bg-foreground/20 transition-colors" title="移除類型篩選">
+                <Link href={removeFilterUrl('type')} className="group flex items-center gap-1 text-[10px] bg-foreground/10 text-foreground px-2 py-0.5 rounded-full font-medium hover:bg-foreground/20 transition-colors" title={t('removeFilter')}>
                   {TYPE_TABS.find(t => t.value === type)?.label}
                   <X className="h-3 w-3 opacity-50 group-hover:opacity-100" />
                 </Link>
               )}
               {rentable && (
-                <Link href={removeFilterUrl('rentable')} className="group flex items-center gap-1 text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium hover:bg-emerald-200 transition-colors" title="移除可租賃篩選">
-                  可租賃
+                <Link href={removeFilterUrl('rentable')} className="group flex items-center gap-1 text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium hover:bg-emerald-200 transition-colors" title={t('removeFilter')}>
+                  {t('rentableFilter')}
                   <X className="h-3 w-3 opacity-50 group-hover:opacity-100" />
                 </Link>
               )}
               {search && (
-                <Link href={removeFilterUrl('search')} className="group flex items-center gap-1 text-[10px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-medium hover:bg-indigo-200 transition-colors" title="移除關鍵字篩選">
-                  「{search}」
+                <Link href={removeFilterUrl('search')} className="group flex items-center gap-1 text-[10px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-medium hover:bg-indigo-200 transition-colors" title={t('removeFilter')}>
+                  &quot;{search}&quot;
                   <X className="h-3 w-3 opacity-50 group-hover:opacity-100" />
                 </Link>
               )}
               {tags.map(tag => (
-                <Link key={tag} href={removeFilterUrl('tag', tag)} className="group flex items-center gap-1 text-[10px] bg-rose-100 text-rose-700 px-2 py-0.5 rounded-full font-medium hover:bg-rose-200 transition-colors" title={`移除標籤: ${tag}`}>
+                <Link key={tag} href={removeFilterUrl('tag', tag)} className="group flex items-center gap-1 text-[10px] bg-rose-100 text-rose-700 px-2 py-0.5 rounded-full font-medium hover:bg-rose-200 transition-colors" title={t('removeFilter')}>
                   #{tag}
                   <X className="h-3 w-3 opacity-50 group-hover:opacity-100" />
                 </Link>
               ))}
               <Link href="/gallery" className="text-[10px] text-muted-foreground hover:text-rose-500 underline ml-auto transition-colors">
-                清除全部
+                {t('clearAll')}
               </Link>
             </div>
           )}
@@ -262,13 +254,13 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
             <div className="h-20 w-20 bg-secondary rounded-full flex items-center justify-center mb-6 shadow-inner">
               <Search className="h-10 w-10 text-muted-foreground/40" />
             </div>
-            <h3 className="text-xl font-serif font-semibold text-foreground mb-2">找不到符合條件的作品</h3>
+            <h3 className="text-xl font-serif font-semibold text-foreground mb-2">{t('noResultsTitle')}</h3>
             <p className="text-sm text-muted-foreground mb-8 text-center max-w-md leading-relaxed">
-              目前沒有符合您所選條件的藝術品。您可以嘗試減少篩選條件，或是清除條件來探索更多精采創作。
+              {t('noResultsDesc')}
             </p>
             <Link href="/gallery" className="rounded-full bg-foreground text-background hover:bg-foreground/90 px-8 py-3 text-sm font-medium transition-all shadow-md flex items-center gap-2">
               <X className="h-4 w-4" />
-              清除所有篩選條件
+              {t('clearFiltersBtn')}
             </Link>
           </div>
         ) : (
@@ -305,7 +297,7 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
                     </Badge>
                     {artwork.is_rentable && artwork.art_type === 'physical' && (
                       <Badge className="bg-emerald-600/90 text-white text-[9px] font-semibold tracking-wider px-2 py-0.5 border-transparent">
-                        可租用
+                        {t('rentable')}
                       </Badge>
                     )}
                   </div>
@@ -344,24 +336,24 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
                     <div>
                       {artwork.price ? (
                         <p className="text-xs text-muted-foreground">
-                          買斷: <span className="text-sm font-bold text-foreground font-mono">{formatPrice(Number(artwork.price))}</span>
+                          {t('buy')} <span className="text-sm font-bold text-foreground font-mono">{formatPrice(Number(artwork.price))}</span>
                         </p>
                       ) : (
-                        <p className="text-xs text-muted-foreground italic">非賣品</p>
+                        <p className="text-xs text-muted-foreground italic">{t('notForSale')}</p>
                       )}
                       {artwork.is_rentable && artwork.art_type === 'physical' && (
                         <p className="text-xs text-indigo-900 font-medium mt-1 font-mono">
-                          月租: {formatPrice(Number(artwork.monthly_rent_price))}
+                          {t('rent')} {formatPrice(Number(artwork.monthly_rent_price))}
                         </p>
                       )}
                     </div>
                     <div className="flex items-center gap-4">
                       <div className="flex gap-2.5 items-center mr-1">
-                        <div className="flex items-center gap-1 text-muted-foreground" title="瀏覽人次">
+                        <div className="flex items-center gap-1 text-muted-foreground" title={t('views')}>
                           <Eye className="h-3.5 w-3.5" />
                           <span className="text-[10px] font-medium">{artwork.views_count}</span>
                         </div>
-                        <div className="flex items-center gap-1 text-rose-500" title="收藏人數">
+                        <div className="flex items-center gap-1 text-rose-500" title={t('likes')}>
                           <Heart className="h-3.5 w-3.5" />
                           <span className="text-[10px] font-medium">{artwork.likes_count}</span>
                         </div>

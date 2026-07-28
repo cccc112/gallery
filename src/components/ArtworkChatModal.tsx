@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { X, Send, MessageSquare, Loader2, Paperclip, ImageIcon, FileText } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 interface Message {
   id: string;
@@ -39,6 +40,7 @@ export function ArtworkChatModal({
   const imageInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const supabase = createClient();
+  const t = useTranslations('ArtworkChatModal');
 
   // 初始化：取得或建立聊天室
   const initChat = useCallback(async () => {
@@ -141,7 +143,7 @@ export function ArtworkChatModal({
       setInput('');
       setPendingFiles([]);
     } catch (e: any) {
-      alert('發送失敗: ' + (e.message || '未知錯誤'));
+      alert(t('sendFailed') + (e.message || t('unknownError')));
     } finally {
       setSending(false);
     }
@@ -164,7 +166,7 @@ export function ArtworkChatModal({
       const newFiles = Array.from(e.target.files);
       const oversized = newFiles.find(f => f.size > 5 * 1024 * 1024);
       if (oversized) {
-        alert('檔案大小不能超過 5MB');
+        alert(t('fileTooLarge'));
         return;
       }
       setPendingFiles(prev => [...prev, ...newFiles]);
@@ -233,7 +235,7 @@ export function ArtworkChatModal({
             <MessageSquare className="h-4 w-4 text-primary" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-foreground truncate">詢問 {artistName}</p>
+            <p className="text-sm font-semibold text-foreground truncate">{t('askArtist', { artistName })}</p>
             <p className="text-xs text-muted-foreground truncate">{artworkTitle}</p>
           </div>
           <button
@@ -253,8 +255,8 @@ export function ArtworkChatModal({
           ) : messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center gap-2">
               <MessageSquare className="h-8 w-8 text-muted-foreground/40" />
-              <p className="text-sm text-muted-foreground">開始與藝術家對話吧！</p>
-              <p className="text-xs text-muted-foreground/70">可詢問作品故事、材質、尺寸等問題</p>
+              <p className="text-sm text-muted-foreground">{t('startChat')}</p>
+              <p className="text-xs text-muted-foreground/70">{t('chatHint')}</p>
             </div>
           ) : (
             messages.map((msg) => {
@@ -273,7 +275,7 @@ export function ArtworkChatModal({
                   <div className={`max-w-[75%] space-y-0.5`}>
                     {!isMe && (
                       <p className="text-[10px] text-muted-foreground pl-1">
-                        {isArtist ? '藝術家' : '看展人'}
+                        {isArtist ? t('artist') : t('visitor')}
                       </p>
                     )}
                     <div
@@ -299,7 +301,7 @@ export function ArtworkChatModal({
         {/* Quick Replies & Input */}
         <div className="flex flex-col border-t border-border/50 bg-white flex-shrink-0">
           <div className="flex gap-2 p-2 overflow-x-auto no-scrollbar bg-stone-50 border-b border-border/30">
-            {["請問這件作品還有嗎？", "可以約時間看實體作品嗎？", "運費大約多少？", "請問能提供更多細節照片嗎？"].map(reply => (
+            {[t('quickReply1'), t('quickReply2'), t('quickReply3'), t('quickReply4')].map(reply => (
               <button
                 key={reply}
                 onClick={() => setInput(reply)}
@@ -328,7 +330,7 @@ export function ArtworkChatModal({
                 onClick={() => imageInputRef.current?.click()}
                 disabled={sending}
                 className="h-10 w-10 rounded-xl bg-stone-100 flex items-center justify-center text-muted-foreground hover:bg-stone-200 hover:text-foreground transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                title="上傳圖片"
+                title={t('uploadImage')}
               >
                 <ImageIcon className="h-4 w-4" />
               </button>
@@ -336,7 +338,7 @@ export function ArtworkChatModal({
                 onClick={() => fileInputRef.current?.click()}
                 disabled={sending}
                 className="h-10 w-10 rounded-xl bg-stone-100 flex items-center justify-center text-muted-foreground hover:bg-stone-200 hover:text-foreground transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                title="上傳檔案"
+                title={t('uploadFile')}
               >
                 <Paperclip className="h-4 w-4" />
               </button>
@@ -361,7 +363,7 @@ export function ArtworkChatModal({
               value={input}
               onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="輸入訊息... (Enter 送出)"
+            placeholder={t('typeMessage')}
             rows={1}
             className="flex-1 resize-none rounded-xl border border-border/60 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-all bg-stone-50 max-h-28"
             style={{ minHeight: '42px' }}

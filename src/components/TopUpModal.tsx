@@ -290,27 +290,6 @@ export default function TopUpModal({ onClose, onSuccess }: { onClose: () => void
             </button>
           </div>
 
-          {/* LINE Pay Button */}
-          <div className="relative group/btn">
-            <div className="absolute -inset-0.5 bg-gradient-to-r from-[#00C300] to-[#00E000] rounded-xl opacity-0 group-hover/btn:opacity-30 blur-md transition duration-500 group-hover/btn:duration-200"></div>
-            <button
-              type="button"
-              onClick={handleLinePay}
-              disabled={isSubmitting || isLinePayLoading}
-              className="relative w-full bg-gradient-to-b from-[#06C755] to-[#05b34c] text-white rounded-xl py-4 font-sans tracking-widest uppercase text-xs font-semibold hover:from-[#07d85c] hover:to-[#06C755] transition-all duration-300 disabled:opacity-50 flex items-center justify-center gap-2.5 h-[56px] border border-[#04a044] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.2)] overflow-hidden"
-            >
-              <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover/btn:animate-[shimmer_1.5s_infinite]"></div>
-              {isLinePayLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin text-white" />
-              ) : (
-                <>
-                  <div className="bg-white text-[#06C755] font-black italic rounded-md px-1.5 py-0.5 text-[10px] tracking-tighter">LINE</div>
-                  <span>使用 LINE Pay 儲值</span>
-                </>
-              )}
-            </button>
-          </div>
-
           {/* PayPal Wrapper */}
           <div className="relative z-0 group/paypal mt-4 pt-4 border-t border-stone-100">
             <div className="flex items-center justify-center gap-3 mb-4">
