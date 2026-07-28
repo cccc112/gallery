@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Loader2, X, Wallet as WalletIcon, AlertTriangle, RefreshCw } from 'lucide-react';
-import { useAccount, useChainId, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
+import { Loader2, X, Wallet as WalletIcon, AlertTriangle } from 'lucide-react';
+import { useAccount, useChainId, useWriteContract, useWaitForTransactionReceipt, useSendTransaction } from 'wagmi';
 import { useConnectModal } from '@rainbow-me/rainbowkit';
-import { PLATFORM_WALLET, USDC_CONTRACTS, USDC_ABI } from '@/lib/crypto';
-import { useUsdcRate } from '@/hooks/useUsdcRate';
+import { PLATFORM_WALLET, USDT_CONTRACTS, ERC20_ABI } from '@/lib/crypto';
+import { useExchangeRate } from '@/hooks/useExchangeRate';
 import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
+import { parseEther, parseUnits } from 'viem';
 
 const CHAIN_NAMES: Record<number, string> = {
   1: 'Ethereum', 8453: 'Base', 137: 'Polygon',
@@ -14,26 +15,32 @@ const CHAIN_NAMES: Record<number, string> = {
 
 export default function TopUpModal({ onClose, onSuccess }: { onClose: () => void, onSuccess: () => void }) {
   const [amount, setAmount] = useState<number | ''>('');
+  const [token, setToken] = useState<'ETH' | 'USDT'>('ETH');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isLinePayLoading, setIsLinePayLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
   // Live rate
-  const { rate, usdcInTwd, loading: rateLoading, isFallback } = useUsdcRate();
+  const { ethRate, usdtRate, usdtInTwd, ethInTwd, loading: rateLoading, isFallback } = useExchangeRate();
 
   // wagmi hooks
   const { address: walletAddress, isConnected } = useAccount();
   const chainId = useChainId();
   const { openConnectModal } = useConnectModal();
+  
+  // For USDT
   const { writeContractAsync } = useWriteContract();
+  // For ETH
+  const { sendTransactionAsync } = useSendTransaction();
+
   const [pendingTxHash, setPendingTxHash] = useState<`0x${string}` | undefined>();
   const { isLoading: isTxPending, isSuccess: isTxConfirmed } = useWaitForTransactionReceipt({
     hash: pendingTxHash,
   });
 
-  // Calculate USDC with live rate
+  // Calculate tokens with live rate
   const twdAmount = amount ? Number(amount) : 0;
-  const usdcAmount = (twdAmount * rate).toFixed(4);
+  const usdtAmount = (twdAmount * usdtRate).toFixed(4);
+  const ethAmountStr = (twdAmount * ethRate).toFixed(5); // Show 5 decimals for ETH
 
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -43,8 +50,8 @@ export default function TopUpModal({ onClose, onSuccess }: { onClose: () => void
       return;
     }
 
-    const usdcContract = USDC_CONTRACTS[chainId];
-    if (!usdcContract) {
+    const usdtContract = USDT_CONTRACTS[chainId];
+    if (token === 'USDT' && !usdtContract) {
       return setErrorMsg(`請切換至支援的網路：Ethereum / Base / Polygon`);
     }
 
@@ -52,23 +59,30 @@ export default function TopUpModal({ onClose, onSuccess }: { onClose: () => void
     setErrorMsg('');
     
     try {
-      const usdcRaw = BigInt(Math.round(twdAmount * rate * 1_000_000)); // USDC 6 decimals
+      let hash: `0x${string}` | undefined;
 
       // Dev environment mock
-      if (process.env.NODE_ENV !== 'production' || !usdcContract) {
-        const mockHash = `0xMOCK${Math.random().toString(16).slice(2).padEnd(62, '0')}` as `0x${string}`;
-        setPendingTxHash(mockHash);
-        await confirmOnServer(mockHash, twdAmount);
+      if (process.env.NODE_ENV !== 'production' || (token === 'USDT' && !usdtContract)) {
+        hash = `0xMOCK${Math.random().toString(16).slice(2).padEnd(62, '0')}` as `0x${string}`;
+        setPendingTxHash(hash);
+        await confirmOnServer(hash, twdAmount, token === 'ETH' ? ethRate : usdtRate, token);
         return;
       }
 
-      // Execute real blockchain tx
-      const hash = await writeContractAsync({
-        address: usdcContract as `0x${string}`,
-        abi: USDC_ABI,
-        functionName: 'transfer',
-        args: [PLATFORM_WALLET as `0x${string}`, usdcRaw],
-      });
+      if (token === 'USDT') {
+        const usdtRaw = parseUnits(usdtAmount, 6); // USDT usually has 6 decimals
+        hash = await writeContractAsync({
+          address: usdtContract as `0x${string}`,
+          abi: ERC20_ABI,
+          functionName: 'transfer',
+          args: [PLATFORM_WALLET as `0x${string}`, usdtRaw],
+        });
+      } else {
+        hash = await sendTransactionAsync({
+          to: PLATFORM_WALLET as `0x${string}`,
+          value: parseEther(ethAmountStr),
+        });
+      }
       
       setPendingTxHash(hash);
       // isTxConfirmed effect will handle the server confirmation
@@ -78,7 +92,7 @@ export default function TopUpModal({ onClose, onSuccess }: { onClose: () => void
     }
   };
 
-  const confirmOnServer = async (hash: string, topupAmount: number) => {
+  const confirmOnServer = async (hash: string, topupAmount: number, usedRate: number, tokenType: string) => {
     try {
       const res = await fetch('/api/wallet/topup/crypto', {
         method: 'POST',
@@ -88,7 +102,8 @@ export default function TopUpModal({ onClose, onSuccess }: { onClose: () => void
           txHash: hash,
           chainId,
           walletAddress,
-          rate, // 送出當時的匯率，讓後端驗算
+          rate: usedRate,
+          token: tokenType
         })
       });
       
@@ -102,32 +117,6 @@ export default function TopUpModal({ onClose, onSuccess }: { onClose: () => void
     } catch (e: any) {
       setErrorMsg(e.message || '發生錯誤');
       setIsSubmitting(false);
-    }
-  };
-
-  const handleLinePay = async () => {
-    if (!amount || amount < 1) return setErrorMsg('儲值點數至少需為 1 點');
-    setIsLinePayLoading(true);
-    setErrorMsg('');
-
-    try {
-      const res = await fetch('/api/linepay/request', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          amount: twdAmount,
-          orderId: `ORDER_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'LINE Pay 請求失敗');
-
-      // Redirect to LINE Pay
-      window.location.href = data.paymentUrl;
-    } catch (err: any) {
-      setErrorMsg(err.message || '無法啟動 LINE Pay');
-      setIsLinePayLoading(false);
     }
   };
 
@@ -172,7 +161,7 @@ export default function TopUpModal({ onClose, onSuccess }: { onClose: () => void
   // Wait for tx confirmation
   useEffect(() => {
     if (isTxConfirmed && pendingTxHash && isSubmitting) {
-      confirmOnServer(pendingTxHash, twdAmount);
+      confirmOnServer(pendingTxHash, twdAmount, token === 'ETH' ? ethRate : usdtRate, token);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isTxConfirmed, pendingTxHash]);
@@ -190,13 +179,6 @@ export default function TopUpModal({ onClose, onSuccess }: { onClose: () => void
           </h2>
           <div className="flex items-center gap-2 mt-1">
             <p className="text-sm text-stone-500">1 點 Blanc 幣 = 1 元新台幣 (NTD)</p>
-            {rateLoading ? (
-              <Loader2 className="h-3 w-3 animate-spin text-stone-400" />
-            ) : (
-              <span className={`text-xs px-1.5 py-0.5 rounded-full font-mono ${isFallback ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>
-                1 USDC ≈ {usdcInTwd.toFixed(1)} NTD {isFallback ? '(備援)' : '⟳'}
-              </span>
-            )}
           </div>
         </div>
         
@@ -216,20 +198,46 @@ export default function TopUpModal({ onClose, onSuccess }: { onClose: () => void
                 className="w-full pl-12 pr-4 py-3 bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-lg font-mono disabled:opacity-50"
               />
             </div>
+
+            {/* Token Selector */}
+            <div className="mt-4 flex rounded-lg p-1 bg-stone-100">
+              <button
+                type="button"
+                onClick={() => setToken('ETH')}
+                className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-all ${token === 'ETH' ? 'bg-white text-purple-700 shadow-sm' : 'text-stone-500 hover:text-stone-700'}`}
+              >
+                ETH
+              </button>
+              <button
+                type="button"
+                onClick={() => setToken('USDT')}
+                className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-all ${token === 'USDT' ? 'bg-white text-purple-700 shadow-sm' : 'text-stone-500 hover:text-stone-700'}`}
+              >
+                USDT
+              </button>
+            </div>
             
             {amount && Number(amount) > 0 && (
               <div className="mt-3 p-3 bg-purple-50 rounded-lg border border-purple-100 space-y-1">
                 <div className="flex justify-between items-center text-sm">
-                  <span className="text-purple-700">需支付 USDC:</span>
+                  <span className="text-purple-700">需支付 {token}:</span>
                   {rateLoading ? (
                     <Loader2 className="h-4 w-4 animate-spin text-purple-400" />
                   ) : (
-                    <span className="font-mono font-bold text-purple-900">{usdcAmount} USDC</span>
+                    <span className="font-mono font-bold text-purple-900">
+                      {token === 'ETH' ? ethAmountStr : usdtAmount} {token}
+                    </span>
                   )}
                 </div>
                 <div className="flex justify-between items-center text-xs text-purple-500">
                   <span>即時匯率</span>
-                  <span className="font-mono">1 TWD = {rate.toFixed(5)} USDC</span>
+                  {rateLoading ? (
+                    <Loader2 className="h-3 w-3 animate-spin text-purple-400" />
+                  ) : (
+                    <span className="font-mono">
+                      1 {token} ≈ {token === 'ETH' ? ethInTwd.toFixed(0) : usdtInTwd.toFixed(1)} NTD {isFallback && '(備援)'}
+                    </span>
+                  )}
                 </div>
               </div>
             )}
@@ -254,10 +262,10 @@ export default function TopUpModal({ onClose, onSuccess }: { onClose: () => void
             </div>
           )}
 
-          {!USDC_CONTRACTS[chainId] && isConnected && (
+          {token === 'USDT' && !USDT_CONTRACTS[chainId] && isConnected && (
             <div className="flex items-start gap-2.5 p-3 rounded-xl border border-rose-200 bg-rose-50/60 text-xs text-rose-700">
               <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
-              <p>目前連接的網路不支援，請切換至 Ethereum / Base / Polygon 網路以使用 USDC。</p>
+              <p>目前連接的網路不支援，請切換至 Ethereum / Base / Polygon 網路以使用 USDT。</p>
             </div>
           )}
 
@@ -272,7 +280,7 @@ export default function TopUpModal({ onClose, onSuccess }: { onClose: () => void
             <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-xl opacity-0 group-hover/btn:opacity-30 blur-md transition duration-500 group-hover/btn:duration-200"></div>
             <button
               type="submit"
-              disabled={isSubmitting || rateLoading || (isConnected && !USDC_CONTRACTS[chainId])}
+              disabled={isSubmitting || rateLoading || (token === 'USDT' && isConnected && !USDT_CONTRACTS[chainId])}
               className="relative w-full bg-gradient-to-b from-stone-800 to-stone-950 text-white rounded-xl py-4 font-sans tracking-widest uppercase text-xs font-semibold hover:from-stone-700 hover:to-stone-900 transition-all duration-300 disabled:opacity-50 flex items-center justify-center gap-3 h-[56px] border border-stone-800 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1)] overflow-hidden"
             >
               <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover/btn:animate-[shimmer_1.5s_infinite]"></div>
@@ -284,7 +292,7 @@ export default function TopUpModal({ onClose, onSuccess }: { onClose: () => void
               ) : (
                 <>
                   <svg className="w-5 h-5 text-purple-400 drop-shadow-[0_0_8px_rgba(168,85,247,0.5)]" viewBox="0 0 24 24" fill="currentColor"><path d="M11.944 17.97L4.58 13.62 11.943 24l7.37-10.38-7.372 4.35h.003zM12.056 0L4.69 12.223l7.365 4.354 7.365-4.35L12.056 0z"/></svg>
-                  <span>{isConnected ? '確認支付並儲值 (USDC)' : '連接 Web3 錢包'}</span>
+                  <span>{isConnected ? `確認支付並儲值 (${token})` : '連接 Web3 錢包'}</span>
                 </>
               )}
             </button>

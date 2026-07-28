@@ -1,11 +1,15 @@
 import { useState, useEffect } from 'react';
 
-const FALLBACK_RATE = 0.031;
+const FALLBACK_USDT_RATE = 0.031;
+const FALLBACK_ETH_RATE = 0.0000095;
 
-/** Hook to fetch live TWD→USDC rate. Returns rate (1 TWD = X USDC). */
-export function useUsdcRate() {
-  const [rate, setRate] = useState<number>(FALLBACK_RATE);
-  const [usdcInTwd, setUsdcInTwd] = useState<number>(1 / FALLBACK_RATE);
+export function useExchangeRate() {
+  const [rates, setRates] = useState({
+    usdtRate: FALLBACK_USDT_RATE,
+    ethRate: FALLBACK_ETH_RATE,
+    usdtInTwd: 1 / FALLBACK_USDT_RATE,
+    ethInTwd: 1 / FALLBACK_ETH_RATE,
+  });
   const [loading, setLoading] = useState(true);
   const [isFallback, setIsFallback] = useState(false);
 
@@ -17,8 +21,12 @@ export function useUsdcRate() {
         const res = await fetch('/api/exchange-rate');
         const data = await res.json();
         if (!cancelled) {
-          setRate(data.rate);
-          setUsdcInTwd(data.usdcInTwd);
+          setRates({
+            usdtRate: data.usdtRate,
+            ethRate: data.ethRate,
+            usdtInTwd: data.usdtInTwd,
+            ethInTwd: data.ethInTwd,
+          });
           setIsFallback(!!data.fallback);
         }
       } catch {
@@ -29,10 +37,9 @@ export function useUsdcRate() {
     };
 
     fetchRate();
-    // Refresh every 60 seconds
     const interval = setInterval(fetchRate, 60_000);
     return () => { cancelled = true; clearInterval(interval); };
   }, []);
 
-  return { rate, usdcInTwd, loading, isFallback };
+  return { ...rates, loading, isFallback };
 }

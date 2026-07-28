@@ -10,8 +10,8 @@ import {
   MapPin, Lock, Shield, ChevronRight, RefreshCw,
   AlertTriangle, ExternalLink,
 } from 'lucide-react';
-import { PLATFORM_WALLET, USDC_CONTRACTS, USDC_ABI } from '@/lib/crypto';
-import { useUsdcRate } from '@/hooks/useUsdcRate';
+import { PLATFORM_WALLET, USDT_CONTRACTS, ERC20_ABI } from '@/lib/crypto';
+import { useExchangeRate } from '@/hooks/useExchangeRate';
 import ESCROW_ABI from '@/lib/GalleryEscrowABI.json';
 
 type ActionType = 'buy' | 'rent';
@@ -78,9 +78,9 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
     hash: pendingTxHash,
   });
 
-  // Live USDC rate
-  const { rate: usdcRate, usdcInTwd, loading: rateLoading, isFallback: rateFallback } = useUsdcRate();
-  const twdToUsdc = (twd: number) => (twd * usdcRate).toFixed(4);
+  // Live USDT rate
+  const { usdtRate: usdtRate, usdtInTwd: usdtInTwd, loading: rateLoading, isFallback: rateFallback } = useExchangeRate();
+  const twdToUsdt = (twd: number) => (twd * usdtRate).toFixed(4);
 
   const isRental = actionType === 'rent';
   const isPhysical = artwork.art_type === 'physical';
@@ -90,7 +90,7 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
   const artistReceives = basePrice - commissionAmount;
   // 買家支付總額（租賃=首月+押金）
   const buyerTotal = isRental ? basePrice + depositAmount : basePrice;
-  const usdcAmount = `${twdToUsdc(buyerTotal)} USDC`;
+  const usdtAmount = `${twdToUsdt(buyerTotal)} USDT`;
 
   const totalDisplay = isRental
     ? `首月 ${formatNTD(basePrice)} + 押金 ${formatNTD(depositAmount)}`
@@ -155,8 +155,8 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
     }
     setStep('processing');
 
-    const usdcContract = USDC_CONTRACTS[chainId];
-    if (!usdcContract) {
+    const usdtContract = USDT_CONTRACTS[chainId];
+    if (!usdtContract) {
       setErrorMsg(`請切換至支援的網路：Ethereum / Base / Polygon（目前 chain ID: ${chainId}）`);
       setStep('error');
       return;
@@ -166,10 +166,10 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
       const totalTwd = isRental
         ? (artwork.monthly_rent_price || 0) + (artwork.deposit_amount || 0)
         : (artwork.price || 0);
-      const usdcRaw = BigInt(Math.round(totalTwd * usdcRate * 1_000_000)); // USDC 6 decimals
+      const usdtRaw = BigInt(Math.round(totalTwd * usdtRate * 1_000_000)); // USDT 6 decimals
 
       // 開發環境：模擬 Mock tx hash
-      if (process.env.NODE_ENV !== 'production' || !usdcContract) {
+      if (process.env.NODE_ENV !== 'production' || !usdtContract) {
         const mockHash = `0xMOCK${Math.random().toString(16).slice(2).padEnd(62, '0')}` as `0x${string}`;
         setPendingTxHash(mockHash);
         await confirmCryptoOnServer(mockHash);
@@ -181,12 +181,12 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
         // 租賃：呼叫 Escrow 合約
         const ESCROW_ADDRESS = '0x0000000000000000000000000000000000000000'; // TODO: 替換為實際部署的合約地址
         const artistWallet = '0x0000000000000000000000000000000000000000'; // TODO: 從資料庫取得真實藝術家錢包
-        const rentAmount = BigInt(Math.round((artwork.monthly_rent_price || 0) * usdcRate * 1_000_000));
-        const depositAmt = BigInt(Math.round((artwork.deposit_amount || 0) * usdcRate * 1_000_000));
+        const rentAmount = BigInt(Math.round((artwork.monthly_rent_price || 0) * usdtRate * 1_000_000));
+        const depositAmt = BigInt(Math.round((artwork.deposit_amount || 0) * usdtRate * 1_000_000));
 
-        // 1. Approve USDC
+        // 1. Approve USDT
         await writeContractAsync({
-          address: usdcContract as `0x${string}`,
+          address: usdtContract as `0x${string}`,
           abi: [{
             "constant": false,
             "inputs": [{"name": "_spender", "type": "address"}, {"name": "_value", "type": "uint256"}],
@@ -197,7 +197,7 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
             "type": "function"
           }],
           functionName: 'approve',
-          args: [ESCROW_ADDRESS as `0x${string}`, usdcRaw],
+          args: [ESCROW_ADDRESS as `0x${string}`, usdtRaw],
         });
 
         // 2. Rent Artwork
@@ -211,10 +211,10 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
       } else {
         // 買斷：直接轉帳
         const hash = await writeContractAsync({
-          address: usdcContract as `0x${string}`,
-          abi: USDC_ABI,
+          address: usdtContract as `0x${string}`,
+          abi: ERC20_ABI,
           functionName: 'transfer',
-          args: [PLATFORM_WALLET as `0x${string}`, usdcRaw],
+          args: [PLATFORM_WALLET as `0x${string}`, usdtRaw],
         });
         setPendingTxHash(hash);
       }
@@ -460,7 +460,7 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
                   <div className="flex-1">
                     <p className="text-sm font-semibold text-foreground">Web3 錢包支付</p>
                     <p className="text-xs text-muted-foreground font-light">
-                      MetaMask / WalletConnect · <span className="font-semibold text-purple-600">{usdcAmount}</span>
+                      MetaMask / WalletConnect · <span className="font-semibold text-purple-600">{usdtAmount}</span>
                     </p>
                   </div>
                   {isConnected ? (
@@ -523,7 +523,7 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
                   { label: `平台服務費 (${Math.round(COMMISSION_RATE * 100)}%)`, value: `- ${formatNTD(commissionAmount)}` },
                   { label: '藝術家實收', value: formatNTD(artistReceives) },
                   { label: '─────────', value: '─────' },
-                  { label: '您的支付總額 (USDC)', value: usdcAmount },
+                  { label: '您的支付總額 (USDT)', value: usdtAmount },
                   { label: '收款網路', value: CHAIN_NAMES[chainId] || `Chain ${chainId}` },
                 ].map(({ label, value }) => (
                   <div key={label} className={`flex justify-between text-xs ${ label === '─────────' ? 'opacity-20' : '' }`}>

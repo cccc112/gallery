@@ -1,14 +1,14 @@
 export const PLATFORM_WALLET = '0x1234567890123456789012345678901234567890'; // 平台收款錢包（正式環境請換成真實地址）
 
-// USDC 合約地址
-export const USDC_CONTRACTS: Record<number, `0x${string}`> = {
-  1: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
-  8453: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
-  137: '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359',
+// USDT 合約地址
+export const USDT_CONTRACTS: Record<number, `0x${string}`> = {
+  1: '0xdAC17F958D2ee523a2206206994597C13D831ec7', // Mainnet
+  8453: '0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb', // Base
+  137: '0xc2132D05D31c914a87C6611C10748AEb04B58e8F', // Polygon
 };
 
-// USDC ABI（只需要 transfer 函式）
-export const USDC_ABI = [
+// ERC20 ABI（只需要 transfer 函式）
+export const ERC20_ABI = [
   {
     name: 'transfer',
     type: 'function',
