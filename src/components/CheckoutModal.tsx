@@ -602,11 +602,11 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
 
               <button
                 onClick={handleCryptoCheckout}
-                disabled={isConnected && !USDT_CONTRACTS[chainId]}
+                disabled={isConnected && ((token === 'USDT' && !USDT_CONTRACTS[chainId]) || (token === 'WBTC' && !WBTC_CONTRACTS[chainId]))}
                 className="w-full rounded-sm bg-purple-700 text-white py-3.5 text-sm font-semibold hover:bg-purple-800 transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Wallet className="h-4 w-4" />
-                {isConnected ? `發送 ${usdtAmount}` : '連接錢包並支付'}
+                {isConnected ? `發送 ${currentCryptoAmount}` : '連接錢包並支付'}
               </button>
               <button type="button" onClick={() => setStep('select')} className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors py-1">
                 ← 返回選擇付款方式
