@@ -10,7 +10,7 @@ import {
   MapPin, Lock, Shield, ChevronRight, RefreshCw,
   AlertTriangle, ExternalLink,
 } from 'lucide-react';
-import { PLATFORM_WALLET, USDT_CONTRACTS, ERC20_ABI } from '@/lib/crypto';
+import { PLATFORM_WALLET, USDT_CONTRACTS, WBTC_CONTRACTS, ERC20_ABI } from '@/lib/crypto';
 import { useExchangeRate } from '@/hooks/useExchangeRate';
 import ESCROW_ABI from '@/lib/GalleryEscrowABI.json';
 
@@ -79,12 +79,13 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
     hash: pendingTxHash,
   });
 
-  const [token, setToken] = useState<'ETH' | 'USDT'>('USDT');
+  const [token, setToken] = useState<'ETH' | 'USDT' | 'WBTC'>('USDT');
 
   // Live Rates
-  const { usdtRate, ethRate, usdtInTwd, ethInTwd, loading: rateLoading, isFallback: rateFallback } = useExchangeRate();
+  const { usdtRate, ethRate, wbtcRate, usdtInTwd, ethInTwd, wbtcInTwd, loading: rateLoading, isFallback: rateFallback } = useExchangeRate();
   const twdToUsdt = (twd: number) => (twd * usdtRate).toFixed(4);
   const twdToEth = (twd: number) => (twd * ethRate).toFixed(6);
+  const twdToWbtc = (twd: number) => (twd * wbtcRate).toFixed(8);
 
   const isRental = actionType === 'rent';
   const isPhysical = artwork.art_type === 'physical';
@@ -96,7 +97,8 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
   const buyerTotal = isRental ? basePrice + depositAmount : basePrice;
   const usdtAmount = `${twdToUsdt(buyerTotal)} USDT`;
   const ethAmount = `${twdToEth(buyerTotal)} ETH`;
-  const currentCryptoAmount = token === 'USDT' ? usdtAmount : ethAmount;
+  const wbtcAmount = `${twdToWbtc(buyerTotal)} WBTC`;
+  const currentCryptoAmount = token === 'USDT' ? usdtAmount : token === 'ETH' ? ethAmount : wbtcAmount;
 
   const totalDisplay = isRental
     ? `首月 ${formatNTD(basePrice)} + 押金 ${formatNTD(depositAmount)}`
@@ -162,7 +164,13 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
     setStep('processing');
 
     const usdtContract = USDT_CONTRACTS[chainId];
+    const wbtcContract = WBTC_CONTRACTS[chainId];
     if (token === 'USDT' && !usdtContract) {
+      setErrorMsg(`請切換至支援的網路：Ethereum / Base / Polygon（目前 chain ID: ${chainId}）`);
+      setStep('error');
+      return;
+    }
+    if (token === 'WBTC' && !wbtcContract) {
       setErrorMsg(`請切換至支援的網路：Ethereum / Base / Polygon（目前 chain ID: ${chainId}）`);
       setStep('error');
       return;
@@ -173,9 +181,10 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
         ? (artwork.monthly_rent_price || 0) + (artwork.deposit_amount || 0)
         : (artwork.price || 0);
       const usdtRaw = BigInt(Math.round(totalTwd * usdtRate * 1_000_000)); // USDT 6 decimals
+      const wbtcRaw = BigInt(Math.round(totalTwd * wbtcRate * 100_000_000)); // WBTC 8 decimals
 
       // 開發環境：模擬 Mock tx hash
-      if (process.env.NODE_ENV !== 'production' || (token === 'USDT' && !usdtContract)) {
+      if (process.env.NODE_ENV !== 'production' || (token === 'USDT' && !usdtContract) || (token === 'WBTC' && !wbtcContract)) {
         const mockHash = `0xMOCK${Math.random().toString(16).slice(2).padEnd(62, '0')}` as `0x${string}`;
         setPendingTxHash(mockHash);
         await confirmCryptoOnServer(mockHash);
@@ -184,7 +193,7 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
 
       // 正式：呼叫合約
       if (isRental) {
-        if (token === 'ETH') {
+        if (token === 'ETH' || token === 'WBTC') {
            setErrorMsg('租賃押金託管目前僅支援 USDT');
            setStep('error');
            return;
@@ -227,6 +236,14 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
             abi: ERC20_ABI,
             functionName: 'transfer',
             args: [PLATFORM_WALLET as `0x${string}`, usdtRaw],
+          });
+          setPendingTxHash(hash);
+        } else if (token === 'WBTC') {
+          const hash = await writeContractAsync({
+            address: wbtcContract as `0x${string}`,
+            abi: ERC20_ABI,
+            functionName: 'transfer',
+            args: [PLATFORM_WALLET as `0x${string}`, wbtcRaw],
           });
           setPendingTxHash(hash);
         } else {
@@ -480,7 +497,7 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
                   <div className="flex-1">
                     <p className="text-sm font-semibold text-foreground flex items-center gap-2">
                       Web3 錢包支付
-                      <span className="text-[10px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-sm font-medium">ETH / USDT</span>
+                      <span className="text-[10px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-sm font-medium">ETH / USDT / WBTC</span>
                     </p>
                     <p className="text-xs text-muted-foreground font-light mt-0.5">
                       MetaMask / WalletConnect
@@ -546,6 +563,14 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
                   className={`flex-1 py-2 text-xs font-semibold rounded-sm transition-all ${token === 'USDT' ? 'bg-white text-purple-700 shadow-sm' : 'text-stone-500 hover:text-stone-700'}`}
                 >
                   泰達幣 (USDT)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setToken('WBTC')}
+                  disabled={isRental}
+                  className={`flex-1 py-2 text-xs font-semibold rounded-sm transition-all ${token === 'WBTC' ? 'bg-white text-purple-700 shadow-sm' : 'text-stone-500 hover:text-stone-700'} ${isRental ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  比特幣 (WBTC)
                 </button>
               </div>
               {isRental && (

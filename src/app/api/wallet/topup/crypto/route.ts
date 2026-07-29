@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { checkRateLimit } from '@/lib/ratelimit';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { USDT_CONTRACTS, PLATFORM_WALLET } from '@/lib/crypto';
+import { USDT_CONTRACTS, WBTC_CONTRACTS, PLATFORM_WALLET } from '@/lib/crypto';
 
 // ERC20 Transfer event topic (keccak256 of 'Transfer(address,address,uint256)')
 const TRANSFER_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
@@ -121,31 +121,35 @@ export async function POST(req: Request) {
     // 2. Fetch live rate
     let liveUsdtRate = 0.031;
     let liveEthRate = 0.0000095;
+    let liveWbtcRate = 0.00000045;
     try {
       const rateRes = await fetch(
-        'https://api.coingecko.com/api/v3/simple/price?ids=tether,ethereum&vs_currencies=twd',
+        'https://api.coingecko.com/api/v3/simple/price?ids=tether,ethereum,bitcoin&vs_currencies=twd',
         { signal: AbortSignal.timeout(3000) }
       );
       if (rateRes.ok) {
         const rateData = await rateRes.json();
         const usdtInTwd = rateData['tether']?.twd;
         const ethInTwd = rateData['ethereum']?.twd;
+        const wbtcInTwd = rateData['bitcoin']?.twd;
         if (usdtInTwd > 0) liveUsdtRate = 1 / usdtInTwd;
         if (ethInTwd > 0) liveEthRate = 1 / ethInTwd;
+        if (wbtcInTwd > 0) liveWbtcRate = 1 / wbtcInTwd;
       }
     } catch { /* use fallback */ }
 
     // 3. Verify transfer amounts
-    if (token === 'USDT') {
-      const usdtAddress = (USDT_CONTRACTS[chainId as number] || '').toLowerCase();
-      if (!usdtAddress) {
-        return NextResponse.json({ error: 'USDT not supported on this chain' }, { status: 400 });
+    if (token === 'USDT' || token === 'WBTC') {
+      const contractDict = token === 'USDT' ? USDT_CONTRACTS : WBTC_CONTRACTS;
+      const contractAddress = (contractDict[chainId as number] || '').toLowerCase();
+      if (!contractAddress) {
+        return NextResponse.json({ error: `${token} not supported on this chain` }, { status: 400 });
       }
 
       let isValidTransfer = false;
       for (const log of receipt.logs) {
         if (
-          log.address.toLowerCase() === usdtAddress &&
+          log.address.toLowerCase() === contractAddress &&
           log.topics[0] === TRANSFER_TOPIC &&
           log.topics.length === 3
         ) {
@@ -164,10 +168,12 @@ export async function POST(req: Request) {
       }
 
       if (!isValidTransfer) {
-        return NextResponse.json({ error: 'Valid USDT transfer to platform not found in transaction' }, { status: 400 });
+        return NextResponse.json({ error: `Valid ${token} transfer to platform not found in transaction` }, { status: 400 });
       }
 
-      expectedRaw = BigInt(Math.round(Number(amount) * liveUsdtRate * 1_000_000)); // 6 decimals
+      const rate = token === 'USDT' ? liveUsdtRate : liveWbtcRate;
+      const multiplier = token === 'USDT' ? 1_000_000 : 100_000_000; // USDT 6 decimals, WBTC 8 decimals
+      expectedRaw = BigInt(Math.round(Number(amount) * rate * multiplier)); 
     } else if (token === 'ETH') {
       const transaction = await getTransaction(rpcUrl, txHash);
       if (!transaction) {

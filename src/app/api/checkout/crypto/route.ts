@@ -5,7 +5,7 @@ import { sql } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
-import { USDT_CONTRACTS } from '@/lib/crypto';
+import { USDT_CONTRACTS, WBTC_CONTRACTS } from '@/lib/crypto';
 
 import { createPublicClient, http } from 'viem';
 
@@ -68,6 +68,7 @@ export async function POST(request: Request) {
       walletAddress,  // 買家錢包地址
       chainId = 1,    // 使用的鏈 (預設 Ethereum)
       rentalMonths = 1,
+      token = 'USDT', // 預設為 USDT
     } = body;
 
     if (!artworkId || !actionType || !txHash || !walletAddress) {
@@ -75,8 +76,11 @@ export async function POST(request: Request) {
     }
 
     // 2. 驗證 chain 支援
-    if (!USDT_CONTRACTS[chainId]) {
-      return NextResponse.json({ error: `不支援的鏈 ID: ${chainId}，請切換至 Ethereum / Base / Polygon` }, { status: 400 });
+    if (token === 'USDT' && !USDT_CONTRACTS[chainId]) {
+      return NextResponse.json({ error: `不支援的鏈 ID: ${chainId}，請切換至 Ethereum / Base / Polygon 以使用 USDT` }, { status: 400 });
+    }
+    if (token === 'WBTC' && !WBTC_CONTRACTS[chainId]) {
+      return NextResponse.json({ error: `不支援的鏈 ID: ${chainId}，請切換至 Ethereum / Base / Polygon 以使用 WBTC` }, { status: 400 });
     }
 
     // 3. 取得作品資料
@@ -143,8 +147,8 @@ export async function POST(request: Request) {
       walletAddress,
       chainId,
       message: isRental
-        ? `租賃成功！首月 USDT 已轉帳，押金已鎖定。`
-        : `收藏成功！USDT 轉帳已確認，${isPhysical ? '實體作品將安排配送' : '數位資產已解鎖可下載'}。`,
+        ? `租賃成功！首月 ${token} 已轉帳，押金已鎖定。`
+        : `收藏成功！${token} 轉帳已確認，${isPhysical ? '實體作品將安排配送' : '數位資產已解鎖可下載'}。`,
     });
   } catch (error: any) {
     console.error('[Crypto Checkout Error]', error);

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Loader2, X, Wallet as WalletIcon, AlertTriangle } from 'lucide-react';
 import { useAccount, useChainId, useWriteContract, useWaitForTransactionReceipt, useSendTransaction } from 'wagmi';
 import { useConnectModal } from '@rainbow-me/rainbowkit';
-import { PLATFORM_WALLET, USDT_CONTRACTS, ERC20_ABI } from '@/lib/crypto';
+import { PLATFORM_WALLET, USDT_CONTRACTS, WBTC_CONTRACTS, ERC20_ABI } from '@/lib/crypto';
 import { useExchangeRate } from '@/hooks/useExchangeRate';
 import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 import { parseEther, parseUnits } from 'viem';
@@ -15,19 +15,19 @@ const CHAIN_NAMES: Record<number, string> = {
 
 export default function TopUpModal({ onClose, onSuccess }: { onClose: () => void, onSuccess: () => void }) {
   const [amount, setAmount] = useState<number | ''>('');
-  const [token, setToken] = useState<'ETH' | 'USDT'>('ETH');
+  const [token, setToken] = useState<'ETH' | 'USDT' | 'WBTC'>('ETH');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
   // Live rate
-  const { ethRate, usdtRate, usdtInTwd, ethInTwd, loading: rateLoading, isFallback } = useExchangeRate();
+  const { ethRate, usdtRate, wbtcRate, usdtInTwd, ethInTwd, wbtcInTwd, loading: rateLoading, isFallback } = useExchangeRate();
 
   // wagmi hooks
   const { address: walletAddress, isConnected } = useAccount();
   const chainId = useChainId();
   const { openConnectModal } = useConnectModal();
   
-  // For USDT
+  // For USDT / WBTC
   const { writeContractAsync } = useWriteContract();
   // For ETH
   const { sendTransactionAsync } = useSendTransaction();
@@ -40,7 +40,8 @@ export default function TopUpModal({ onClose, onSuccess }: { onClose: () => void
   // Calculate tokens with live rate
   const twdAmount = amount ? Number(amount) : 0;
   const usdtAmount = (twdAmount * usdtRate).toFixed(4);
-  const ethAmountStr = (twdAmount * ethRate).toFixed(5); // Show 5 decimals for ETH
+  const ethAmountStr = (twdAmount * ethRate).toFixed(6);
+  const wbtcAmount = (twdAmount * wbtcRate).toFixed(8);
 
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -51,7 +52,12 @@ export default function TopUpModal({ onClose, onSuccess }: { onClose: () => void
     }
 
     const usdtContract = USDT_CONTRACTS[chainId];
+    const wbtcContract = WBTC_CONTRACTS[chainId];
+
     if (token === 'USDT' && !usdtContract) {
+      return setErrorMsg(`請切換至支援的網路：Ethereum / Base / Polygon`);
+    }
+    if (token === 'WBTC' && !wbtcContract) {
       return setErrorMsg(`請切換至支援的網路：Ethereum / Base / Polygon`);
     }
 
@@ -62,10 +68,10 @@ export default function TopUpModal({ onClose, onSuccess }: { onClose: () => void
       let hash: `0x${string}` | undefined;
 
       // Dev environment mock
-      if (process.env.NODE_ENV !== 'production' || (token === 'USDT' && !usdtContract)) {
+      if (process.env.NODE_ENV !== 'production' || (token === 'USDT' && !usdtContract) || (token === 'WBTC' && !wbtcContract)) {
         hash = `0xMOCK${Math.random().toString(16).slice(2).padEnd(62, '0')}` as `0x${string}`;
         setPendingTxHash(hash);
-        await confirmOnServer(hash, twdAmount, token === 'ETH' ? ethRate : usdtRate, token);
+        await confirmOnServer(hash, twdAmount, token === 'ETH' ? ethRate : token === 'USDT' ? usdtRate : wbtcRate, token);
         return;
       }
 
@@ -76,6 +82,14 @@ export default function TopUpModal({ onClose, onSuccess }: { onClose: () => void
           abi: ERC20_ABI,
           functionName: 'transfer',
           args: [PLATFORM_WALLET as `0x${string}`, usdtRaw],
+        });
+      } else if (token === 'WBTC') {
+        const wbtcRaw = parseUnits(wbtcAmount, 8); // WBTC usually has 8 decimals
+        hash = await writeContractAsync({
+          address: wbtcContract as `0x${string}`,
+          abi: ERC20_ABI,
+          functionName: 'transfer',
+          args: [PLATFORM_WALLET as `0x${string}`, wbtcRaw],
         });
       } else {
         hash = await sendTransactionAsync({
@@ -161,7 +175,7 @@ export default function TopUpModal({ onClose, onSuccess }: { onClose: () => void
   // Wait for tx confirmation
   useEffect(() => {
     if (isTxConfirmed && pendingTxHash && isSubmitting) {
-      confirmOnServer(pendingTxHash, twdAmount, token === 'ETH' ? ethRate : usdtRate, token);
+      confirmOnServer(pendingTxHash, twdAmount, token === 'ETH' ? ethRate : token === 'USDT' ? usdtRate : wbtcRate, token);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isTxConfirmed, pendingTxHash]);
@@ -215,6 +229,13 @@ export default function TopUpModal({ onClose, onSuccess }: { onClose: () => void
               >
                 USDT
               </button>
+              <button
+                type="button"
+                onClick={() => setToken('WBTC')}
+                className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-all ${token === 'WBTC' ? 'bg-white text-purple-700 shadow-sm' : 'text-stone-500 hover:text-stone-700'}`}
+              >
+                WBTC
+              </button>
             </div>
             
             {amount && Number(amount) > 0 && (
@@ -225,7 +246,7 @@ export default function TopUpModal({ onClose, onSuccess }: { onClose: () => void
                     <Loader2 className="h-4 w-4 animate-spin text-purple-400" />
                   ) : (
                     <span className="font-mono font-bold text-purple-900">
-                      {token === 'ETH' ? ethAmountStr : usdtAmount} {token}
+                      {token === 'ETH' ? ethAmountStr : token === 'USDT' ? usdtAmount : wbtcAmount} {token}
                     </span>
                   )}
                 </div>
@@ -235,7 +256,7 @@ export default function TopUpModal({ onClose, onSuccess }: { onClose: () => void
                     <Loader2 className="h-3 w-3 animate-spin text-purple-400" />
                   ) : (
                     <span className="font-mono">
-                      1 {token} ≈ {token === 'ETH' ? ethInTwd.toFixed(0) : usdtInTwd.toFixed(1)} NTD {isFallback && '(備援)'}
+                      1 {token} ≈ {token === 'ETH' ? ethInTwd.toFixed(0) : token === 'USDT' ? usdtInTwd.toFixed(1) : wbtcInTwd.toFixed(0)} NTD {isFallback && '(備援)'}
                     </span>
                   )}
                 </div>
@@ -269,6 +290,13 @@ export default function TopUpModal({ onClose, onSuccess }: { onClose: () => void
             </div>
           )}
 
+          {token === 'WBTC' && !WBTC_CONTRACTS[chainId] && isConnected && (
+            <div className="flex items-start gap-2.5 p-3 rounded-xl border border-rose-200 bg-rose-50/60 text-xs text-rose-700">
+              <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+              <p>目前連接的網路不支援，請切換至 Ethereum / Base / Polygon 網路以使用 WBTC。</p>
+            </div>
+          )}
+
           {errorMsg && (
             <div className="p-3 rounded-lg bg-rose-50 text-rose-600 text-sm border border-rose-100">
               {errorMsg}
@@ -280,7 +308,7 @@ export default function TopUpModal({ onClose, onSuccess }: { onClose: () => void
             <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-xl opacity-0 group-hover/btn:opacity-30 blur-md transition duration-500 group-hover/btn:duration-200"></div>
             <button
               type="submit"
-              disabled={isSubmitting || rateLoading || (token === 'USDT' && isConnected && !USDT_CONTRACTS[chainId])}
+              disabled={isSubmitting || rateLoading || (token === 'USDT' && isConnected && !USDT_CONTRACTS[chainId]) || (token === 'WBTC' && isConnected && !WBTC_CONTRACTS[chainId])}
               className="relative w-full bg-gradient-to-b from-stone-800 to-stone-950 text-white rounded-xl py-4 font-sans tracking-widest uppercase text-xs font-semibold hover:from-stone-700 hover:to-stone-900 transition-all duration-300 disabled:opacity-50 flex items-center justify-center gap-3 h-[56px] border border-stone-800 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1)] overflow-hidden"
             >
               <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover/btn:animate-[shimmer_1.5s_infinite]"></div>
