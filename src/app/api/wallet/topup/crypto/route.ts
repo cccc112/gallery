@@ -12,6 +12,7 @@ const RPC_URLS: Record<number, string> = {
   1: 'https://cloudflare-eth.com',
   8453: 'https://mainnet.base.org',
   137: 'https://polygon-rpc.com',
+  11155111: 'https://rpc.sepolia.org',
 };
 
 /** Decode ABI-encoded address (32 bytes, last 20 bytes) */

@@ -21,7 +21,8 @@ async function verifyTransaction(txHash: string, chainId: number): Promise<{
   const RPC_URLS: Record<number, string> = {
     1: 'https://cloudflare-eth.com',
     8453: 'https://mainnet.base.org',
-    137: 'https://polygon-rpc.com'
+    137: 'https://polygon-rpc.com',
+    11155111: 'https://rpc.sepolia.org',
   };
   const rpcUrl = RPC_URLS[chainId];
   if (!rpcUrl) return { verified: false };

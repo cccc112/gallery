@@ -73,14 +73,18 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
   const chainId = useChainId();
   const { openConnectModal } = useConnectModal();
   const { writeContractAsync } = useWriteContract();
+  const { sendTransactionAsync } = useSendTransaction();
   const [pendingTxHash, setPendingTxHash] = useState<`0x${string}` | undefined>();
   const { isLoading: isTxPending, isSuccess: isTxConfirmed } = useWaitForTransactionReceipt({
     hash: pendingTxHash,
   });
 
-  // Live USDT rate
-  const { usdtRate: usdtRate, usdtInTwd: usdtInTwd, loading: rateLoading, isFallback: rateFallback } = useExchangeRate();
+  const [token, setToken] = useState<'ETH' | 'USDT'>('USDT');
+
+  // Live Rates
+  const { usdtRate, ethRate, usdtInTwd, ethInTwd, loading: rateLoading, isFallback: rateFallback } = useExchangeRate();
   const twdToUsdt = (twd: number) => (twd * usdtRate).toFixed(4);
+  const twdToEth = (twd: number) => (twd * ethRate).toFixed(6);
 
   const isRental = actionType === 'rent';
   const isPhysical = artwork.art_type === 'physical';
@@ -91,6 +95,8 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
   // 買家支付總額（租賃=首月+押金）
   const buyerTotal = isRental ? basePrice + depositAmount : basePrice;
   const usdtAmount = `${twdToUsdt(buyerTotal)} USDT`;
+  const ethAmount = `${twdToEth(buyerTotal)} ETH`;
+  const currentCryptoAmount = token === 'USDT' ? usdtAmount : ethAmount;
 
   const totalDisplay = isRental
     ? `首月 ${formatNTD(basePrice)} + 押金 ${formatNTD(depositAmount)}`
@@ -156,7 +162,7 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
     setStep('processing');
 
     const usdtContract = USDT_CONTRACTS[chainId];
-    if (!usdtContract) {
+    if (token === 'USDT' && !usdtContract) {
       setErrorMsg(`請切換至支援的網路：Ethereum / Base / Polygon（目前 chain ID: ${chainId}）`);
       setStep('error');
       return;
@@ -169,7 +175,7 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
       const usdtRaw = BigInt(Math.round(totalTwd * usdtRate * 1_000_000)); // USDT 6 decimals
 
       // 開發環境：模擬 Mock tx hash
-      if (process.env.NODE_ENV !== 'production' || !usdtContract) {
+      if (process.env.NODE_ENV !== 'production' || (token === 'USDT' && !usdtContract)) {
         const mockHash = `0xMOCK${Math.random().toString(16).slice(2).padEnd(62, '0')}` as `0x${string}`;
         setPendingTxHash(mockHash);
         await confirmCryptoOnServer(mockHash);
@@ -178,6 +184,11 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
 
       // 正式：呼叫合約
       if (isRental) {
+        if (token === 'ETH') {
+           setErrorMsg('租賃押金託管目前僅支援 USDT');
+           setStep('error');
+           return;
+        }
         // 租賃：呼叫 Escrow 合約
         const ESCROW_ADDRESS = '0x0000000000000000000000000000000000000000'; // TODO: 替換為實際部署的合約地址
         const artistWallet = '0x0000000000000000000000000000000000000000'; // TODO: 從資料庫取得真實藝術家錢包
@@ -210,13 +221,21 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
         setPendingTxHash(hash);
       } else {
         // 買斷：直接轉帳
-        const hash = await writeContractAsync({
-          address: usdtContract as `0x${string}`,
-          abi: ERC20_ABI,
-          functionName: 'transfer',
-          args: [PLATFORM_WALLET as `0x${string}`, usdtRaw],
-        });
-        setPendingTxHash(hash);
+        if (token === 'USDT') {
+          const hash = await writeContractAsync({
+            address: usdtContract as `0x${string}`,
+            abi: ERC20_ABI,
+            functionName: 'transfer',
+            args: [PLATFORM_WALLET as `0x${string}`, usdtRaw],
+          });
+          setPendingTxHash(hash);
+        } else {
+          const hash = await sendTransactionAsync({
+            to: PLATFORM_WALLET as `0x${string}`,
+            value: parseUnits(twdToEth(buyerTotal), 18),
+          });
+          setPendingTxHash(hash);
+        }
       }
       // isTxConfirmed effect 會自動呼叫 confirmCryptoOnServer
 
@@ -238,6 +257,7 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
           txHash: hash,
           walletAddress,
           chainId,
+          token,
         }),
       });
       const data = await res.json();
@@ -452,24 +472,26 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
                 {/* Web3 */}
                 <button
                   onClick={() => { setPayMethod('crypto'); setStep('crypto-confirm'); }}
-                  className="w-full flex items-center gap-4 p-4 border border-border rounded-sm bg-white/60 hover:bg-white hover:border-purple-300 hover:shadow-sm transition-all group text-left"
+                  className="w-full flex items-center gap-4 p-4 border border-border rounded-sm bg-white hover:bg-purple-50 hover:border-purple-200 transition-all text-left group"
                 >
-                  <div className="h-10 w-10 rounded-full bg-purple-50 flex items-center justify-center border border-purple-100 flex-shrink-0">
-                    <Wallet className="h-5 w-5 text-purple-600" />
+                  <div className="h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center border border-purple-200 flex-shrink-0 group-hover:scale-105 transition-transform">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" alt="MetaMask" className="h-5 w-5" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm font-semibold text-foreground">Web3 錢包支付</p>
-                    <p className="text-xs text-muted-foreground font-light">
-                      MetaMask / WalletConnect · <span className="font-semibold text-purple-600">{usdtAmount}</span>
+                    <p className="text-sm font-semibold text-foreground flex items-center gap-2">
+                      Web3 錢包支付
+                      <span className="text-[10px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-sm font-medium">ETH / USDT</span>
+                    </p>
+                    <p className="text-xs text-muted-foreground font-light mt-0.5">
+                      MetaMask / WalletConnect
                     </p>
                   </div>
                   {isConnected ? (
-                    <div className="flex items-center gap-1.5 text-[10px] text-emerald-600 font-semibold">
-                      <div className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                      已連接
+                    <div className="h-5 w-5 rounded-full bg-emerald-500 flex items-center justify-center">
+                      <Check className="h-3 w-3 text-white" />
                     </div>
                   ) : (
-                    <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+                    <ChevronRight className="h-4 w-4 text-stone-400 group-hover:text-purple-500 transition-colors" />
                   )}
                 </button>
               </div>
@@ -508,32 +530,45 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
                 </div>
               )}
 
-              {/* 付款摘要 */}
-              <div className="space-y-2 border border-border/50 rounded-sm p-4 bg-white/50">
-                <h3 className="text-xs font-semibold tracking-widest uppercase text-muted-foreground mb-3">付款摘要</h3>
+              {/* Token Selector */}
+              <div className="mt-2 flex rounded-sm p-1 bg-stone-100">
+                <button
+                  type="button"
+                  onClick={() => setToken('ETH')}
+                  disabled={isRental}
+                  className={`flex-1 py-2 text-xs font-semibold rounded-sm transition-all ${token === 'ETH' ? 'bg-white text-purple-700 shadow-sm' : 'text-stone-500 hover:text-stone-700'} ${isRental ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  以太幣 (ETH)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setToken('USDT')}
+                  className={`flex-1 py-2 text-xs font-semibold rounded-sm transition-all ${token === 'USDT' ? 'bg-white text-purple-700 shadow-sm' : 'text-stone-500 hover:text-stone-700'}`}
+                >
+                  泰達幣 (USDT)
+                </button>
+              </div>
+              {isRental && (
+                <p className="text-[10px] text-amber-600 text-center mt-1">
+                  注意：租賃服務涉及押金託管合約，目前僅支援 USDT。
+                </p>
+              )}
+
+              <div className="bg-stone-50 border border-border p-4 rounded-sm space-y-2.5">
                 {[
-                  { label: '作品', value: artwork.title },
-                  { label: '類型', value: isRental ? '短期租賃' : '買斷收藏' },
-                  ...(isRental ? [
-                    { label: '首月租金', value: formatNTD(basePrice) },
-                    { label: '押金（預授權）', value: formatNTD(depositAmount) },
-                  ] : [
-                    { label: '作品售價', value: formatNTD(basePrice) },
-                  ]),
-                  { label: `平台服務費 (${Math.round(COMMISSION_RATE * 100)}%)`, value: `- ${formatNTD(commissionAmount)}` },
-                  { label: '藝術家實收', value: formatNTD(artistReceives) },
-                  { label: '─────────', value: '─────' },
-                  { label: '您的支付總額 (USDT)', value: usdtAmount },
-                  { label: '收款網路', value: CHAIN_NAMES[chainId] || `Chain ${chainId}` },
-                ].map(({ label, value }) => (
-                  <div key={label} className={`flex justify-between text-xs ${ label === '─────────' ? 'opacity-20' : '' }`}>
-                    <span className={`${ label === '藝術家實收' ? 'font-semibold text-emerald-700' : label === `平台服務費 (${Math.round(COMMISSION_RATE * 100)}%)` ? 'text-rose-500' : 'text-muted-foreground' }`}>{label}</span>
-                    <span className={`font-semibold text-right max-w-[180px] truncate ${ label === '藝術家實收' ? 'text-emerald-700' : label === `平台服務費 (${Math.round(COMMISSION_RATE * 100)}%)` ? 'text-rose-500' : 'text-foreground' }`}>{value}</span>
+                  { label: '作品價格', value: formatNTD(basePrice) },
+                  ...(isRental ? [{ label: '租賃押金 (退租後返還)', value: formatNTD(depositAmount) }] : []),
+                  { label: '平台服務費 (0%)', value: '免手續費' },
+                  { label: `您的支付總額 (${token})`, value: currentCryptoAmount },
+                ].map(({ label, value }, i) => (
+                  <div key={i} className={`flex justify-between items-center text-sm ${i === 3 ? 'pt-2 mt-2 border-t font-bold text-base' : ''}`}>
+                    <span className="text-muted-foreground">{label}</span>
+                    <span className={`font-semibold text-right max-w-[180px] truncate ${i === 3 ? 'text-purple-700' : 'text-foreground'}`}>{value}</span>
                   </div>
                 ))}
               </div>
 
-              {!USDT_CONTRACTS[chainId] && isConnected && (
+              {token === 'USDT' && !USDT_CONTRACTS[chainId] && isConnected && (
                 <div className="flex items-start gap-2.5 p-3 rounded-sm border border-rose-200 bg-rose-50/60 text-xs text-rose-700">
                   <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
                   <p>目前連接的網路不支援，請在 MetaMask 中切換至 Ethereum / Base / Polygon</p>
