@@ -1,4 +1,4 @@
-export const PLATFORM_WALLET = '0x1234567890123456789012345678901234567890'; // 平台收款錢包（正式環境請換成真實地址）
+export const PLATFORM_WALLET = '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045'; // 平台收款錢包（測試時使用 vitalik.eth 避免被 MetaMask 攔截，正式環境請換成真實地址）
 
 export const USDT_CONTRACTS: Record<number, `0x${string}`> = {
   1: '0xdAC17F958D2ee523a2206206994597C13D831ec7', // Mainnet

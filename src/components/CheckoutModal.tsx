@@ -199,8 +199,8 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
            return;
         }
         // 租賃：呼叫 Escrow 合約
-        const ESCROW_ADDRESS = '0x0000000000000000000000000000000000000000'; // TODO: 替換為實際部署的合約地址
-        const artistWallet = '0x0000000000000000000000000000000000000000'; // TODO: 從資料庫取得真實藝術家錢包
+        const ESCROW_ADDRESS = '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045'; // TODO: 替換為實際部署的合約地址 (測試時暫用 vitalik 避免 MetaMask 報錯)
+        const artistWallet = '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045'; // TODO: 從資料庫取得真實藝術家錢包
         const rentAmount = BigInt(Math.round((artwork.monthly_rent_price || 0) * usdtRate * 1_000_000));
         const depositAmt = BigInt(Math.round((artwork.deposit_amount || 0) * usdtRate * 1_000_000));
 
