@@ -183,8 +183,8 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
       const usdtRaw = BigInt(Math.round(totalTwd * usdtRate * 1_000_000)); // USDT 6 decimals
       const wbtcRaw = BigInt(Math.round(totalTwd * wbtcRate * 100_000_000)); // WBTC 8 decimals
 
-      // 開發環境：模擬 Mock tx hash
-      if (process.env.NODE_ENV !== 'production' || (token === 'USDT' && !usdtContract) || (token === 'WBTC' && !wbtcContract)) {
+      // 開發環境或明確觸發測試：模擬 Mock tx hash
+      if (process.env.NODE_ENV !== 'production' || (token === 'USDT' && !usdtContract) || (token === 'WBTC' && !wbtcContract) || (window as any).__FORCE_MOCK_TX) {
         const mockHash = `0xMOCK${Math.random().toString(16).slice(2).padEnd(62, '0')}` as `0x${string}`;
         setPendingTxHash(mockHash);
         await confirmCryptoOnServer(mockHash);
@@ -608,7 +608,22 @@ export function CheckoutModal({ artwork, actionType, isOpen, onClose }: Checkout
                 <Wallet className="h-4 w-4" />
                 {isConnected ? `發送 ${currentCryptoAmount}` : '連接錢包並支付'}
               </button>
-              <button type="button" onClick={() => setStep('select')} className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors py-1">
+
+              {/* Developer Cheat Button (Only on Sepolia 11155111) */}
+              {chainId === 11155111 && (
+                <button
+                  onClick={async () => {
+                    (window as any).__FORCE_MOCK_TX = true;
+                    await handleCryptoCheckout();
+                    (window as any).__FORCE_MOCK_TX = false;
+                  }}
+                  className="w-full rounded-sm bg-stone-200 text-stone-700 py-3.5 text-sm font-semibold hover:bg-stone-300 transition-all flex items-center justify-center gap-2 mt-2 border border-stone-300"
+                >
+                  🛠️ 測試專用：免錢包一鍵模擬成功
+                </button>
+              )}
+
+              <button type="button" onClick={() => setStep('select')} className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors py-1 mt-2">
                 ← 返回選擇付款方式
               </button>
             </div>

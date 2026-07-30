@@ -67,8 +67,8 @@ export default function TopUpModal({ onClose, onSuccess }: { onClose: () => void
     try {
       let hash: `0x${string}` | undefined;
 
-      // Dev environment mock
-      if (process.env.NODE_ENV !== 'production' || (token === 'USDT' && !usdtContract) || (token === 'WBTC' && !wbtcContract)) {
+      // 開發環境或手動觸發測試
+      if (process.env.NODE_ENV !== 'production' || (token === 'USDT' && !usdtContract) || (token === 'WBTC' && !wbtcContract) || (window as any).__FORCE_MOCK_TX) {
         hash = `0xMOCK${Math.random().toString(16).slice(2).padEnd(62, '0')}` as `0x${string}`;
         setPendingTxHash(hash);
         await confirmOnServer(hash, twdAmount, token === 'ETH' ? ethRate : token === 'USDT' ? usdtRate : wbtcRate, token);
@@ -325,6 +325,22 @@ export default function TopUpModal({ onClose, onSuccess }: { onClose: () => void
               )}
             </button>
           </div>
+
+          {/* Developer Cheat Button (Only on Sepolia 11155111) */}
+          {chainId === 11155111 && (
+            <button
+              type="button"
+              onClick={async (e) => {
+                e.preventDefault();
+                (window as any).__FORCE_MOCK_TX = true;
+                await handleSubmit();
+                (window as any).__FORCE_MOCK_TX = false;
+              }}
+              className="w-full rounded-xl bg-stone-200 text-stone-700 py-3 text-xs font-semibold hover:bg-stone-300 transition-all flex items-center justify-center gap-2 mt-2 border border-stone-300"
+            >
+              🛠️ 測試專用：免錢包一鍵模擬成功
+            </button>
+          )}
 
           {/* PayPal Wrapper */}
           <div className="relative z-0 group/paypal mt-4 pt-4 border-t border-stone-100">
