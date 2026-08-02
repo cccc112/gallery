@@ -22,7 +22,10 @@ export default async function HomePage() {
              (SELECT count(*) FROM public.favorites WHERE artwork_id = a.id) as likes_count
       FROM public.artworks a
       JOIN public.users u ON a.artist_id = u.id
-      ORDER BY a.created_at DESC
+      ORDER BY (
+        (SELECT count(*) FROM public.favorites WHERE artwork_id = a.id) * 3 +
+        (SELECT count(*) FROM public.page_views WHERE artwork_id = a.id)
+      ) DESC, a.created_at DESC
       LIMIT 6
     `;
     const stats = await sql`
